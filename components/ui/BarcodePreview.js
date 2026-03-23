@@ -29,10 +29,84 @@ export function BarcodePreview({ value, title = 'Barcode', compact = false }) {
   )
 }
 
-export function printBarcodeCard({ title, value, subtitle = '' }) {
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>body{font-family:Arial,sans-serif;padding:24px}.card{border:1px solid #d7dfef;border-radius:16px;padding:24px;max-width:420px}.title{font-size:20px;font-weight:700}.sub{margin:6px 0 16px;color:#4b5563}.value{font-size:18px;font-weight:600;word-break:break-all;margin-top:12px}.muted{color:#6b7280;font-size:12px;margin-top:10px}</style></head><body onload="window.print();window.close()"><div class="card"><div class="title">${title}</div><div class="sub">${subtitle}</div><div class="value">${value}</div><div class="muted">Print dari Bimbel Pro Enterprise Upgrade Besar</div></div></body></html>`
-  const w = window.open('', '_blank', 'width=560,height=720')
+export async function printBarcodeCard({ title, value, subtitle = '' }) {
+  const qr = await QRCode.toDataURL(value, {
+    margin: 1,
+    width: 256,
+  })
+
+  const html = `
+  <!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>${title}</title>
+    <style>
+      @page {
+        size: 4cm 4cm;
+        margin: 0;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        width: 4cm;
+        height: 4cm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: Arial;
+        background: #fff;
+      }
+
+      .card {
+        width: 4cm;
+        height: 4cm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .title {
+        font-size: 10px;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .sub {
+        font-size: 8px;
+        text-align: center;
+        margin-bottom: 4px;
+      }
+
+      img {
+        width: 2.6cm;
+        height: 2.6cm;
+      }
+
+      .value {
+        font-size: 7px;
+        text-align: center;
+        margin-top: 4px;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body onload="window.print();window.close()">
+    <div class="card">
+      <div class="title">${title}</div>
+      <div class="sub">${subtitle}</div>
+      <img src="${qr}" />
+      <div class="value">${value}</div>
+    </div>
+  </body>
+  </html>
+  `
+
+  const w = window.open('', '_blank', 'width=400,height=400')
   if (!w) return
+
   w.document.write(html)
   w.document.close()
 }
