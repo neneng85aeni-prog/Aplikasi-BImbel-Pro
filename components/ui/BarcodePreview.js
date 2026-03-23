@@ -102,6 +102,7 @@ export async function printBarcodeCard({ title, value, subtitle = '' }) {
     </div>
   </body>
   </html>
+  `
 
   const w = window.open('', '_blank', 'width=400,height=400')
   if (!w) return
