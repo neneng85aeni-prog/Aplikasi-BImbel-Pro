@@ -156,7 +156,7 @@ export function useBimbelApp() {
   }, [perkembanganTampil, perkembanganForm.siswa_id])
 
   const guruOptions = useMemo(() => usersTampil.filter((item) => item.akses === 'guru'), [usersTampil])
-  const payrollRows = useMemo(() => computePayroll({ users: usersTampil, absensiSiswa: absensiSiswaTampil, bonusManual: bonusManualTampil }), [usersTampil, absensiSiswaTampil, bonusManualTampil])
+  const payrollRows = useMemo(() => computePayroll({ users: usersTampil, absensiSiswa: absensiSiswaTampil, absensiKaryawan: absensiKaryawanTampil, bonusManual: bonusManualTampil }), [usersTampil, absensiSiswaTampil, absensiKaryawanTampil, bonusManualTampil])
   const overview = useMemo(() => computeOverview({ pembayaran: pembayaranTampil, siswa: siswaTampil, users: usersTampil, branches: selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches, payrollRows }), [pembayaranTampil, siswaTampil, usersTampil, branches, selectedBranchId, payrollRows])
   const financeSummary = useMemo(() => buildFinanceSummary(pembayaranTampil, payrollRows, bonusManualTampil, selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches), [pembayaranTampil, payrollRows, bonusManualTampil, branches, selectedBranchId])
   const stats = useMemo(() => ({ siswa: siswaTampil.length, pegawai: usersTampil.length, program: programs.length, pemasukan: pembayaranTampil.reduce((sum, item) => sum + Number(item.nominal || 0), 0) }), [siswaTampil, usersTampil, programs, pembayaranTampil])
@@ -589,49 +589,41 @@ export function useBimbelApp() {
     }
   }
 
-  function printThermalReceipt(receipt) {
-  const data = receipt || lastReceipt
-  if (!data) {
-    setErrorMsg('Belum ada data pembayaran.')
-    return
+  function buildReceiptHtml(data, withAutoPrint = true) {
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000;background:#fff}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:15px;font-weight:bold}.help{margin-top:12px;font-size:11px;color:#374151;background:#f8fafc;padding:8px;border-radius:8px}@media print{body{width:72mm}}</style></head><body ${withAutoPrint ? 'onload="window.print();window.close()"' : ''}><div class="receipt"><div class="center big">BIMBEL PRO</div><div class="center">Bukti Pembayaran</div><div class="line"></div><div><span class="label">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class="label">Cabang:</span> ${data.cabang || '-'}</div><div><span class="label">Nama siswa:</span> ${data.nama || '-'}</div><div><span class="label">Program:</span> ${data.programNama || '-'}</div><div><span class="label">Guru default:</span> ${data.guruNama || '-'}</div><div><span class="label">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class="label">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class="row"><span class="label">Nominal</span><span>${formatRupiah(data.nominal || 0)}</span></div><div class="line"></div><div class="center">Terima kasih</div>${withAutoPrint ? '' : '<div class="help"><b>Cara print di Android:</b><br/>1. Buka menu browser<br/>2. Pilih Share atau bagikan ke aplikasi printer bluetooth<br/>3. Jika aplikasi printer mendukung print halaman web/teks, gunakan halaman ini sebagai sumber cetak.</div>'}</div></body></html>`
   }
 
-  const isAndroid = /Android/i.test(navigator.userAgent)
-
-  const html = `
-  <html>
-  <body style="text-align:center;font-family:Arial">
-    <h3>Bukti Pembayaran</h3>
-    <p>${data.nama}</p>
-    <p>${data.programNama}</p>
-    <p>${data.metode_bayar}</p>
-    <h2>${formatRupiah(data.nominal)}</h2>
-    <hr/>
-    <p>Tekan lama → Share → Printer</p>
-  </body>
-  </html>
-  `
-
-  const win = window.open('', '_blank')
-
-  if (isAndroid) {
-    win.document.write(html)
-    win.document.close()
-    return
+  function printThermalReceiptDesktop(receipt) {
+    const data = receipt || lastReceipt
+    if (!data) {
+      setErrorMsg('Belum ada data pembayaran untuk dicetak.')
+      return
+    }
+    const html = buildReceiptHtml(data, true)
+    const w = window.open('', '_blank', 'width=420,height=700')
+    if (!w) {
+      setErrorMsg('Popup printer diblokir browser. Izinkan popup lalu coba lagi.')
+      return
+    }
+    w.document.write(html)
+    w.document.close()
   }
 
-  // desktop
-  const printHtml = `
-  <html>
-  <body onload="window.print();window.close()">
-    ${html}
-  </body>
-  </html>
-  `
-
-  win.document.write(printHtml)
-  win.document.close()
-}
+  function printThermalReceiptAndroid(receipt) {
+    const data = receipt || lastReceipt
+    if (!data) {
+      setErrorMsg('Belum ada data pembayaran untuk dicetak.')
+      return
+    }
+    const html = buildReceiptHtml(data, false)
+    const w = window.open('', '_blank')
+    if (!w) {
+      setErrorMsg('Popup diblokir browser. Izinkan popup lalu coba lagi.')
+      return
+    }
+    w.document.write(html)
+    w.document.close()
+  }
 
   async function prosesScanKaryawan(decodedText) {
     try {
@@ -818,7 +810,7 @@ export function useBimbelApp() {
       submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa,
       submitPerkembangan, submitKasir, submitBonus, submitEmployeeManualAttendance, submitStudentAttendance, submitReview,
       prosesScanSiswa, prosesScanPerkembangan, prosesScanKaryawan,
-      startEditBranch, startEditProgram, startEditUser, startEditSiswa, handleDownload, printThermalReceipt,
+      startEditBranch, startEditProgram, startEditUser, startEditSiswa, handleDownload, printThermalReceiptDesktop, printThermalReceiptAndroid,
       selectStudentById, selectProgressStudentById, generateStudentBarcodeAction, printStudentBarcode,
       addReviewItem, changeReviewItem, removeReviewItem, printEmployeeReview, togglePermissionDraft, savePermissions, selectAllPermissions, resetPermissionDraft, setQuickExportRange,
     },
