@@ -22,13 +22,7 @@ export function KasirTab({ branches, selectedBranchId, setSelectedBranchId, sisw
         </div>
         <div className="form-row"><label>Nominal</label><input type="number" value={kasirForm.nominal} onChange={(e) => setKasirForm({ ...kasirForm, nominal: e.target.value })} /></div>
         <div className="form-row"><label>Keterangan</label><textarea value={kasirForm.keterangan} onChange={(e) => setKasirForm({ ...kasirForm, keterangan: e.target.value })} /></div>
-        <div className="btn-row"><button className="btn btn-primary" type="button" onClick={onSubmitKasir}>Simpan transaksi</button><button className="btn btn-secondary" type="button" onClick={() => onPrintReceipt()}><button className="btn btn-secondary" type="button" onClick={() => onPrintReceipt()}>
-  Print Desktop
-</button>
-
-<button className="btn btn-primary" type="button" onClick={() => onPrintReceipt()}>
-  Print Android
-</button>
+        <div className="btn-row"><button className="btn btn-primary" type="button" onClick={onSubmitKasir}>Simpan transaksi</button><button className="btn btn-secondary" type="button" onClick={() => onPrintReceipt()}><button className="btn btn-secondary" type="button" onClick={() => onPrintReceipt()}>Print Desktop</button><button className="btn btn-primary" type="button" onClick={() => onPrintReceipt()}>Print Android</button></button></div>
         <p className="text-muted">Jika status belum lunas, transaksi tetap tercatat untuk laporan keuangan.</p>
       </div>
     </div>
