@@ -55,7 +55,7 @@ import { clearSession, readSession, saveSession } from '../lib/session'
 import { downloadCsv, exportRows } from '../lib/export'
 import { buildFinanceSummary, computeOverview, computePayroll, filterByUserBranch } from '../lib/reporting'
 import { printBarcodeCard } from '../components/ui/BarcodePreview'
-
+import QRCode from 'qrcode'
 function normalizeUserPayload(row) {
   if (!row) return row
   return {
@@ -364,8 +364,27 @@ export function useBimbelApp() {
   }
 
   function printStudentBarcode(item) {
-    printBarcodeCard({ title: `Barcode ${item.nama}`, subtitle: `${item.branches?.nama || '-'} • ${item.kelas || ''}`, value: item.kode_qr || item.id })
+  const isAndroid = /Android/i.test(navigator.userAgent)
+
+  if (isAndroid) {
+    QRCode.toDataURL(item.kode_qr || item.id, { margin: 1, width: 300 })
+      .then((url) => {
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${item.nama}-barcode.png`
+        link.click()
+
+        alert('QR disimpan. Silakan buka aplikasi printer bluetooth dan print gambar.')
+      })
+    return
   }
+
+  printBarcodeCard({
+    title: `Barcode ${item.nama}`,
+    subtitle: `${item.branches?.nama || '-'} • ${item.kelas || ''}`,
+    value: item.kode_qr || item.id,
+  })
+}
 
   async function submitPerkembangan(event) {
     event.preventDefault()
