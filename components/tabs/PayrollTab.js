@@ -5,8 +5,43 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
   return (
     <div className="grid grid-2">
       <div className="glass-card">
-        <h2 className="section-title">Payroll bulanan</h2>
-        <div className="table-wrap"><table><thead><tr><th>Karyawan</th><th>Siswa tertangani</th><th>Gaji pokok</th><th>Fee siswa</th><th>Bonus</th><th>Total</th></tr></thead><tbody>{payrollRows.map((item) => <tr key={item.id}><td><b>{item.nama}</b><div className="text-muted">{item.akses}</div></td><td>{item.studentHandled}</td><td>{formatRupiah(item.gajiPokok)}</td><td>{formatRupiah(item.gajiSiswa)}</td><td>{formatRupiah(item.bonusOtomatis + item.bonusManual)}</td><td><b>{formatRupiah(item.totalGaji)}</b></td></tr>)}</tbody></table></div>
+        <h2 className="section-title">Payroll bulanan final</h2>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Karyawan</th>
+                <th>Hadir</th>
+                <th>Izin</th>
+                <th>Alpha</th>
+                <th>Gaji pokok</th>
+                <th>Fee siswa</th>
+                <th>Tunjangan tetap</th>
+                <th>Tunjangan hadir</th>
+                <th>Bonus</th>
+                <th>Potongan</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payrollRows.map((item) => (
+                <tr key={item.id}>
+                  <td><b>{item.nama}</b><div className="text-muted">{item.akses}</div></td>
+                  <td>{item.hadir || 0}</td>
+                  <td>{item.izin || 0}</td>
+                  <td>{item.alpha || 0}</td>
+                  <td>{formatRupiah(item.gajiPokok || 0)}</td>
+                  <td>{formatRupiah(item.feeSiswa || item.gajiSiswa || 0)}</td>
+                  <td>{formatRupiah(item.tunjanganTetap || 0)}</td>
+                  <td>{formatRupiah(item.tunjanganHadir || 0)}</td>
+                  <td>{formatRupiah((item.bonusOtomatis || 0) + (item.bonusManual || 0))}</td>
+                  <td>{formatRupiah(item.potongan || 0)}</td>
+                  <td><b>{formatRupiah(item.totalGaji || 0)}</b></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       <div className="glass-card">
         <h2 className="section-title">Input bonus manual</h2>
