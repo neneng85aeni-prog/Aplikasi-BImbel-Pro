@@ -590,20 +590,48 @@ export function useBimbelApp() {
   }
 
   function printThermalReceipt(receipt) {
-    const data = receipt || lastReceipt
-    if (!data) {
-      setErrorMsg('Belum ada data pembayaran untuk dicetak.')
-      return
-    }
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:15px;font-weight:bold}@media print{body{width:72mm}}</style></head><body onload="window.print();window.close()"><div class="receipt"><div class="center big">BIMBEL PRO</div><div class="center">Bukti Pembayaran</div><div class="line"></div><div><span class="label">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class="label">Cabang:</span> ${data.cabang || '-'}</div><div><span class="label">Nama siswa:</span> ${data.nama || '-'}</div><div><span class="label">Program:</span> ${data.programNama || '-'}</div><div><span class="label">Guru default:</span> ${data.guruNama || '-'}</div><div><span class="label">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class="label">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class="row"><span class="label">Nominal</span><span>${formatRupiah(data.nominal || 0)}</span></div><div class="line"></div><div class="center">Terima kasih</div></div></body></html>`
-    const w = window.open('', '_blank', 'width=420,height=700')
-    if (!w) {
-      setErrorMsg('Popup printer diblokir browser. Izinkan popup lalu coba lagi.')
-      return
-    }
-    w.document.write(html)
-    w.document.close()
+  const data = receipt || lastReceipt
+  if (!data) {
+    setErrorMsg('Belum ada data pembayaran.')
+    return
   }
+
+  const isAndroid = /Android/i.test(navigator.userAgent)
+
+  const html = `
+  <html>
+  <body style="text-align:center;font-family:Arial">
+    <h3>Bukti Pembayaran</h3>
+    <p>${data.nama}</p>
+    <p>${data.programNama}</p>
+    <p>${data.metode_bayar}</p>
+    <h2>${formatRupiah(data.nominal)}</h2>
+    <hr/>
+    <p>Tekan lama → Share → Printer</p>
+  </body>
+  </html>
+  `
+
+  const win = window.open('', '_blank')
+
+  if (isAndroid) {
+    win.document.write(html)
+    win.document.close()
+    return
+  }
+
+  // desktop
+  const printHtml = `
+  <html>
+  <body onload="window.print();window.close()">
+    ${html}
+  </body>
+  </html>
+  `
+
+  win.document.write(printHtml)
+  win.document.close()
+}
 
   async function prosesScanKaryawan(decodedText) {
     try {
