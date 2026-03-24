@@ -32,9 +32,43 @@ export function BarcodePreview({ value, title = 'Barcode', compact = false }) {
 export async function printBarcodeCard({ title, value, subtitle = '' }) {
   const qr = await QRCode.toDataURL(value, {
     margin: 1,
-    width: 256,
+    width: 512,
   })
 
+  const isAndroid = /Android/i.test(navigator.userAgent)
+
+  // ✅ ANDROID → SHARE KE APP PRINTER
+  if (isAndroid && navigator.canShare) {
+    try {
+      const res = await fetch(qr)
+      const blob = await res.blob()
+      const file = new File([blob], `${title}.png`, { type: 'image/png' })
+
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title,
+          text: value,
+          files: [file],
+        })
+        return
+      }
+    } catch (err) {
+      console.log('Share gagal, fallback ke download')
+    }
+  }
+
+  // ✅ FALLBACK ANDROID → DOWNLOAD
+  if (isAndroid) {
+    const link = document.createElement('a')
+    link.href = qr
+    link.download = `${title}.png`
+    link.click()
+
+    alert('QR disimpan. Silakan print dari aplikasi printer bluetooth.')
+    return
+  }
+
+  // ✅ DESKTOP → PRINT
   const html = `
   <!doctype html>
   <html>
@@ -42,10 +76,7 @@ export async function printBarcodeCard({ title, value, subtitle = '' }) {
     <meta charset="utf-8">
     <title>${title}</title>
     <style>
-      @page {
-        size: 4cm 4cm;
-        margin: 0;
-      }
+      @page { size: 4cm 4cm; margin: 0; }
 
       body {
         margin: 0;
