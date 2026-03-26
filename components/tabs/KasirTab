@@ -1,7 +1,7 @@
 import { PAYMENT_METHOD_OPTIONS, PAYMENT_STATUS_OPTIONS } from '../../lib/constants'
 import { formatRupiah } from '../../lib/format'
 
-export function KasirTab({ branches, selectedBranchId, setSelectedBranchId, siswaOptions, selectedStudent, kasirForm, setKasirForm, studentScanInfo, scanStudentActive, setScanStudentActive, studentScanText, onSelectStudent, onSubmitKasir, onPrintReceiptDesktop, onPrintReceiptAndroid }) {
+export function KasirTab({ branches, selectedBranchId, setSelectedBranchId, siswaOptions, selectedStudent, kasirForm, setKasirForm, studentScanInfo, scanStudentActive, setScanStudentActive, studentScanText, onSelectStudent, onSubmitKasir, onPrintReceiptDesktop, onPrintReceiptAndroid, programs }) {
   return (
     <div className="grid grid-2">
       <div className="glass-card">
@@ -19,6 +19,32 @@ export function KasirTab({ branches, selectedBranchId, setSelectedBranchId, sisw
         <div className="grid grid-2">
           <div className="form-row"><label>Status</label><select value={kasirForm.status} onChange={(e) => setKasirForm({ ...kasirForm, status: e.target.value })}>{PAYMENT_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
           <div className="form-row"><label>Metode bayar</label><select value={kasirForm.metode_bayar} onChange={(e) => setKasirForm({ ...kasirForm, metode_bayar: e.target.value })}>{PAYMENT_METHOD_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
+        </div>
+
+        {/* --- TAMBAHAN KODE PROGRAM MANUAL MULAI DARI SINI --- */}
+        <div className="form-row">
+          <label>Pilih Program (Opsional)</label>
+          <select 
+            value={kasirForm.program_id || ''} 
+            onChange={(e) => {
+               const selectedProgId = e.target.value;
+               const selectedProg = programs?.find(p => p.id === selectedProgId);
+               setKasirForm({ 
+                  ...kasirForm, 
+                  program_id: selectedProgId,
+                  nominal: selectedProg ? selectedProg.nominal : (selectedStudent?.nominal || '') 
+               });
+            }}
+          >
+            <option value="">-- Gunakan Program Bawaan Siswa --</option>
+            {programs?.map((item) => (
+              <option key={item.id} value={item.id}>{item.nama} - {formatRupiah(item.nominal)}</option>
+            ))}
+          </select>
+        </div>
+        {/* --- TAMBAHAN KODE PROGRAM MANUAL SAMPAI SINI --- */}
+
+        <div className="form-row"><label>Nominal</label><input type="number" value={kasirForm.nominal} onChange={(e) => setKasirForm({ ...kasirForm, nominal: e.target.value })} /></div>
         </div>
         <div className="form-row"><label>Nominal</label><input type="number" value={kasirForm.nominal} onChange={(e) => setKasirForm({ ...kasirForm, nominal: e.target.value })} /></div>
         <div className="form-row"><label>Keterangan</label><textarea value={kasirForm.keterangan} onChange={(e) => setKasirForm({ ...kasirForm, keterangan: e.target.value })} /></div>
