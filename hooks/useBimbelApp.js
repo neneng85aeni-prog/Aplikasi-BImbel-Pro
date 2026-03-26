@@ -521,9 +521,11 @@ export function useBimbelApp() {
     try {
       if (!selectedStudent) throw new Error('Pilih atau scan siswa terlebih dahulu.')
       const payload = validateKasirForm(kasirForm, selectedStudent.nominal)
+      const finalProgramId = payload.program_id || selectedStudent.program_id; // Logika pemilihan program
+
       const res = await saveKasirTransaction({
         p_siswa_id: selectedStudent.id,
-        p_program_id: selectedStudent.program_id,
+        p_program_id: finalProgramId, // Gunakan variabel finalProgramId
         p_kasir_id: user?.id,
         p_tanggal: TODAY(),
         p_nominal: payload.nominal,
