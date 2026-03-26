@@ -16,12 +16,12 @@ export function KasirTab({ branches, selectedBranchId, setSelectedBranchId, sisw
       </div>
       <div className="glass-card">
         <h2 className="section-title">Input pembayaran</h2>
+        
         <div className="grid grid-2">
           <div className="form-row"><label>Status</label><select value={kasirForm.status} onChange={(e) => setKasirForm({ ...kasirForm, status: e.target.value })}>{PAYMENT_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
           <div className="form-row"><label>Metode bayar</label><select value={kasirForm.metode_bayar} onChange={(e) => setKasirForm({ ...kasirForm, metode_bayar: e.target.value })}>{PAYMENT_METHOD_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
         </div>
 
-        {/* --- TAMBAHAN KODE PROGRAM MANUAL MULAI DARI SINI --- */}
         <div className="form-row">
           <label>Pilih Program (Opsional)</label>
           <select 
@@ -42,10 +42,7 @@ export function KasirTab({ branches, selectedBranchId, setSelectedBranchId, sisw
             ))}
           </select>
         </div>
-        {/* --- TAMBAHAN KODE PROGRAM MANUAL SAMPAI SINI --- */}
 
-        <div className="form-row"><label>Nominal</label><input type="number" value={kasirForm.nominal} onChange={(e) => setKasirForm({ ...kasirForm, nominal: e.target.value })} /></div>
-        </div>
         <div className="form-row"><label>Nominal</label><input type="number" value={kasirForm.nominal} onChange={(e) => setKasirForm({ ...kasirForm, nominal: e.target.value })} /></div>
         <div className="form-row"><label>Keterangan</label><textarea value={kasirForm.keterangan} onChange={(e) => setKasirForm({ ...kasirForm, keterangan: e.target.value })} /></div>
         <div className="btn-row"><button className="btn btn-primary" type="button" onClick={onSubmitKasir}>Simpan transaksi</button><button className="btn btn-secondary" type="button" onClick={onPrintReceiptDesktop}>Print Desktop</button><button className="btn btn-primary" type="button" onClick={onPrintReceiptAndroid}>Print Android</button></div>
