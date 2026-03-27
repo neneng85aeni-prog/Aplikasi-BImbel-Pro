@@ -15,6 +15,7 @@ import { ReviewsTab } from './tabs/ReviewsTab'
 import { LaporanTab } from './tabs/LaporanTab'
 import { PayrollTab } from './tabs/PayrollTab'
 import { DownloadTab } from './tabs/DownloadTab'
+import { PengeluaranTab } from './tabs/PengeluaranTab'
 
 export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
@@ -43,7 +44,7 @@ export function Dashboard({ state, actions }) {
         <div className="grid grid-3 compact-stats">
           <StatCard label="Siswa" value={stats.siswa} />
           <StatCard label="Karyawan" value={stats.pegawai} />
-          <StatCard label="Net bulan ini" value={formatRupiah(overview.labaBulanan)} />
+          <StatCard label="Net bulan ini (Laba)" value={formatRupiah(overview.labaBulanan)} />
         </div>
 
         {message ? <Banner>{message}</Banner> : null}
@@ -58,28 +59,20 @@ export function Dashboard({ state, actions }) {
         
         {activeTab === 'kasir' && (
           <KasirTab 
-            branches={state.branches} 
-            selectedBranchId={state.selectedBranchId} 
-            setSelectedBranchId={actions.setSelectedBranchId} 
-            siswaOptions={state.siswaTampil} 
-            selectedStudent={state.selectedStudent} 
-            kasirForm={state.kasirForm} 
-            setKasirForm={actions.setKasirForm} 
-            studentScanInfo={state.studentScanInfo} 
-            scanStudentActive={state.scanStudentActive} 
-            setScanStudentActive={actions.setScanStudentActive} 
-            studentScanText={state.studentScanText} 
-            onSelectStudent={actions.selectStudentById} 
-            onSubmitKasir={actions.submitKasir} 
-            onPrintReceiptDesktop={actions.printThermalReceiptDesktop} 
-            onPrintReceiptAndroid={actions.printThermalReceiptAndroid} 
-            programs={state.programs} 
+            branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} 
+            siswaOptions={state.siswaTampil} selectedStudent={state.selectedStudent} kasirForm={state.kasirForm} setKasirForm={actions.setKasirForm} 
+            studentScanInfo={state.studentScanInfo} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} 
+            studentScanText={state.studentScanText} onSelectStudent={actions.selectStudentById} onSubmitKasir={actions.submitKasir} 
+            onPrintReceiptDesktop={actions.printThermalReceiptDesktop} onPrintReceiptAndroid={actions.printThermalReceiptAndroid} programs={state.programs} 
           />
         )}
         
         {activeTab === 'perkembangan' && <PerkembanganTab user={state.user} perkembanganForm={state.perkembanganForm} setPerkembanganForm={actions.setPerkembanganForm} siswaTampil={state.siswaTampil} guruOptions={state.guruOptions} perkembanganHistory={state.perkembanganHistory} selectedProgressStudent={state.selectedProgressStudent} progressInputMode={state.progressInputMode} setProgressInputMode={actions.setProgressInputMode} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanInfo={state.studentScanInfo} onSelectProgressStudent={actions.selectProgressStudentById} onSubmit={actions.submitPerkembangan} />}
         {activeTab === 'karyawan' && <KaryawanTab currentUser={state.user} employeeMode={state.employeeMode} setEmployeeMode={actions.setEmployeeMode} scanEmployeeActive={state.scanEmployeeActive} setScanEmployeeActive={actions.setScanEmployeeActive} employeeScanInfo={state.employeeScanInfo} employeeScanText={state.employeeScanText} absensiKaryawan={state.absensiKaryawanTampil} employeeBarcodeIn={state.employeeBarcodeIn} employeeBarcodeOut={state.employeeBarcodeOut} employeeManualForm={state.employeeManualForm} setEmployeeManualForm={actions.setEmployeeManualForm} users={state.usersTampil} onSubmitManual={actions.submitEmployeeManualAttendance} />}
         {activeTab === 'review' && <ReviewsTab reviewForm={state.reviewForm} setReviewForm={actions.setReviewForm} users={state.usersTampil} reviews={state.reviewsTampil} onAddItem={actions.addReviewItem} onChangeItem={actions.changeReviewItem} onRemoveItem={actions.removeReviewItem} onSubmitReview={actions.submitReview} onPrintReview={actions.printEmployeeReview} />}
+        
+        {activeTab === 'pengeluaran' && <PengeluaranTab pengeluaranForm={state.pengeluaranForm} setPengeluaranForm={actions.setPengeluaranForm} pengeluaran={state.pengeluaranTampil} branches={state.branches} onSubmit={actions.submitPengeluaran} onEdit={actions.startEditPengeluaran} onDelete={actions.deletePengeluaran} onReset={actions.setPengeluaranForm} />}
+        
         {activeTab === 'laporan' && <LaporanTab financeSummary={financeSummary} pembayaran={state.pembayaranTampil} branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} payrollRows={state.payrollRows} bonusManual={state.bonusManualTampil} searchTransaksi={state.searchTransaksi} setSearchTransaksi={actions.setSearchTransaksi} onEditTransaksi={actions.editTransaksi} onDeleteTransaksi={actions.deleteTransaksi} />}
         {activeTab === 'payroll' && <PayrollTab payrollRows={state.payrollRows} bonusForm={state.bonusForm} setBonusForm={actions.setBonusForm} users={state.usersTampil} bonusManual={state.bonusManualTampil} onSubmitBonus={actions.submitBonus} />}
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
