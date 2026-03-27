@@ -1,13 +1,33 @@
 import { formatRupiah } from '../../lib/format'
-import { SALARY_TYPE_OPTIONS } from '../../lib/constants'
+import { SALARY_TYPE_OPTIONS, ALL_MENU_KEYS, TAB_LABELS } from '../../lib/constants'
 
 export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onReset, onEdit, onDelete }) {
+  
+  // Fungsi untuk Centang / Hapus Centang Hak Akses
+  const handleTogglePermission = (key) => {
+    const currentPerms = userForm.menu_permissions || []
+    if (currentPerms.includes(key)) {
+      setUserForm({ ...userForm, menu_permissions: currentPerms.filter(k => k !== key) })
+    } else {
+      setUserForm({ ...userForm, menu_permissions: [...currentPerms, key] })
+    }
+  }
+
+  // Fungsi Pilih Semua Menu
+  const handleSelectAll = () => {
+    setUserForm({ ...userForm, menu_permissions: ALL_MENU_KEYS })
+  }
+
+  // Fungsi Kosongkan Semua Menu
+  const handleClearAll = () => {
+    setUserForm({ ...userForm, menu_permissions: ['overview'] }) // Minimal sisakan overview agar tidak error
+  }
+
   return (
     <div className="grid gap-lg">
       <div className="glass-card">
         <h2 className="section-title">Manajemen Karyawan</h2>
         
-        {/* Trik autoComplete="off" agar browser tidak otomatis mengisi email/password admin */}
         <form onSubmit={onSubmit} autoComplete="off">
           <div className="grid grid-2">
             <div className="form-row">
@@ -23,7 +43,6 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
           <div className="grid grid-2">
             <div className="form-row">
               <label>Password {userForm.id && '(Kosongkan jika tidak diubah)'}</label>
-              {/* Trik autoComplete="new-password" adalah kunci utama mencegah autofill */}
               <input type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} required={!userForm.id} autoComplete="new-password" />
             </div>
             <div className="form-row">
@@ -34,8 +53,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
           
           <div className="grid grid-2">
             <div className="form-row">
-              <label>Akses / Jabatan</label>
-              {/* KOLOM INPUT MANUAL OTOMATIS HURUF BESAR (UPPERCASE) */}
+              <label>Jabatan Utama (Role)</label>
               <input 
                 type="text" 
                 value={userForm.akses} 
@@ -51,6 +69,30 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
                 <option value="" style={{ color: 'black' }}>Pusat / Semua Cabang</option>
                 {branches.map((b) => <option key={b.id} value={b.id} style={{ color: 'black' }}>{b.nama}</option>)}
               </select>
+            </div>
+          </div>
+
+          {/* CHECKLIST HAK AKSES MENU */}
+          <div style={{ marginTop: '20px', marginBottom: '20px', padding: '20px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+              <h3 style={{ margin: 0, fontSize: '15px' }}>Hak Akses Menu (Checklist)</h3>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="button" onClick={handleSelectAll} className="btn btn-secondary btn-small" style={{ fontSize: '11px', padding: '6px 12px' }}>Centang Semua</button>
+                <button type="button" onClick={handleClearAll} className="btn btn-danger btn-small" style={{ fontSize: '11px', padding: '6px 12px', background: 'transparent' }}>Kosongkan</button>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+              {ALL_MENU_KEYS.map((key) => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', fontSize: '13px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={userForm.menu_permissions?.includes(key) || false}
+                    onChange={() => handleTogglePermission(key)}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  {TAB_LABELS[key]}
+                </label>
+              ))}
             </div>
           </div>
 
@@ -95,7 +137,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
         <h2 className="section-title">Daftar Karyawan</h2>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Nama</th><th>Email / WA</th><th>Akses</th><th>Cabang</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Nama</th><th>Email / WA</th><th>Jabatan</th><th>Cabang</th><th>Aksi</th></tr></thead>
             <tbody>
               {users.map((item) => (
                 <tr key={item.id}>
@@ -104,7 +146,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
                   <td style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{item.akses}</td>
                   <td>{item.branch_nama || 'Pusat'}</td>
                   <td>
-                    <div className="btn-row">
+                    <div className="btn-row" style={{ flexWrap: 'nowrap' }}>
                       <button className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>Edit</button>
                       <button className="btn btn-danger btn-small" onClick={() => onDelete(item.id)}>Hapus</button>
                     </div>
