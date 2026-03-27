@@ -2,7 +2,7 @@ import { formatRupiah, formatTanggal } from '../../lib/format'
 
 export function LaporanTab({ 
   financeSummary, pembayaran, branches, selectedBranchId, setSelectedBranchId, 
-  payrollRows, bonusManual, searchTransaksi, setSearchTransaksi, onDeleteTransaksi,
+  searchTransaksi, setSearchTransaksi, onDeleteTransaksi,
   editTransaksiForm, setEditTransaksiForm, onSubmitEditTransaksi, onStartEditTransaksi 
 }) {
   return (
@@ -42,7 +42,6 @@ export function LaporanTab({
                   <td><b style={{ color: '#10b981' }}>{formatRupiah(item.nominal)}</b></td>
                   <td>
                     <div className="btn-row">
-                      {/* INI DIA PERBAIKANNYA: Dari onEditTransaksi menjadi onStartEditTransaksi */}
                       <button className="btn btn-secondary btn-small" onClick={() => onStartEditTransaksi(item)}>Edit</button>
                       <button className="btn btn-danger btn-small" onClick={() => onDeleteTransaksi(item.id)}>Hapus</button>
                     </div>
@@ -55,18 +54,18 @@ export function LaporanTab({
         </div>
       </div>
 
-      {/* POPUP EDIT TRANSAKSI */}
+      {/* POPUP EDIT TRANSAKSI - ANTI SILAU */}
       {editTransaksiForm && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <form onSubmit={onSubmitEditTransaksi} className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '25px', border: '1px solid rgba(255,255,255,0.2)' }}>
             <h2 className="section-title">Edit Transaksi</h2>
             <div className="form-row">
               <label>Keterangan / Jenis Transaksi</label>
-              <input type="text" value={editTransaksiForm.keterangan} onChange={(e) => setEditTransaksiForm({ ...editTransaksiForm, keterangan: e.target.value })} placeholder="Cth: Pembayaran SPP" required style={{ width: '100%' }} />
+              <input type="text" value={editTransaksiForm.keterangan} onChange={(e) => setEditTransaksiForm({ ...editTransaksiForm, keterangan: e.target.value })} required style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: 'inherit' }} />
             </div>
             <div className="form-row">
               <label>Nominal (Rp)</label>
-              <input type="number" value={editTransaksiForm.nominal} onChange={(e) => setEditTransaksiForm({ ...editTransaksiForm, nominal: e.target.value })} required style={{ width: '100%' }} />
+              <input type="number" value={editTransaksiForm.nominal} onChange={(e) => setEditTransaksiForm({ ...editTransaksiForm, nominal: e.target.value })} required style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: 'inherit' }} />
             </div>
             <div className="btn-row" style={{ marginTop: '20px' }}>
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Simpan Perubahan</button>
