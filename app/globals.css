@@ -201,3 +201,91 @@ option {
     grid-template-columns: 1fr;
   }
 }
+/* =========================================
+   📱 MOBILE RESPONSIVE FIX (HP)
+   ========================================= */
+@media (max-width: 768px) {
+  /* Ubah layout utama agar menumpuk ke bawah, bukan ke samping */
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  /* Pindahkan sidebar ke atas dan buat melayang (sticky) */
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-radius: 0 0 15px 15px;
+    padding: 15px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Sembunyikan email dan rapikan judul aplikasi */
+  .sidebar > div:first-child p {
+    display: none; 
+  }
+  .sidebar > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  /* Buat menu berjejer ke samping dan bisa di-scroll (swipe) */
+  .nav-stack {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 5px;
+    scrollbar-width: thin;
+  }
+  .nav-stack::-webkit-scrollbar {
+    height: 4px;
+  }
+  .nav-stack::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+
+  /* Perkecil ukuran tombol tab agar pas di layar HP */
+  .tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* Jadikan tombol Refresh dan Logout berjejer menyamping di bawah menu */
+  .sidebar .btn-row.column {
+    flex-direction: row;
+    margin-top: 10px;
+  }
+  .sidebar .btn-row.column button {
+    flex: 1;
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  /* Ubah semua kotak (grid) yang awalnya menyamping menjadi ke bawah (1 kolom) */
+  .grid-2, .grid-3, .compact-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Rapikan jarak konten */
+  .content-area {
+    padding: 15px 10px;
+  }
+
+  /* Agar tabel tidak terpotong, bisa digeser ke samping */
+  .table-wrap {
+    overflow-x: auto;
+  }
+}
