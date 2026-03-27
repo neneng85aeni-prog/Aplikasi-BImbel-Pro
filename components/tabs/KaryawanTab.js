@@ -19,11 +19,12 @@ export function KaryawanTab({
           
           <div className="form-row">
             <label>Pilih Mode Absen:</label>
-            <div style={{ display: 'flex', gap: '15px', background: '#f1f5f9', padding: '10px', borderRadius: '8px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
+            {/* BAGIAN INI YANG DIPERBAIKI (Hapus background putih, ganti ke padding transparan) */}
+            <div style={{ display: 'flex', gap: '20px', padding: '10px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
                 <input type="radio" value="datang" checked={employeeMode === 'datang'} onChange={(e) => setEmployeeMode(e.target.value)} /> Masuk / Datang
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
                 <input type="radio" value="pulang" checked={employeeMode === 'pulang'} onChange={(e) => setEmployeeMode(e.target.value)} /> Pulang
               </label>
             </div>
