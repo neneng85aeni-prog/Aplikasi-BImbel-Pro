@@ -42,6 +42,7 @@ export function LaporanTab({
                   <td><b style={{ color: '#10b981' }}>{formatRupiah(item.nominal)}</b></td>
                   <td>
                     <div className="btn-row">
+                      {/* INI DIA PERBAIKANNYA: Dari onEditTransaksi menjadi onStartEditTransaksi */}
                       <button className="btn btn-secondary btn-small" onClick={() => onStartEditTransaksi(item)}>Edit</button>
                       <button className="btn btn-danger btn-small" onClick={() => onDeleteTransaksi(item.id)}>Hapus</button>
                     </div>
