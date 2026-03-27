@@ -87,7 +87,12 @@ export function PerkembanganTab({
                     <td><b>{item.siswa?.nama || '-'}</b><br/><span className="text-muted" style={{fontSize: '11px'}}>Guru: {item.users?.nama || '-'}</span></td>
                     <td><div style={{ maxHeight: '60px', overflowY: 'auto', fontSize: '13px' }}>{item.catatan}</div></td>
                     <td>
-                      <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981', borderColor: '#10b981', whiteSpace: 'nowrap' }}>Kirim WA 💬</button>
+                      {/* GEMBOK PINTAR: Cek apakah yang login BUKAN guru */}
+                      {user?.akses !== 'guru' ? (
+                        <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981', borderColor: '#10b981', whiteSpace: 'nowrap' }}>Kirim WA 💬</button>
+                      ) : (
+                        <span className="text-muted" style={{ fontSize: '12px', fontStyle: 'italic' }}>-</span>
+                      )}
                     </td>
                   </tr>
                 ))}
