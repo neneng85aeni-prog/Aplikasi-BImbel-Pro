@@ -40,7 +40,6 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
     const totalCustomPotongan = customItems.filter(i => i.type === 'potongan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
     const totalBersih = slipModal.totalGaji + totalCustomTunjangan - totalCustomPotongan
     
-    // Gunakan bulan dan tahun sesuai pilihan filter, BUKAN bulan berjalan
     const periodeCetak = formatMonthYear(payrollMonth, payrollYear)
     const branchObj = branches?.find(b => b.id === slipModal.branch_id)
     const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
@@ -56,6 +55,60 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
     setSlipModal(null)
   }
 
+  // FUNGSI BARU UNTUK KIRIM SLIP GAJI VIA WHATSAPP
+  function handleSendWAAndSave() {
+    if (!slipModal) return
+
+    const totalCustomTunjangan = customItems.filter(i => i.type === 'tunjangan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
+    const totalCustomPotongan = customItems.filter(i => i.type === 'potongan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
+    const totalBersih = slipModal.totalGaji + totalCustomTunjangan - totalCustomPotongan
+    
+    const periodeCetak = formatMonthYear(payrollMonth, payrollYear)
+    const branchObj = branches?.find(b => b.id === slipModal.branch_id)
+    const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
+
+    // 1. Catat pengeluaran otomatis di Laporan Keuangan
+    onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${periodeCetak} (Via WA)`, totalBersih, slipModal.branch_id)
+
+    // 2. Format teks untuk dikirim ke WhatsApp
+    let text = `*SLIP GAJI - ${namaKopSurat}*\n\n`;
+    text += `Nama Pegawai: ${slipModal.nama}\n`;
+    text += `Posisi: ${slipModal.akses}\n`;
+    text += `Periode: ${periodeCetak}\n\n`;
+    
+    text += `*PENDAPATAN:*\n`;
+    if (slipModal.gajiPokok) text += `- Gaji Pokok: ${formatRupiah(slipModal.gajiPokok)}\n`;
+    if (slipModal.feeSiswa) text += `- Honor Mengajar: ${formatRupiah(slipModal.feeSiswa)}\n`;
+    if (slipModal.tunjanganTetap) text += `- Tunjangan Tetap: ${formatRupiah(slipModal.tunjanganTetap)}\n`;
+    if (slipModal.tunjanganHadir) text += `- Tunjangan Hadir: ${formatRupiah(slipModal.tunjanganHadir)}\n`;
+    if (slipModal.bonusOtomatis) text += `- Bonus Target: ${formatRupiah(slipModal.bonusOtomatis)}\n`;
+    if (slipModal.bonusManual) text += `- Bonus Tambahan: ${formatRupiah(slipModal.bonusManual)}\n`;
+    customItems.filter(i => i.type === 'tunjangan').forEach(i => {
+      text += `- ${i.name || 'Tunjangan Lain'}: ${formatRupiah(i.amount)}\n`;
+    });
+    
+    let hasPotongan = false;
+    let potText = `\n*POTONGAN:*\n`;
+    if (slipModal.potongan) { potText += `- Potongan Absen: ${formatRupiah(slipModal.potongan)}\n`; hasPotongan = true; }
+    customItems.filter(i => i.type === 'potongan').forEach(i => {
+      potText += `- ${i.name || 'Potongan Lain'}: ${formatRupiah(i.amount)}\n`; hasPotongan = true;
+    });
+    if (hasPotongan) text += potText;
+
+    text += `\n*TAKE HOME PAY: ${formatRupiah(totalBersih)}*\n\n`;
+    text += `Terima kasih atas dedikasi dan kerja keras Anda.\n_Pesan otomatis dikirim dari Aplikasi Manajemen ${namaKopSurat}_`;
+
+    // 3. Buka link WhatsApp Web / App
+    const encodedText = encodeURIComponent(text);
+    let phone = slipModal.no_telepon || '';
+    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+
+    const w = window.open(`https://wa.me/${phone}?text=${encodedText}`, '_blank');
+    if (!w) alert('Popup diblokir browser. Izinkan popup untuk membuka WA.');
+
+    setSlipModal(null)
+  }
+
   return (
     <div className="grid gap-lg">
       <div className="glass-card">
@@ -63,15 +116,15 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
           <h2 className="section-title" style={{ margin: 0 }}>Data Payroll Karyawan</h2>
           
           {/* FILTER PERIODE BULAN & TAHUN */}
-          <div style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '10px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div>
-              <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Periode Bulan</label>
+              <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Periode Bulan</label>
               <select value={payrollMonth} onChange={(e) => setPayrollMonth(Number(e.target.value))} style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
                 {BULAN_OPTIONS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Tahun</label>
+              <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Tahun</label>
               <select value={payrollYear} onChange={(e) => setPayrollYear(Number(e.target.value))} style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
                 {TAHUN_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -96,7 +149,7 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
                   </td>
                   <td>{formatRupiah(item.potongan)}</td>
                   <td><b style={{color: '#1e293b'}}>{formatRupiah(item.totalGaji)}</b></td>
-                  <td><button className="btn btn-primary btn-small" onClick={() => openModal(item)}>Cetak Slip 🖨️</button></td>
+                  <td><button className="btn btn-primary btn-small" onClick={() => openModal(item)}>Kirim / Cetak</button></td>
                 </tr>
               ))}
             </tbody>
@@ -137,18 +190,18 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
       {/* POPUP SLIP GAJI */}
       {slipModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '30px' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '30px', border: '1px solid rgba(255,255,255,0.2)' }}>
             <h2 className="section-title">Setup Slip Gaji: {slipModal.nama}</h2>
 
-            <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{color: '#1e293b'}}>Total Hitungan Sistem (Auto)</span><b style={{fontSize: '18px', color: '#1e293b'}}>{formatRupiah(slipModal.totalGaji)}</b></div>
+            <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.05)', padding: '15px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span>Total Hitungan Sistem (Auto)</span><b style={{fontSize: '18px'}}>{formatRupiah(slipModal.totalGaji)}</b></div>
               <div className="text-muted" style={{ fontSize: '12px', lineHeight: '1.5' }}>*Gaji pokok, bonus, dan potongan absen periode {formatMonthYear(payrollMonth, payrollYear)} sudah dihitung oleh sistem. Tambahkan tunjangan/potongan insidental di bawah ini jika diperlukan.</div>
             </div>
 
-            <h3 style={{ fontSize: '14px', marginBottom: '12px', fontWeight: 'bold', color: '#f8fafc' }}>Tunjangan / Potongan Manual (Opsional)</h3>
+            <h3 style={{ fontSize: '14px', marginBottom: '12px', fontWeight: 'bold' }}>Tunjangan / Potongan Manual (Opsional)</h3>
             {customItems.map((item, idx) => (
               <div key={idx} className="grid grid-3" style={{ gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
-                <input placeholder="Nama (Cth: Uang Lembur)" value={item.name} onChange={(e) => updateCustomItem(idx, 'name', e.target.value)} style={{padding: '8px'}} />
+                <input placeholder="Nama (Cth: Lembur)" value={item.name} onChange={(e) => updateCustomItem(idx, 'name', e.target.value)} style={{padding: '8px'}} />
                 <input type="number" placeholder="Nominal (Cth: 50000)" value={item.amount} onChange={(e) => updateCustomItem(idx, 'amount', e.target.value)} style={{padding: '8px'}} />
                 <div style={{ display: 'flex', gap: '5px' }}>
                   <select value={item.type} onChange={(e) => updateCustomItem(idx, 'type', e.target.value)} style={{ flex: 1, padding: '8px' }}>
@@ -165,7 +218,7 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
               <button type="button" className="btn btn-secondary btn-small" onClick={() => addCustomItem('potongan')}>+ Tambah Potongan</button>
             </div>
 
-            <div style={{ background: '#111827', color: '#fff', padding: '20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div>
                 <div style={{fontSize: '12px', color: '#94a3b8', marginBottom: '4px'}}>TAKE HOME PAY</div>
                 <b style={{fontSize: '15px'}}>Total Bersih</b>
@@ -173,10 +226,13 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
               <b style={{ fontSize: '24px', color: '#10b981' }}>{formatRupiah(slipModal.totalGaji + customItems.filter(i=>i.type==='tunjangan').reduce((a,b)=>a+Number(b.amount||0),0) - customItems.filter(i=>i.type==='potongan').reduce((a,b)=>a+Number(b.amount||0),0))}</b>
             </div>
 
+            {/* TOMBOL WA DITAMBAHKAN DI SINI */}
             <div className="btn-row">
-              <button className="btn btn-primary" onClick={handlePrintAndSave} style={{ flex: 1, padding: '14px', fontSize: '15px' }}>🖨️ Cetak PDF & Catat Pengeluaran</button>
+              <button className="btn btn-primary" onClick={handlePrintAndSave} style={{ flex: 1, padding: '14px', fontSize: '15px' }}>🖨️ Cetak PDF</button>
+              <button className="btn btn-primary" onClick={handleSendWAAndSave} style={{ flex: 1, padding: '14px', fontSize: '15px', background: '#10b981', borderColor: '#10b981' }}>💬 Kirim WA</button>
               <button className="btn btn-secondary" onClick={() => setSlipModal(null)} style={{ padding: '14px', fontSize: '15px' }}>Batal</button>
             </div>
+            <div className="text-muted" style={{ textAlign: 'center', marginTop: '10px', fontSize: '12px' }}>*Mencetak atau mengirim WA akan otomatis mencatat pengeluaran di sistem.</div>
           </div>
         </div>
       )}
