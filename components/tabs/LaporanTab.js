@@ -1,6 +1,6 @@
 import { formatRupiah, formatTanggal } from '../../lib/format'
 
-export function LaporanTab({ financeSummary, pembayaran, branches, selectedBranchId, setSelectedBranchId, payrollRows, bonusManual }) {
+export function LaporanTab({ financeSummary, pembayaran, branches, selectedBranchId, setSelectedBranchId, payrollRows, bonusManual, searchTransaksi, setSearchTransaksi }) {
   return (
     <div className="grid gap-lg">
       <div className="glass-card">
@@ -20,8 +20,20 @@ export function LaporanTab({ financeSummary, pembayaran, branches, selectedBranc
           <div className="table-wrap"><table><thead><tr><th>Cabang</th><th>Pemasukan</th><th>Pengeluaran</th><th>Laba</th></tr></thead><tbody>{financeSummary.byBranch.map((item) => <tr key={item.id}><td>{item.nama}</td><td>{formatRupiah(item.pemasukan)}</td><td>{formatRupiah(item.pengeluaran)}</td><td>{formatRupiah(item.laba)}</td></tr>)}</tbody></table></div>
         </div>
         <div className="glass-card">
-          <h2 className="section-title">Transaksi terbaru</h2>
-          <div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Siswa</th><th>Metode</th><th>Nominal</th></tr></thead><tbody>{pembayaran.slice(0, 10).map((item) => <tr key={item.id}><td>{formatTanggal(item.tanggal)}</td><td>{item.siswa?.nama || '-'}</td><td>{item.metode_bayar}</td><td>{formatRupiah(item.nominal)}</td></tr>)}</tbody></table></div>
+          <h2 className="section-title">Daftar Transaksi</h2>
+          
+          {/* KOTAK PENCARIAN TRANSAKSI DITAMBAHKAN DI SINI */}
+          <div style={{ marginBottom: '16px' }}>
+            <input 
+              type="text" 
+              placeholder="🔍 Cari nama siswa atau nama program..." 
+              value={searchTransaksi || ''} 
+              onChange={(e) => setSearchTransaksi && setSearchTransaksi(e.target.value)} 
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #d7dfef', fontSize: '14px' }}
+            />
+          </div>
+
+          <div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Siswa</th><th>Metode</th><th>Nominal</th></tr></thead><tbody>{(searchTransaksi ? pembayaran : pembayaran.slice(0, 10)).map((item) => <tr key={item.id}><td>{formatTanggal(item.tanggal)}</td><td><b>{item.siswa?.nama || '-'}</b><br/><span style={{fontSize: '12px', color: '#64748b'}}>{item.programs?.nama || item.siswa?.programs?.nama || '-'}</span></td><td>{item.metode_bayar}</td><td>{formatRupiah(item.nominal)}</td></tr>)}</tbody></table></div>
         </div>
       </div>
       <div className="grid grid-2">
