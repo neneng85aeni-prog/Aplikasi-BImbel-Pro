@@ -66,10 +66,9 @@ export function Dashboard({ state, actions }) {
         {activeTab === 'pengeluaran' && <PengeluaranTab pengeluaranForm={state.pengeluaranForm} setPengeluaranForm={actions.setPengeluaranForm} pengeluaran={state.pengeluaranTampil} branches={state.branches} onSubmit={actions.submitPengeluaran} onEdit={actions.startEditPengeluaran} onDelete={actions.deletePengeluaran} onReset={actions.setPengeluaranForm} />}
         {activeTab === 'inventory' && <InventoryTab inventoryForm={state.inventoryForm} setInventoryForm={actions.setInventoryForm} inventory={state.inventoryTampil} branches={state.branches} onSubmit={actions.submitInventory} onEdit={actions.startEditInventory} onDelete={actions.deleteInventory} onReset={() => actions.setInventoryForm(INITIAL_INVENTORY_FORM)} />}
         
-        {/* FIX JALUR PAYROLL (Menambahkan openSmartWA) */}
         {activeTab === 'payroll' && <PayrollTab payrollRows={state.payrollRows} bonusForm={state.bonusForm} setBonusForm={actions.setBonusForm} users={state.usersTampil} bonusManual={state.bonusManualTampil} onSubmitBonus={actions.submitBonus} onCatatGaji={actions.catatPengeluaranGaji} branches={state.branches} payrollMonth={state.payrollMonth} setPayrollMonth={actions.setPayrollMonth} payrollYear={state.payrollYear} setPayrollYear={actions.setPayrollYear} openSmartWA={actions.openSmartWA} />}
         
-        {/* FIX JALUR LAPORAN (Menghapus editTransaksi dan ganti ke onStartEditTransaksi) */}
+        {/* TAB LAPORAN (KABEL SUDAH SINKRON TOTAL) */}
         {activeTab === 'laporan' && (
           <LaporanTab 
             financeSummary={financeSummary} 
@@ -77,8 +76,6 @@ export function Dashboard({ state, actions }) {
             branches={state.branches} 
             selectedBranchId={state.selectedBranchId} 
             setSelectedBranchId={actions.setSelectedBranchId} 
-            payrollRows={state.payrollRows} 
-            bonusManual={state.bonusManualTampil} 
             searchTransaksi={state.searchTransaksi} 
             setSearchTransaksi={actions.setSearchTransaksi} 
             onDeleteTransaksi={actions.deleteTransaksi} 
