@@ -1,121 +1,104 @@
 import { formatTanggal } from '../../lib/format'
 
-export function PerkembanganTab({
-  user,
-  perkembanganForm,
-  setPerkembanganForm,
-  siswaTampil,
-  guruOptions,
-  perkembanganHistory,
-  selectedProgressStudent,
-  progressInputMode,
-  setProgressInputMode,
-  scanStudentActive,
-  setScanStudentActive,
-  studentScanInfo,
-  onSelectProgressStudent,
-  onSubmit,
+export function PerkembanganTab({ 
+  user, perkembanganForm, setPerkembanganForm, siswaTampil, guruOptions, 
+  perkembanganHistory, selectedProgressStudent, progressInputMode, setProgressInputMode, 
+  scanStudentActive, setScanStudentActive, studentScanInfo, onSelectProgressStudent, 
+  onSubmit, onSendPerkembanganWA, perkembanganTampil 
 }) {
   return (
-    <div className="grid grid-2 gap-lg">
-      <div className="glass-card">
-        <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h2 className="section-title">Perkembangan siswa + absensi harian</h2>
-            <p className="text-muted">Guru cukup scan sekali sehari atau pilih manual. Saat siswa dipilih, absensi hadir hari itu otomatis diproses untuk guru yang membimbing.</p>
-          </div>
-          <div className="pill-row">
-            <button type="button" className={`tab ${progressInputMode === 'scan' ? 'active' : ''}`} onClick={() => setProgressInputMode('scan')}>Scan barcode</button>
-            <button type="button" className={`tab ${progressInputMode === 'manual' ? 'active' : ''}`} onClick={() => setProgressInputMode('manual')}>Input manual</button>
-          </div>
-        </div>
-
-        {progressInputMode === 'scan' ? (
-          <>
-            <div id="reader-siswa" className="reader-box" />
-            <p className="text-muted" style={{ marginTop: 12 }}>{studentScanInfo}</p>
-            <div className="btn-row">
-              <button className="btn btn-primary" type="button" onClick={() => setScanStudentActive(true)}>{scanStudentActive ? 'Scanning...' : 'Start scanning'}</button>
-              <button className="btn btn-secondary" type="button" onClick={() => setScanStudentActive(false)}>Stop</button>
+    <div className="grid gap-lg">
+      <div className="grid grid-2">
+        
+        {/* BAGIAN KIRI: INPUT PROGRESS OLEH GURU/ADMIN */}
+        <div className="glass-card">
+          <div className="btn-row" style={{ justifyContent: 'space-between', marginBottom: '20px' }}>
+            <h2 className="section-title" style={{ margin: 0 }}>Input Perkembangan</h2>
+            <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '5px', borderRadius: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                <input type="radio" checked={progressInputMode === 'scan'} onChange={() => setProgressInputMode('scan')} /> Scan Barcode
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                <input type="radio" checked={progressInputMode === 'manual'} onChange={() => setProgressInputMode('manual')} /> Cari Manual
+              </label>
             </div>
-          </>
-        ) : (
-          <div className="form-row" style={{ marginTop: 16 }}>
-            <label>Pilih siswa manual</label>
-            <select value={perkembanganForm.siswa_id} onChange={(e) => onSelectProgressStudent(e.target.value, 'manual')}>
-              <option value="">Cari / pilih siswa</option>
-              {siswaTampil.map((item) => <option key={item.id} value={item.id}>{item.nama} • {item.branch_nama || item.branches?.nama || '-'} • {item.kelas || '-'}</option>)}
-            </select>
           </div>
-        )}
 
-        {selectedProgressStudent ? (
-          <div className="helper-box" style={{ marginTop: 18 }}>
-            <b>{selectedProgressStudent.nama}</b> • {selectedProgressStudent.branch_nama || selectedProgressStudent.branches?.nama || '-'} • Program {selectedProgressStudent.programs?.nama || '-'}<br />
-            Guru default: {selectedProgressStudent.guru_default_nama || selectedProgressStudent.users?.nama || '-'}
+          <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            {progressInputMode === 'scan' ? (
+              <div>
+                {!scanStudentActive ? (
+                  <button type="button" className="btn btn-secondary" onClick={() => setScanStudentActive(true)} style={{ width: '100%', padding: '12px' }}>📷 Buka Scanner Siswa</button>
+                ) : (
+                  <div className="scanner-container">
+                    <div id="reader-siswa" style={{ width: '100%' }}></div>
+                    <button type="button" className="btn btn-danger" onClick={() => setScanStudentActive(false)} style={{ width: '100%', marginTop: '10px' }}>Tutup Scanner</button>
+                  </div>
+                )}
+                <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#3b82f6' }}>{studentScanInfo}</div>
+              </div>
+            ) : (
+              <div className="form-row">
+                <label>Pilih Siswa Manual</label>
+                <select value={perkembanganForm.siswa_id} onChange={(e) => onSelectProgressStudent(e.target.value, 'manual')} style={{ width: '100%', padding: '10px' }}>
+                  <option value="">-- Ketik/Pilih Nama Siswa --</option>
+                  {siswaTampil.map((item) => <option key={item.id} value={item.id}>{item.nama} ({item.branches?.nama || 'Pusat'})</option>)}
+                </select>
+              </div>
+            )}
           </div>
-        ) : null}
 
-        <form onSubmit={onSubmit} style={{ marginTop: 18 }}>
-          <div className="grid grid-2">
+          <form onSubmit={onSubmit}>
+            {user?.akses !== 'guru' && (
+              <div className="form-row">
+                <label>Guru Pengajar (Default: {selectedProgressStudent?.guru_default_nama || '-'})</label>
+                <select value={perkembanganForm.guru_handle_id} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, guru_handle_id: e.target.value })}>
+                  <option value="">Sama dengan guru default</option>
+                  {guruOptions.map((g) => <option key={g.id} value={g.id}>{g.nama}</option>)}
+                </select>
+              </div>
+            )}
             <div className="form-row">
-              <label>Tanggal sesi</label>
-              <input type="date" value={perkembanganForm.tanggal} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, tanggal: e.target.value })} />
+              <label>Tanggal Sesi</label>
+              <input type="date" value={perkembanganForm.tanggal} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, tanggal: e.target.value })} required />
             </div>
             <div className="form-row">
-              <label>Guru yang handle hari ini</label>
-              <select value={perkembanganForm.guru_handle_id} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, guru_handle_id: e.target.value })}>
-                <option value="">Pilih guru</option>
-                {guruOptions.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}
-              </select>
+              <label>Catatan Perkembangan / Materi Hari Ini</label>
+              <textarea value={perkembanganForm.catatan} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, catatan: e.target.value })} placeholder="Cth: Ananda sudah mulai lancar perkalian pecahan..." rows="4" required style={{ width: '100%', padding: '10px', borderRadius: '8px' }}></textarea>
             </div>
-          </div>
-          {user?.akses === 'guru' ? <div className="helper-box" style={{ marginBottom: 14 }}>Saat guru login, scan/pilih siswa otomatis akan memakai guru yang sedang login sebagai guru handle hari ini.</div> : null}
-          <div className="form-row">
-            <label>Catatan perkembangan hari ini</label>
-            <textarea value={perkembanganForm.catatan} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, catatan: e.target.value })} placeholder="Contoh: review pecahan, perlu penguatan pembagian, PR halaman 21 nomor 1-5." />
-          </div>
-          <div className="btn-row">
-            <button className="btn btn-primary" type="submit">Simpan perkembangan hari ini</button>
-            <button className="btn btn-secondary" type="button" onClick={() => setPerkembanganForm((prev) => ({ ...prev, catatan: '' }))}>Kosongkan catatan</button>
-          </div>
-        </form>
-      </div>
+            <button className="btn btn-primary" type="submit" disabled={!perkembanganForm.siswa_id} style={{ width: '100%', padding: '14px', fontSize: '15px' }}>💾 Simpan Perkembangan</button>
+          </form>
+        </div>
 
-      <div className="glass-card">
-        <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 className="section-title">Perkembangan sebelumnya</h2>
-            <p className="text-muted">Riwayat terbaru siswa yang sedang dipilih agar guru mudah melanjutkan materi.</p>
+        {/* BAGIAN KANAN: TABEL RIWAYAT UNTUK KASIR KIRIM WA */}
+        <div className="glass-card">
+          <h2 className="section-title">Riwayat Input Terakhir (Semua Siswa)</h2>
+          <p className="text-muted" style={{ fontSize: '13px', marginBottom: '15px' }}>Tabel ini memudahkan Kasir/Admin untuk langsung mengirimkan laporan ke WA Orang Tua tanpa perlu HP Guru.</p>
+          
+          <div className="table-wrap" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+            <table style={{ minWidth: '100%' }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: '#1e293b' }}>
+                <tr><th>Tanggal</th><th>Siswa</th><th>Catatan Guru</th><th>Aksi</th></tr>
+              </thead>
+              <tbody>
+                {perkembanganTampil && perkembanganTampil.slice(0, 30).map((item) => (
+                  <tr key={item.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatTanggal(item.tanggal)}</td>
+                    <td><b>{item.siswa?.nama || '-'}</b><br/><span className="text-muted" style={{fontSize: '11px'}}>Guru: {item.users?.nama || '-'}</span></td>
+                    <td><div style={{ maxHeight: '60px', overflowY: 'auto', fontSize: '13px' }}>{item.catatan}</div></td>
+                    <td>
+                      <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981', borderColor: '#10b981', whiteSpace: 'nowrap' }}>Kirim WA 💬</button>
+                    </td>
+                  </tr>
+                ))}
+                {(!perkembanganTampil || perkembanganTampil.length === 0) && (
+                  <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>Belum ada riwayat perkembangan.</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
-          <span className="badge">{perkembanganHistory.length} riwayat</span>
         </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Tanggal</th>
-                <th>Siswa</th>
-                <th>Guru</th>
-                <th>Catatan</th>
-              </tr>
-            </thead>
-            <tbody>
-              {perkembanganHistory.length ? perkembanganHistory.map((item) => (
-                <tr key={item.id}>
-                  <td>{formatTanggal(item.tanggal)}</td>
-                  <td>{item.siswa?.nama || '-'}</td>
-                  <td>{item.users?.nama || '-'}</td>
-                  <td>{item.catatan}</td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan="4" className="text-muted">Pilih atau scan siswa untuk melihat riwayat perkembangan sebelumnya.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+
       </div>
     </div>
   )
