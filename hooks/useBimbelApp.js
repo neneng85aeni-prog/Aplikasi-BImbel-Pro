@@ -87,6 +87,7 @@ export function useBimbelApp() {
   const [payrollMonth, setPayrollMonth] = useState(new Date().getMonth() + 1)
   const [payrollYear, setPayrollYear] = useState(new Date().getFullYear())
 
+  // STATE UNTUK POPUP
   const [showReceiptPopup, setShowReceiptPopup] = useState(false)
   const [editTransaksiForm, setEditTransaksiForm] = useState(null)
 
@@ -451,7 +452,7 @@ export function useBimbelApp() {
       startEditBranch, startEditProgram, startEditUser, startEditSiswa, startEditPengeluaran, startEditInventory, handleDownload, printThermalReceiptDesktop, printThermalReceiptAndroid,
       selectStudentById, selectProgressStudentById, generateStudentBarcodeAction, printStudentBarcode,
       addReviewItem, changeReviewItem, removeReviewItem, printEmployeeReview, togglePermissionDraft, savePermissions, selectAllPermissions, resetPermissionDraft, setQuickExportRange,
-      setSearchSiswa, setSearchTransaksi, deleteTransaksi, editTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA, openSmartWA, startEditTransaksi
+      setSearchSiswa, setSearchTransaksi, deleteTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA, openSmartWA, startEditTransaksi
     },
   }
 }
