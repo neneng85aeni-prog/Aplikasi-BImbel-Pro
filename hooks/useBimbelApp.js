@@ -12,7 +12,7 @@ import { formatMonthYear, formatRupiah, generateStudentBarcode, formatTanggal } 
 import { loginWithRpc } from '../lib/auth'
 import {
   fetchAllData, removeById, saveBonus, saveEmployeeAttendance, saveEmployeeManualAttendance,
-  saveKasirTransaction, savePerkembangan, saveReview, saveStudentAttendance, saveStudentCheckout,
+  saveKasirTransaction, savePerkembangan, saveReview, saveStudentAttendance,
   saveUserPermissions, upsertBranch, upsertProgram, upsertSiswa, upsertUserViaRpc,
   updatePembayaran, savePengeluaran, updatePengeluaran, upsertInventory, updateInventoryStock
 } from '../lib/data'
@@ -75,7 +75,6 @@ export function useBimbelApp() {
   const [studentScanInfo, setStudentScanInfo] = useState('Belum ada hasil scan siswa.')
   const [employeeScanInfo, setEmployeeScanInfo] = useState('Belum ada hasil scan karyawan.')
   const [selectedStudent, setSelectedStudent] = useState(null)
-  const [selectedGuruStudent, setSelectedGuruStudent] = useState(null)
   const [selectedProgressStudent, setSelectedProgressStudent] = useState(null)
   const [exportType, setExportType] = useState('siswa')
   const [exportDateFrom, setExportDateFrom] = useState('')
@@ -85,11 +84,9 @@ export function useBimbelApp() {
   const [searchSiswa, setSearchSiswa] = useState('')
   const [searchTransaksi, setSearchTransaksi] = useState('')
   const [selectedBranchId, setSelectedBranchId] = useState('')
-
   const [payrollMonth, setPayrollMonth] = useState(new Date().getMonth() + 1)
   const [payrollYear, setPayrollYear] = useState(new Date().getFullYear())
 
-  // STATE BARU UNTUK POPUP
   const [showReceiptPopup, setShowReceiptPopup] = useState(false)
   const [editTransaksiForm, setEditTransaksiForm] = useState(null)
 
@@ -234,7 +231,6 @@ export function useBimbelApp() {
   async function deleteSiswa(id) { if (!window.confirm('Hapus siswa ini?')) return; const { error } = await removeById('siswa', id); if (error) return setErrorMsg(error.message); setMessage('Siswa dihapus.'); await loadAllData() }
   async function deleteTransaksi(id) { if (!window.confirm('Hapus transaksi ini?')) return; const { error } = await removeById('pembayaran', id); if (error) return setErrorMsg(error.message); setMessage('Transaksi dihapus.'); await loadAllData() }
   
-  // LOGIKA BARU: POPUP EDIT TRANSAKSI
   function startEditTransaksi(item) {
     setEditTransaksiForm({
       id: item.id,
@@ -329,9 +325,8 @@ export function useBimbelApp() {
   function selectStudentById(id) { if (!id) return setSelectedStudent(null); const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, nominal: String(info.nominal || '') }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
   async function selectProgressStudentById(id, source = 'manual') { try { if (!id) { setSelectedProgressStudent(null); setPerkembanganForm((prev) => ({ ...prev, siswa_id: '' })); return } const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; await ensureStudentSession(matched, source); setStudentScanInfo(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
-  // LOGIKA KASIR DIPERBAIKI (Tambahan preventDefault & Pop-up)
   async function submitKasir(event) { 
-    event.preventDefault(); // <--- INI OBAT ANTI RELOAD / LOGOUT NYA!
+    event.preventDefault(); 
     try { 
       if (!selectedStudent) throw new Error('Pilih siswa dulu.')
       
@@ -348,8 +343,8 @@ export function useBimbelApp() {
         if (res.error) throw res.error
         
         if (kasirForm.status === 'lunas') { 
-          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedStudent.branches?.nama || '-', programNama: `Beli Barang: ${selectedItem.nama}`, guruNama: selectedStudent.guruNama, nominal: selectedItem.harga, metode_bayar: kasirForm.metode_bayar, status: kasirForm.status }) 
-          setShowReceiptPopup(true); // <--- MUNCULKAN POPUP
+          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedBranch?.nama || '-', programNama: `Beli Barang: ${selectedItem.nama}`, guruNama: selectedStudent.guruNama, nominal: selectedItem.harga, metode_bayar: kasirForm.metode_bayar, status: kasirForm.status }) 
+          setShowReceiptPopup(true);
         }
       } else {
         const payload = validateKasirForm(kasirForm, selectedStudent.nominal)
@@ -357,8 +352,8 @@ export function useBimbelApp() {
         if (res.error) throw res.error
         
         if (payload.status === 'lunas') { 
-          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedStudent.branches?.nama || '-', programNama: selectedStudent.programNama, guruNama: selectedStudent.guruNama, nominal: payload.nominal, metode_bayar: payload.metode_bayar, status: payload.status }) 
-          setShowReceiptPopup(true); // <--- MUNCULKAN POPUP
+          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedBranch?.nama || '-', programNama: selectedStudent.programNama, guruNama: selectedStudent.guruNama, nominal: payload.nominal, metode_bayar: payload.metode_bayar, status: payload.status }) 
+          setShowReceiptPopup(true);
         }
       }
       
@@ -374,7 +369,6 @@ export function useBimbelApp() {
   async function submitStudentAttendance(event) { event.preventDefault(); try { const payload = validateStudentAttendanceForm(studentAttendanceForm); const res = await saveStudentAttendance({ p_siswa_id: payload.siswa_id, p_guru_handle_id: payload.guru_handle_id, p_tanggal: payload.tanggal, p_mode: payload.mode, p_status: payload.status, p_catatan: payload.catatan, p_sumber: 'manual' }); if (res.error) throw res.error; setStudentAttendanceForm(INITIAL_STUDENT_ATTENDANCE_FORM); setMessage('Absensi siswa disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function submitEmployeeManualAttendance(event) { event.preventDefault(); try { const payload = validateEmployeeManualForm(employeeManualForm); const res = await saveEmployeeManualAttendance({ p_user_id: payload.user_id, p_tanggal: payload.tanggal, p_status: payload.status, p_jam_datang: payload.jam_datang || null, p_jam_pulang: payload.jam_pulang || null, p_catatan: payload.catatan }); if (res.error) throw res.error; setEmployeeManualForm(INITIAL_EMPLOYEE_MANUAL_FORM); setMessage('Absensi manual disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
-  // FUNGSI PRINT TIDAK DISENTUH SAMA SEKALI
   function buildReceiptHtml(data, withAutoPrint = true) { return `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000;background:#fff}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:15px;font-weight:bold}.help{margin-top:12px;font-size:11px;color:#374151;background:#f8fafc;padding:8px;border-radius:8px}@media print{body{width:72mm}}</style></head><body ${withAutoPrint ? 'onload="window.print();window.close()"' : ''}><div class="receipt"><div class="center big">BIMBEL PRO</div><div class="center">Bukti Pembayaran</div><div class="line"></div><div><span class="label">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class="label">Cabang:</span> ${data.cabang || '-'}</div><div><span class="label">Nama siswa:</span> ${data.nama || '-'}</div><div><span class="label">Transaksi:</span> ${data.programNama || '-'}</div><div><span class="label">Guru default:</span> ${data.guruNama || '-'}</div><div><span class="label">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class="label">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class="row"><span class="label">Nominal</span><span>${formatRupiah(data.nominal || 0)}</span></div><div class="line"></div><div class="center">Terima kasih</div>${withAutoPrint ? '' : '<div class="help"><b>Cara print di Android:</b><br/>1. Buka menu browser<br/>2. Pilih Share atau bagikan ke aplikasi printer bluetooth<br/>3. Jika aplikasi printer mendukung print halaman web/teks, gunakan halaman ini sebagai sumber cetak.</div>'}</div></body></html>` }
   function printThermalReceiptDesktop(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank', 'width=420,height=700'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, true)); w.document.close() }
   function printThermalReceiptAndroid(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, false)); w.document.close() }
@@ -389,8 +383,8 @@ export function useBimbelApp() {
     else { window.open(`https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedText}`, 'BIMBEL_PRO_WA_WEB'); }
   }
 
-  function sendThermalReceiptWA(receipt) { 
-    const data = receipt || lastReceipt; 
+  function sendThermalReceiptWA() { 
+    const data = lastReceipt; 
     if (!data) return setErrorMsg('Belum ada transaksi terakhir untuk dikirim.'); 
     
     let text = `*BIMBEL PRO - BUKTI PEMBAYARAN*\n\n`;
@@ -443,13 +437,13 @@ export function useBimbelApp() {
       exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode,
       guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats,
       searchSiswa, searchTransaksi, payrollMonth, payrollYear,
-      showReceiptPopup, editTransaksiForm // EXPORT STATE POPUP
+      showReceiptPopup, editTransaksiForm
     },
     actions: {
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId,
       setBranchForm, setProgramForm, setUserForm, setSiswaForm, setPerkembanganForm, setKasirForm, setBonusForm, setEmployeeManualForm, setStudentAttendanceForm, setReviewForm, setPengeluaranForm, setInventoryForm,
       setPermissionUserId, setPermissionDraft, setScanStudentActive, setScanEmployeeActive, setEmployeeMode, setExportType, setExportDateFrom, setExportDateTo, setProgressInputMode,
-      setPayrollMonth, setPayrollYear, setShowReceiptPopup, setEditTransaksiForm, submitEditTransaksi, // EXPORT ACTIONS POPUP
+      setPayrollMonth, setPayrollYear, setShowReceiptPopup, setEditTransaksiForm, submitEditTransaksi,
       login, logout, loadAllData,
       submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa, submitPengeluaran, deletePengeluaran, submitInventory, deleteInventory,
       submitPerkembangan, submitKasir, submitBonus, submitEmployeeManualAttendance, submitStudentAttendance, submitReview,
