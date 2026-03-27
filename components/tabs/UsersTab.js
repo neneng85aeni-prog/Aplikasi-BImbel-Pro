@@ -14,7 +14,6 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
           
           <div className="grid grid-2">
             <div className="form-row"><label>Password {userForm.id && '(Kosongkan jika tidak diubah)'}</label><input type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} required={!userForm.id} /></div>
-            {/* INI DIA KOLOM NO HP YANG SEMPAT HILANG! */}
             <div className="form-row"><label>No. Telepon / WA</label><input type="text" value={userForm.no_telepon} onChange={(e) => setUserForm({ ...userForm, no_telepon: e.target.value })} placeholder="Cth: 08123456789" required /></div>
           </div>
           
@@ -28,7 +27,8 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
 
           <div className="grid grid-2">
             <div className="form-row"><label>Gaji Pokok (Bulan)</label><input type="number" value={userForm.salary_fixed} onChange={(e) => setUserForm({ ...userForm, salary_fixed: e.target.value })} placeholder="0" /></div>
-            <div className="form-row"><label>Tunjangan Hadir (Per Hari)</label><input type="number" value={userForm.student_fee_daily} onChange={(e) => setUserForm({ ...userForm, student_fee_daily: e.target.value })} placeholder="0" /></div>
+            {/* INI SAYA KEMBALIKAN JADI HONOR FEE PER SISWA */}
+            <div className="form-row"><label>Honor Mengajar (Fee per Siswa)</label><input type="number" value={userForm.student_fee_daily} onChange={(e) => setUserForm({ ...userForm, student_fee_daily: e.target.value })} placeholder="0" /></div>
           </div>
 
           <div className="grid grid-2">
