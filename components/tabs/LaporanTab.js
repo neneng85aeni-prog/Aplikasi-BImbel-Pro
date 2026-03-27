@@ -50,15 +50,15 @@ export function LaporanTab({
 
       {editTransaksiForm && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <form onSubmit={onSubmitEditTransaksi} className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '25px' }}>
+          <form onSubmit={onSubmitEditTransaksi} className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '25px', border: '1px solid rgba(255,255,255,0.2)' }}>
             <h2 className="section-title">Edit Transaksi</h2>
             <div className="form-row">
               <label>Keterangan</label>
-              <input type="text" value={editTransaksiForm.keterangan} onChange={(e) => setEditTransaksiForm({ ...editTransaksiForm, keterangan: e.target.value })} required style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }} />
+              <input type="text" value={editTransaksiForm.keterangan} onChange={(e) => setEditTransaksiForm({ ...editTransaksiForm, keterangan: e.target.value })} required style={{ background: 'rgba(255,255,255,0.05)', color: 'white', width: '100%' }} />
             </div>
             <div className="form-row">
               <label>Nominal</label>
-              <input type="number" value={editTransaksiForm.nominal} onChange={(e) => setEditTransaksiForm({ ...editTransaksiForm, nominal: e.target.value })} required style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }} />
+              <input type="number" value={editTransaksiForm.nominal} onChange={(e) => setEditTransaksiForm({ ...editTransaksiForm, nominal: e.target.value })} required style={{ background: 'rgba(255,255,255,0.05)', color: 'white', width: '100%' }} />
             </div>
             <div className="btn-row">
               <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Simpan</button>
