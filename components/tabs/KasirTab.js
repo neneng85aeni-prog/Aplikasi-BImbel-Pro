@@ -5,7 +5,7 @@ export function KasirTab({
   branches, selectedBranchId, setSelectedBranchId, siswaOptions, selectedStudent, 
   kasirForm, setKasirForm, studentScanInfo, scanStudentActive, setScanStudentActive, 
   studentScanText, onSelectStudent, onSubmitKasir, onPrintReceiptDesktop, onPrintReceiptAndroid, 
-  programs, inventoryTampil 
+  onSendReceiptWA, programs, inventoryTampil 
 }) {
   return (
     <div className="grid gap-lg">
@@ -16,7 +16,7 @@ export function KasirTab({
         </div>
 
         <div className="grid grid-2">
-          {/* BAGIAN 1: KIRI (PILIH SISWA) */}
+          {/* KIRI: SCAN SISWA */}
           <div className="glass-card" style={{ padding: '20px' }}>
             <h3 className="section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>1. Pilih / Scan Siswa</h3>
             <div style={{ marginBottom: '16px' }}>
@@ -46,7 +46,7 @@ export function KasirTab({
             </div>
           </div>
 
-          {/* BAGIAN 2: KANAN (FORM TRANSAKSI) */}
+          {/* KANAN: FORM TRANSAKSI */}
           <div>
             <form onSubmit={onSubmitKasir} className="glass-card" style={{ padding: '20px', marginBottom: '20px' }}>
               <h3 className="section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>2. Detail Transaksi</h3>
@@ -92,11 +92,13 @@ export function KasirTab({
               </div>
             </form>
 
+            {/* AREA TOMBOL PRINT & WA */}
             <div className="glass-card" style={{ textAlign: 'center', padding: '20px' }}>
               <h3 className="text-muted" style={{ fontSize: '13px', marginBottom: '15px' }}>Cetak Struk Transaksi Terakhir</h3>
               <div className="btn-row" style={{ justifyContent: 'center' }}>
                 <button type="button" className="btn btn-secondary btn-small" onClick={() => onPrintReceiptDesktop()}>Print Desktop 🖨️</button>
                 <button type="button" className="btn btn-secondary btn-small" onClick={() => onPrintReceiptAndroid()}>Print Android 📱</button>
+                <button type="button" className="btn btn-primary btn-small" onClick={() => onSendReceiptWA()} style={{ background: '#10b981', borderColor: '#10b981' }}>Kirim WA 💬</button>
               </div>
             </div>
           </div>
