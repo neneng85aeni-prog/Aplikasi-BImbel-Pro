@@ -73,14 +73,9 @@ async function openAndroidQrSharePage(item) {
 }
 
 export function SiswaTab({ user, siswaForm, setSiswaForm, siswaTampil, programs, guruOptions, branches, onGenerateBarcode, onSubmit, onReset, onEdit, onDelete, onPrintBarcode, perkembanganForm, setPerkembanganForm, onSubmitPerkembangan, searchSiswa, setSearchSiswa }) {
-  if (user?.akses === 'guru') {
-    return (
-      <div className="glass-card">
-        <h2 className="section-title">Data siswa</h2>
-        <p className="text-muted">Untuk guru, input kehadiran harian dan perkembangan siswa sekarang dipusatkan di menu <b>Perkembangan &amp; Absensi</b> agar cukup sekali scan atau pilih manual dalam sehari.</p>
-      </div>
-    )
-  }
+  
+  // Gembok paksa "if (user?.akses === 'guru')" SUDAH DIHAPUS!
+  // Sekarang patuh 100% pada Checklist Hak Akses.
 
   return (
     <div className="grid grid-2">
@@ -88,7 +83,7 @@ export function SiswaTab({ user, siswaForm, setSiswaForm, siswaTampil, programs,
         <h2 className="section-title">Pendaftaran siswa</h2>
         <form onSubmit={onSubmit}>
           <div className="grid grid-2">
-            <div className="form-row"><label>Nama siswa</label><input value={siswaForm.nama} onChange={(e) => setSiswaForm({ ...siswaForm, nama: e.target.value })} /></div>
+            <div className="form-row"><label>Nama siswa</label><input value={siswaForm.nama} onChange={(e) => setSiswaForm({ ...siswaForm, nama: e.target.value })} required /></div>
             <div className="form-row"><label>Cabang</label><select value={siswaForm.branch_id} onChange={(e) => setSiswaForm({ ...siswaForm, branch_id: e.target.value })}><option value="">Pilih cabang</option>{branches.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
           </div>
           <div className="grid grid-2">
