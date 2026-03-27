@@ -811,7 +811,7 @@ export function useBimbelApp() {
       branches, programs, users, siswa, pembayaran, absensiSiswa, perkembangan, absensiKaryawan, bonusManual, reviews,
       branchForm, programForm, userForm, siswaForm, perkembanganForm, kasirForm, bonusForm, employeeManualForm, studentAttendanceForm, reviewForm,
       permissionUserId, permissionDraft,
-      scanStudentActive, scanEmployeeActive, employeeMode, studentScanText, employeeScanText,
+      scanStudentActive, setSearchSiswa, setSearchTransaksi, scanEmployeeActive, employeeMode, studentScanText, employeeScanText,
       studentScanInfo, employeeScanInfo, selectedStudent, selectedGuruStudent, selectedProgressStudent,
       exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode,
       guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats,
