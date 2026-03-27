@@ -811,10 +811,11 @@ export function useBimbelApp() {
       branches, programs, users, siswa, pembayaran, absensiSiswa, perkembangan, absensiKaryawan, bonusManual, reviews,
       branchForm, programForm, userForm, siswaForm, perkembanganForm, kasirForm, bonusForm, employeeManualForm, studentAttendanceForm, reviewForm,
       permissionUserId, permissionDraft,
-      scanStudentActive, setSearchSiswa, setSearchTransaksi, scanEmployeeActive, employeeMode, studentScanText, employeeScanText,
+      scanStudentActive, scanEmployeeActive, employeeMode, studentScanText, employeeScanText,
       studentScanInfo, employeeScanInfo, selectedStudent, selectedGuruStudent, selectedProgressStudent,
       exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode,
       guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats,
+      searchSiswa, searchTransaksi // <--- Ini yang benar untuk state
     },
     actions: {
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId,
@@ -828,6 +829,7 @@ export function useBimbelApp() {
       startEditBranch, startEditProgram, startEditUser, startEditSiswa, handleDownload, printThermalReceiptDesktop, printThermalReceiptAndroid,
       selectStudentById, selectProgressStudentById, generateStudentBarcodeAction, printStudentBarcode,
       addReviewItem, changeReviewItem, removeReviewItem, printEmployeeReview, togglePermissionDraft, savePermissions, selectAllPermissions, resetPermissionDraft, setQuickExportRange,
+      setSearchSiswa, setSearchTransaksi // <--- Ini yang benar untuk actions
     },
   }
 }
