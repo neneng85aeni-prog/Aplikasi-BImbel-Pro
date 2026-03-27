@@ -1,9 +1,18 @@
 import { useState } from 'react'
 import { formatRupiah, formatTanggal, formatMonthYear } from '../../lib/format'
 
-export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusManual, onSubmitBonus, onCatatGaji, branches }) {
+export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusManual, onSubmitBonus, onCatatGaji, branches, payrollMonth, setPayrollMonth, payrollYear, setPayrollYear }) {
   const [slipModal, setSlipModal] = useState(null)
   const [customItems, setCustomItems] = useState([])
+
+  const BULAN_OPTIONS = [
+    { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' }, { value: 3, label: 'Maret' },
+    { value: 4, label: 'April' }, { value: 5, label: 'Mei' }, { value: 6, label: 'Juni' },
+    { value: 7, label: 'Juli' }, { value: 8, label: 'Agustus' }, { value: 9, label: 'September' },
+    { value: 10, label: 'Oktober' }, { value: 11, label: 'November' }, { value: 12, label: 'Desember' }
+  ]
+  
+  const TAHUN_OPTIONS = Array.from({length: 5}, (_, i) => new Date().getFullYear() - i)
 
   function openModal(user) {
     setSlipModal(user)
@@ -27,28 +36,20 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
   function handlePrintAndSave() {
     if (!slipModal) return
 
-    // Hitung total custom (Tunjangan Manual & Potongan Manual)
     const totalCustomTunjangan = customItems.filter(i => i.type === 'tunjangan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
     const totalCustomPotongan = customItems.filter(i => i.type === 'potongan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
-    
-    // Perhitungan Take Home Pay
     const totalBersih = slipModal.totalGaji + totalCustomTunjangan - totalCustomPotongan
-    const bulanIni = formatMonthYear(new Date().getMonth() + 1, new Date().getFullYear())
-
-    // LOGIKA BARU: Tarik otomatis nama cabang karyawan untuk dijadikan Kop Surat
+    
+    // Gunakan bulan dan tahun sesuai pilihan filter, BUKAN bulan berjalan
+    const periodeCetak = formatMonthYear(payrollMonth, payrollYear)
     const branchObj = branches?.find(b => b.id === slipModal.branch_id)
     const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
 
-    // 1. Eksekusi Pencatatan Otomatis ke Laporan Keuangan
-    onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${bulanIni}`, totalBersih, slipModal.branch_id)
+    onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${periodeCetak}`, totalBersih, slipModal.branch_id)
 
-    // 2. Generate PDF HTML untuk Cetak A4 (Kirim namaKopSurat otomatis)
-    const html = buildSlipGajiHtml(slipModal, customItems, totalBersih, bulanIni, namaKopSurat, branchObj?.nama)
+    const html = buildSlipGajiHtml(slipModal, customItems, totalBersih, periodeCetak, namaKopSurat, branchObj?.nama)
     const w = window.open('', '_blank', 'width=800,height=900')
-    if (!w) {
-      alert('Popup diblokir browser. Izinkan popup untuk mencetak slip.')
-      return
-    }
+    if (!w) { alert('Popup diblokir browser. Izinkan popup untuk mencetak slip.'); return }
     w.document.write(html)
     w.document.close()
 
@@ -58,7 +59,26 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
   return (
     <div className="grid gap-lg">
       <div className="glass-card">
-        <h2 className="section-title">Data Payroll Karyawan (Bulan Berjalan)</h2>
+        <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 className="section-title" style={{ margin: 0 }}>Data Payroll Karyawan</h2>
+          
+          {/* FILTER PERIODE BULAN & TAHUN */}
+          <div style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '10px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <div>
+              <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Periode Bulan</label>
+              <select value={payrollMonth} onChange={(e) => setPayrollMonth(Number(e.target.value))} style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
+                {BULAN_OPTIONS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Tahun</label>
+              <select value={payrollYear} onChange={(e) => setPayrollYear(Number(e.target.value))} style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
+                {TAHUN_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div className="table-wrap">
           <table>
             <thead>
@@ -96,7 +116,7 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
           </form>
         </div>
         <div className="glass-card">
-          <h2 className="section-title">Riwayat Bonus Bulan Ini</h2>
+          <h2 className="section-title">Riwayat Bonus Sesuai Periode</h2>
           <div className="table-wrap">
             <table>
               <thead><tr><th>Tanggal</th><th>Karyawan</th><th>Nominal</th></tr></thead>
@@ -122,7 +142,7 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
 
             <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{color: '#1e293b'}}>Total Hitungan Sistem (Auto)</span><b style={{fontSize: '18px', color: '#1e293b'}}>{formatRupiah(slipModal.totalGaji)}</b></div>
-              <div className="text-muted" style={{ fontSize: '12px', lineHeight: '1.5' }}>*Gaji pokok, bonus, dan potongan absen otomatis sudah dihitung oleh sistem. Tambahkan tunjangan/potongan insidental di bawah ini jika diperlukan.</div>
+              <div className="text-muted" style={{ fontSize: '12px', lineHeight: '1.5' }}>*Gaji pokok, bonus, dan potongan absen periode {formatMonthYear(payrollMonth, payrollYear)} sudah dihitung oleh sistem. Tambahkan tunjangan/potongan insidental di bawah ini jika diperlukan.</div>
             </div>
 
             <h3 style={{ fontSize: '14px', marginBottom: '12px', fontWeight: 'bold', color: '#f8fafc' }}>Tunjangan / Potongan Manual (Opsional)</h3>
