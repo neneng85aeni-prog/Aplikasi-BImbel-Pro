@@ -38,6 +38,7 @@ import {
   upsertProgram,
   upsertSiswa,
   upsertUserViaRpc,
+  updatePembayaran,
 } from '../lib/data'
 import {
   validateBonusForm,
@@ -56,6 +57,7 @@ import { downloadCsv, exportRows } from '../lib/export'
 import { buildFinanceSummary, computeOverview, computePayroll, filterByUserBranch } from '../lib/reporting'
 import { printBarcodeCard } from '../components/ui/BarcodePreview'
 import QRCode from 'qrcode'
+
 function normalizeUserPayload(row) {
   if (!row) return row
   return {
@@ -376,28 +378,51 @@ export function useBimbelApp() {
     await loadAllData()
   }
 
-  function printStudentBarcode(item) {
-  const isAndroid = /Android/i.test(navigator.userAgent)
-
-  if (isAndroid) {
-    QRCode.toDataURL(item.kode_qr || item.id, { margin: 1, width: 300 })
-      .then((url) => {
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `${item.nama}-barcode.png`
-        link.click()
-
-        alert('QR disimpan. Silakan buka aplikasi printer bluetooth dan print gambar.')
-      })
-    return
+  async function deleteTransaksi(id) {
+    if (!window.confirm('Yakin ingin menghapus transaksi ini? Laporan laba/rugi akan otomatis menyesuaikan.')) return
+    const { error } = await removeById('pembayaran', id)
+    if (error) return setErrorMsg(error.message || 'Gagal menghapus transaksi.')
+    setMessage('Transaksi berhasil dihapus.')
+    await loadAllData()
   }
 
-  printBarcodeCard({
-    title: `Barcode ${item.nama}`,
-    subtitle: `${item.branches?.nama || '-'} • ${item.kelas || ''}`,
-    value: item.kode_qr || item.id,
-  })
-}
+  async function editTransaksi(item) {
+    const newNominal = window.prompt(`Edit nominal pembayaran untuk ${item.siswa?.nama || 'Siswa'}:\n(Hanya masukkan angka tanpa titik)`, item.nominal)
+    if (newNominal === null) return // Jika user menekan Cancel
+    if (isNaN(newNominal) || String(newNominal).trim() === '') return alert('Nominal harus berupa angka valid.')
+
+    try {
+      const { error } = await updatePembayaran(item.id, { nominal: Number(newNominal) })
+      if (error) throw error
+      setMessage('Nominal transaksi berhasil diupdate.')
+      await loadAllData()
+    } catch (error) {
+      setErrorMsg(error.message || 'Gagal mengupdate transaksi.')
+    }
+  }
+
+  function printStudentBarcode(item) {
+    const isAndroid = /Android/i.test(navigator.userAgent)
+
+    if (isAndroid) {
+      QRCode.toDataURL(item.kode_qr || item.id, { margin: 1, width: 300 })
+        .then((url) => {
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${item.nama}-barcode.png`
+          link.click()
+
+          alert('QR disimpan. Silakan buka aplikasi printer bluetooth dan print gambar.')
+        })
+      return
+    }
+
+    printBarcodeCard({
+      title: `Barcode ${item.nama}`,
+      subtitle: `${item.branches?.nama || '-'} • ${item.kelas || ''}`,
+      value: item.kode_qr || item.id,
+    })
+  }
 
   async function submitPerkembangan(event) {
     event.preventDefault()
@@ -815,7 +840,7 @@ export function useBimbelApp() {
       studentScanInfo, employeeScanInfo, selectedStudent, selectedGuruStudent, selectedProgressStudent,
       exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode,
       guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats,
-      searchSiswa, searchTransaksi // <--- Ini yang benar untuk state
+      searchSiswa, searchTransaksi
     },
     actions: {
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId,
@@ -829,7 +854,8 @@ export function useBimbelApp() {
       startEditBranch, startEditProgram, startEditUser, startEditSiswa, handleDownload, printThermalReceiptDesktop, printThermalReceiptAndroid,
       selectStudentById, selectProgressStudentById, generateStudentBarcodeAction, printStudentBarcode,
       addReviewItem, changeReviewItem, removeReviewItem, printEmployeeReview, togglePermissionDraft, savePermissions, selectAllPermissions, resetPermissionDraft, setQuickExportRange,
-      setSearchSiswa, setSearchTransaksi // <--- Ini yang benar untuk actions
+      setSearchSiswa, setSearchTransaksi,
+      deleteTransaksi, editTransaksi
     },
   }
 }
