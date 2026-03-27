@@ -454,4 +454,4 @@ export function useBimbelApp() {
       setSearchSiswa, setSearchTransaksi, deleteTransaksi, editTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA, openSmartWA, startEditTransaksi
     },
   }
-
+}
