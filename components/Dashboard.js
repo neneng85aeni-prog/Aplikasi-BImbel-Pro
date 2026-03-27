@@ -54,14 +54,10 @@ export function Dashboard({ state, actions }) {
         {activeTab === 'overview' && <OverviewTab overview={overview} financeSummary={financeSummary} selectedBranch={state.selectedBranch} employeeBarcodeIn={state.employeeBarcodeIn} employeeBarcodeOut={state.employeeBarcodeOut} />}
         {activeTab === 'cabang' && <CabangTab branchForm={state.branchForm} setBranchForm={actions.setBranchForm} branches={state.branches} onSubmit={actions.submitBranch} onReset={actions.setBranchForm} onEdit={actions.startEditBranch} onDelete={actions.deleteBranch} />}
         {activeTab === 'program' && <ProgramTab programForm={state.programForm} setProgramForm={actions.setProgramForm} programs={state.programs} onSubmit={actions.submitProgram} onReset={actions.setProgramForm} onEdit={actions.startEditProgram} onDelete={actions.deleteProgram} />}
-        
-        {/* TAB USERS - SAYA KEMBALIKAN LABELNYA */}
         {activeTab === 'users' && <UsersTab userForm={state.userForm} setUserForm={actions.setUserForm} users={state.usersTampil} branches={state.branches} onSubmit={actions.submitUser} onReset={actions.setUserForm} onEdit={actions.startEditUser} onDelete={actions.deleteUser} />}
-        
         {activeTab === 'permissions' && <PermissionsTab users={state.usersTampil} permissionUserId={state.permissionUserId} setPermissionUserId={actions.setPermissionUserId} permissionDraft={state.permissionDraft} onTogglePermission={actions.togglePermissionDraft} onSavePermissions={actions.savePermissions} onSelectAllPermissions={actions.selectAllPermissions} onResetPermissions={actions.resetPermissionDraft} />}
         {activeTab === 'siswa' && <SiswaTab user={state.user} siswaForm={state.siswaForm} setSiswaForm={actions.setSiswaForm} siswaTampil={state.siswaTampil} programs={state.programs} guruOptions={state.guruOptions} branches={state.branches} onGenerateBarcode={actions.generateStudentBarcodeAction} onSubmit={actions.submitSiswa} onReset={actions.setSiswaForm} onEdit={actions.startEditSiswa} onDelete={actions.deleteSiswa} onPrintBarcode={actions.printStudentBarcode} perkembanganForm={state.perkembanganForm} setPerkembanganForm={actions.setPerkembanganForm} onSubmitPerkembangan={actions.submitPerkembangan} searchSiswa={state.searchSiswa} setSearchSiswa={actions.setSearchSiswa} />}
         
-        {/* TAB KASIR (DENGAN POPUP) */}
         {activeTab === 'kasir' && <KasirTab branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} siswaOptions={state.siswaTampil} selectedStudent={state.selectedStudent} kasirForm={state.kasirForm} setKasirForm={actions.setKasirForm} studentScanInfo={state.studentScanInfo} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanText={state.studentScanText} onSelectStudent={actions.selectStudentById} onSubmitKasir={actions.submitKasir} onPrintReceiptDesktop={actions.printThermalReceiptDesktop} onPrintReceiptAndroid={actions.printThermalReceiptAndroid} onSendReceiptWA={actions.sendThermalReceiptWA} programs={state.programs} inventoryTampil={state.inventoryTampil} showReceiptPopup={state.showReceiptPopup} setShowReceiptPopup={actions.setShowReceiptPopup} lastReceipt={state.lastReceipt} />}
         
         {activeTab === 'perkembangan' && <PerkembanganTab user={state.user} perkembanganForm={state.perkembanganForm} setPerkembanganForm={actions.setPerkembanganForm} siswaTampil={state.siswaTampil} guruOptions={state.guruOptions} perkembanganHistory={state.perkembanganHistory} selectedProgressStudent={state.selectedProgressStudent} progressInputMode={state.progressInputMode} setProgressInputMode={actions.setProgressInputMode} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanInfo={state.studentScanInfo} onSelectProgressStudent={actions.selectProgressStudentById} onSubmit={actions.submitPerkembangan} onSendPerkembanganWA={actions.sendPerkembanganWA} perkembanganTampil={state.perkembanganTampil} />}
@@ -69,10 +65,29 @@ export function Dashboard({ state, actions }) {
         {activeTab === 'review' && <ReviewsTab reviewForm={state.reviewForm} setReviewForm={actions.setReviewForm} users={state.usersTampil} reviews={state.reviewsTampil} onAddItem={actions.addReviewItem} onChangeItem={actions.changeReviewItem} onRemoveItem={actions.removeReviewItem} onSubmitReview={actions.submitReview} onPrintReview={actions.printEmployeeReview} />}
         {activeTab === 'pengeluaran' && <PengeluaranTab pengeluaranForm={state.pengeluaranForm} setPengeluaranForm={actions.setPengeluaranForm} pengeluaran={state.pengeluaranTampil} branches={state.branches} onSubmit={actions.submitPengeluaran} onEdit={actions.startEditPengeluaran} onDelete={actions.deletePengeluaran} onReset={actions.setPengeluaranForm} />}
         {activeTab === 'inventory' && <InventoryTab inventoryForm={state.inventoryForm} setInventoryForm={actions.setInventoryForm} inventory={state.inventoryTampil} branches={state.branches} onSubmit={actions.submitInventory} onEdit={actions.startEditInventory} onDelete={actions.deleteInventory} onReset={() => actions.setInventoryForm(INITIAL_INVENTORY_FORM)} />}
+        
+        {/* FIX JALUR PAYROLL (Menambahkan openSmartWA) */}
         {activeTab === 'payroll' && <PayrollTab payrollRows={state.payrollRows} bonusForm={state.bonusForm} setBonusForm={actions.setBonusForm} users={state.usersTampil} bonusManual={state.bonusManualTampil} onSubmitBonus={actions.submitBonus} onCatatGaji={actions.catatPengeluaranGaji} branches={state.branches} payrollMonth={state.payrollMonth} setPayrollMonth={actions.setPayrollMonth} payrollYear={state.payrollYear} setPayrollYear={actions.setPayrollYear} openSmartWA={actions.openSmartWA} />}
         
-        {/* TAB LAPORAN (DENGAN POPUP EDIT) */}
-        {activeTab === 'laporan' && <LaporanTab financeSummary={financeSummary} pembayaran={state.pembayaranTampil} branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} payrollRows={state.payrollRows} bonusManual={state.bonusManualTampil} searchTransaksi={state.searchTransaksi} setSearchTransaksi={actions.setSearchTransaksi} onDeleteTransaksi={actions.deleteTransaksi} editTransaksiForm={state.editTransaksiForm} setEditTransaksiForm={actions.setEditTransaksiForm} onSubmitEditTransaksi={actions.submitEditTransaksi} onStartEditTransaksi={actions.startEditTransaksi} />}
+        {/* FIX JALUR LAPORAN (Menghapus editTransaksi dan ganti ke onStartEditTransaksi) */}
+        {activeTab === 'laporan' && (
+          <LaporanTab 
+            financeSummary={financeSummary} 
+            pembayaran={state.pembayaranTampil} 
+            branches={state.branches} 
+            selectedBranchId={state.selectedBranchId} 
+            setSelectedBranchId={actions.setSelectedBranchId} 
+            payrollRows={state.payrollRows} 
+            bonusManual={state.bonusManualTampil} 
+            searchTransaksi={state.searchTransaksi} 
+            setSearchTransaksi={actions.setSearchTransaksi} 
+            onDeleteTransaksi={actions.deleteTransaksi} 
+            editTransaksiForm={state.editTransaksiForm} 
+            setEditTransaksiForm={actions.setEditTransaksiForm} 
+            onSubmitEditTransaksi={actions.submitEditTransaksi} 
+            onStartEditTransaksi={actions.startEditTransaksi} 
+          />
+        )}
         
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
       </section>
