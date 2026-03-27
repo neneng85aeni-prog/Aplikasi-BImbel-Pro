@@ -343,11 +343,37 @@ export function useBimbelApp() {
   function printThermalReceiptDesktop(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank', 'width=420,height=700'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, true)); w.document.close() }
   function printThermalReceiptAndroid(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, false)); w.document.close() }
   
+  // ==========================================
+  // LOGIKA SMART WHATSAPP ROUTING (ANTI BERANAK PINAK)
+  // ==========================================
+  function openSmartWA(phone, text) {
+    if (!phone) {
+      alert('Maaf, nomor HP belum tersimpan di sistem.');
+      return;
+    }
+    
+    // Format ke +62 dan bersihkan strip/spasi
+    let formattedPhone = phone.startsWith('0') ? '62' + phone.substring(1) : phone;
+    formattedPhone = formattedPhone.replace(/\D/g, ''); 
+    const encodedText = encodeURIComponent(text);
+
+    // Deteksi apakah sedang dibuka lewat HP (Android/iOS)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // Buka langsung aplikasi WA di HP
+      window.location.href = `whatsapp://send?phone=${formattedPhone}&text=${encodedText}`;
+    } else {
+      // Buka WA Web di Laptop dengan NAMA TAB 'BIMBEL_PRO_WA_WEB' agar sesi dipakai ulang!
+      window.open(`https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedText}`, 'BIMBEL_PRO_WA_WEB');
+    }
+  }
+
   function sendThermalReceiptWA(receipt) { 
     const data = receipt || lastReceipt; 
     if (!data) return setErrorMsg('Belum ada transaksi terakhir untuk dikirim.'); 
     
-    let text = `*BIMBEL TOP - BUKTI PEMBAYARAN*\n\n`;
+    let text = `*BIMBEL PRO - BUKTI PEMBAYARAN*\n\n`;
     text += `Tanggal: ${new Date().toLocaleString('id-ID')}\n`;
     text += `Cabang: ${data.cabang || '-'}\n`;
     text += `Nama Siswa: ${data.nama || '-'}\n`;
@@ -357,31 +383,17 @@ export function useBimbelApp() {
     text += `*Nominal: ${formatRupiah(data.nominal || 0)}*\n\n`;
     text += `Terima kasih atas kepercayaannya.`;
     
-    const encodedText = encodeURIComponent(text);
-    let phone = data.no_hp || '';
-    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-    
-    const w = window.open(`https://wa.me/${phone}?text=${encodedText}`, '_blank');
-    if (!w) return setErrorMsg('Popup diblokir browser. Izinkan popup untuk membuka WA.');
+    openSmartWA(data.no_hp, text);
   }
 
   function sendPerkembanganWA(item) {
     if (!item) return;
-    const phone = item.siswa?.no_hp || '';
-    if (!phone) {
-      alert('Siswa ini belum memiliki data No HP di sistem.');
-      return;
-    }
-
-    let text = `Assalamu'alaikum Halo Ayah/Bunda,\nBerikut adalah laporan perkembangan dan kehadiran ananda *${item.siswa?.nama || '-'}* pada ${formatTanggal(item.tanggal)}:\n\n`;
+    
+    let text = `Halo Ayah/Bunda,\nBerikut adalah laporan perkembangan dan kehadiran ananda *${item.siswa?.nama || '-'}* pada ${formatTanggal(item.tanggal)}:\n\n`;
     text += `*Catatan Guru:*\n${item.catatan || 'Hadir mengikuti sesi pembelajaran dengan baik.'}\n\n`;
-    text += `Salam hangat,\nAdmin ${item.siswa?.branches?.nama || 'Bimbel TOP'}`;
+    text += `Salam hangat,\nAdmin ${item.siswa?.branches?.nama || 'Bimbel Pro'}`;
 
-    const encodedText = encodeURIComponent(text);
-    let formattedPhone = phone.startsWith('0') ? '62' + phone.substring(1) : phone;
-
-    const w = window.open(`https://wa.me/${formattedPhone}?text=${encodedText}`, '_blank');
-    if (!w) alert('Popup diblokir browser. Izinkan popup untuk membuka WA.');
+    openSmartWA(item.siswa?.no_hp, text);
   }
 
   async function prosesScanKaryawan(decodedText) { try { const validCode = employeeMode === 'datang' ? employeeBarcodeIn : employeeBarcodeOut; if (decodedText !== validCode) { setEmployeeScanInfo(`Barcode ${employeeMode} tidak dikenali.`); return } const res = await saveEmployeeAttendance({ p_user_id: user?.id, p_tanggal: TODAY(), p_mode: employeeMode }); if (res.error) throw res.error; setEmployeeScanInfo(`Scan ${employeeMode} berhasil untuk ${user?.nama}.`); setMessage(`Absensi ${employeeMode} disimpan.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
@@ -426,7 +438,7 @@ export function useBimbelApp() {
       startEditBranch, startEditProgram, startEditUser, startEditSiswa, startEditPengeluaran, startEditInventory, handleDownload, printThermalReceiptDesktop, printThermalReceiptAndroid,
       selectStudentById, selectProgressStudentById, generateStudentBarcodeAction, printStudentBarcode,
       addReviewItem, changeReviewItem, removeReviewItem, printEmployeeReview, togglePermissionDraft, savePermissions, selectAllPermissions, resetPermissionDraft, setQuickExportRange,
-      setSearchSiswa, setSearchTransaksi, deleteTransaksi, editTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA
+      setSearchSiswa, setSearchTransaksi, deleteTransaksi, editTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA, openSmartWA // <--- EXPORT OPEN SMART WA
     },
   }
 }
