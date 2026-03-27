@@ -1,5 +1,5 @@
 import { formatRupiah } from '../../lib/format'
-import { ACCESS_OPTIONS, SALARY_TYPE_OPTIONS } from '../../lib/constants'
+import { SALARY_TYPE_OPTIONS } from '../../lib/constants'
 
 export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onReset, onEdit, onDelete }) {
   return (
@@ -35,9 +35,15 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
           <div className="grid grid-2">
             <div className="form-row">
               <label>Akses / Jabatan</label>
-              <select value={userForm.akses} onChange={(e) => setUserForm({ ...userForm, akses: e.target.value })} style={{ background: 'rgba(255,255,255,0.05)', color: 'inherit' }}>
-                {ACCESS_OPTIONS.map((opt) => <option key={opt} value={opt} style={{ color: 'black' }}>{opt.toUpperCase()}</option>)}
-              </select>
+              {/* KOLOM INPUT MANUAL OTOMATIS HURUF BESAR (UPPERCASE) */}
+              <input 
+                type="text" 
+                value={userForm.akses} 
+                onChange={(e) => setUserForm({ ...userForm, akses: e.target.value.toUpperCase() })} 
+                placeholder="Cth: MASTER, ADMIN, GURU, KASIR..." 
+                required 
+                autoComplete="off" 
+              />
             </div>
             <div className="form-row">
               <label>Penempatan Cabang</label>
@@ -95,7 +101,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
                 <tr key={item.id}>
                   <td><b>{item.nama}</b></td>
                   <td>{item.email}<br/><span className="text-muted" style={{color: '#10b981'}}>{item.no_telepon || 'Belum ada WA'}</span></td>
-                  <td style={{ textTransform: 'capitalize' }}>{item.akses}</td>
+                  <td style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{item.akses}</td>
                   <td>{item.branch_nama || 'Pusat'}</td>
                   <td>
                     <div className="btn-row">
