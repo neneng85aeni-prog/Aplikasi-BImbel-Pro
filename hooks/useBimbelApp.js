@@ -87,7 +87,6 @@ export function useBimbelApp() {
   const [payrollMonth, setPayrollMonth] = useState(new Date().getMonth() + 1)
   const [payrollYear, setPayrollYear] = useState(new Date().getFullYear())
 
-  // STATE BARU UNTUK POPUP TRANSAKSI & EDIT
   const [showReceiptPopup, setShowReceiptPopup] = useState(false)
   const [editTransaksiForm, setEditTransaksiForm] = useState(null)
 
@@ -232,7 +231,6 @@ export function useBimbelApp() {
   async function deleteSiswa(id) { if (!window.confirm('Hapus siswa ini?')) return; const { error } = await removeById('siswa', id); if (error) return setErrorMsg(error.message); setMessage('Siswa dihapus.'); await loadAllData() }
   async function deleteTransaksi(id) { if (!window.confirm('Hapus transaksi ini?')) return; const { error } = await removeById('pembayaran', id); if (error) return setErrorMsg(error.message); setMessage('Transaksi dihapus.'); await loadAllData() }
   
-  // LOGIKA BARU: POPUP EDIT TRANSAKSI
   function startEditTransaksi(item) {
     setEditTransaksiForm({
       id: item.id,
@@ -327,7 +325,6 @@ export function useBimbelApp() {
   function selectStudentById(id) { if (!id) return setSelectedStudent(null); const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, nominal: String(info.nominal || '') }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
   async function selectProgressStudentById(id, source = 'manual') { try { if (!id) { setSelectedProgressStudent(null); setPerkembanganForm((prev) => ({ ...prev, siswa_id: '' })); return } const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; await ensureStudentSession(matched, source); setStudentScanInfo(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
-  // LOGIKA KASIR DIPERBAIKI (Tambahan preventDefault & Pop-up)
   async function submitKasir(event) { 
     event.preventDefault(); 
     try { 
@@ -436,7 +433,7 @@ export function useBimbelApp() {
       branches, programs, users, siswa, pembayaran, absensiSiswa, perkembangan, absensiKaryawan, bonusManual, reviews, pengeluaranTampil, inventoryTampil,
       branchForm, programForm, userForm, siswaForm, perkembanganForm, kasirForm, bonusForm, employeeManualForm, studentAttendanceForm, reviewForm, pengeluaranForm, inventoryForm,
       permissionUserId, permissionDraft, scanStudentActive, scanEmployeeActive, employeeMode, studentScanText, employeeScanText,
-      studentScanInfo, employeeScanInfo, selectedStudent, selectedGuruStudent, selectedProgressStudent,
+      studentScanInfo, employeeScanInfo, selectedStudent, selectedProgressStudent,
       exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode,
       guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats,
       searchSiswa, searchTransaksi, payrollMonth, payrollYear,
