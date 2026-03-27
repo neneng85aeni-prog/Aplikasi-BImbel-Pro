@@ -68,7 +68,6 @@ export function Dashboard({ state, actions }) {
         
         {activeTab === 'payroll' && <PayrollTab payrollRows={state.payrollRows} bonusForm={state.bonusForm} setBonusForm={actions.setBonusForm} users={state.usersTampil} bonusManual={state.bonusManualTampil} onSubmitBonus={actions.submitBonus} onCatatGaji={actions.catatPengeluaranGaji} branches={state.branches} payrollMonth={state.payrollMonth} setPayrollMonth={actions.setPayrollMonth} payrollYear={state.payrollYear} setPayrollYear={actions.setPayrollYear} openSmartWA={actions.openSmartWA} />}
         
-        {/* TAB LAPORAN (KABEL SUDAH SINKRON TOTAL) */}
         {activeTab === 'laporan' && (
           <LaporanTab 
             financeSummary={financeSummary} 
