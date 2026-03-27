@@ -115,6 +115,8 @@ export function useBimbelApp() {
   const [exportDateTo, setExportDateTo] = useState('')
   const [progressInputMode, setProgressInputMode] = useState('scan')
   const [lastReceipt, setLastReceipt] = useState(null)
+  const [searchSiswa, setSearchSiswa] = useState('')
+  const [searchTransaksi, setSearchTransaksi] = useState('')
   const [selectedBranchId, setSelectedBranchId] = useState('')
 
   const studentScannerRef = useRef(null)
