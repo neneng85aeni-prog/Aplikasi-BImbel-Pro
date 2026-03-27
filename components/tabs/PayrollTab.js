@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatRupiah, formatTanggal, formatMonthYear } from '../../lib/format'
 
-export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusManual, onSubmitBonus, onCatatGaji }) {
+export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusManual, onSubmitBonus, onCatatGaji, branches }) {
   const [slipModal, setSlipModal] = useState(null)
   const [customItems, setCustomItems] = useState([])
 
@@ -35,11 +35,15 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
     const totalBersih = slipModal.totalGaji + totalCustomTunjangan - totalCustomPotongan
     const bulanIni = formatMonthYear(new Date().getMonth() + 1, new Date().getFullYear())
 
+    // LOGIKA BARU: Tarik otomatis nama cabang karyawan untuk dijadikan Kop Surat
+    const branchObj = branches?.find(b => b.id === slipModal.branch_id)
+    const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
+
     // 1. Eksekusi Pencatatan Otomatis ke Laporan Keuangan
     onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${bulanIni}`, totalBersih, slipModal.branch_id)
 
-    // 2. Generate PDF HTML untuk Cetak A4
-    const html = buildSlipGajiHtml(slipModal, customItems, totalBersih, bulanIni)
+    // 2. Generate PDF HTML untuk Cetak A4 (Kirim namaKopSurat otomatis)
+    const html = buildSlipGajiHtml(slipModal, customItems, totalBersih, bulanIni, namaKopSurat, branchObj?.nama)
     const w = window.open('', '_blank', 'width=800,height=900')
     if (!w) {
       alert('Popup diblokir browser. Izinkan popup untuk mencetak slip.')
@@ -115,15 +119,16 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '30px' }}>
             <h2 className="section-title">Setup Slip Gaji: {slipModal.nama}</h2>
+
             <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span>Total Hitungan Sistem (Auto)</span><b style={{fontSize: '18px'}}>{formatRupiah(slipModal.totalGaji)}</b></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span style={{color: '#1e293b'}}>Total Hitungan Sistem (Auto)</span><b style={{fontSize: '18px', color: '#1e293b'}}>{formatRupiah(slipModal.totalGaji)}</b></div>
               <div className="text-muted" style={{ fontSize: '12px', lineHeight: '1.5' }}>*Gaji pokok, bonus, dan potongan absen otomatis sudah dihitung oleh sistem. Tambahkan tunjangan/potongan insidental di bawah ini jika diperlukan.</div>
             </div>
 
-            <h3 style={{ fontSize: '14px', marginBottom: '12px', fontWeight: 'bold' }}>Tunjangan / Potongan Manual (Opsional)</h3>
+            <h3 style={{ fontSize: '14px', marginBottom: '12px', fontWeight: 'bold', color: '#f8fafc' }}>Tunjangan / Potongan Manual (Opsional)</h3>
             {customItems.map((item, idx) => (
               <div key={idx} className="grid grid-3" style={{ gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
-                <input placeholder="Nama (Cth: Uang Lembur / Cicilan Kasbon)" value={item.name} onChange={(e) => updateCustomItem(idx, 'name', e.target.value)} style={{padding: '8px'}} />
+                <input placeholder="Nama (Cth: Uang Lembur)" value={item.name} onChange={(e) => updateCustomItem(idx, 'name', e.target.value)} style={{padding: '8px'}} />
                 <input type="number" placeholder="Nominal (Cth: 50000)" value={item.amount} onChange={(e) => updateCustomItem(idx, 'amount', e.target.value)} style={{padding: '8px'}} />
                 <div style={{ display: 'flex', gap: '5px' }}>
                   <select value={item.type} onChange={(e) => updateCustomItem(idx, 'type', e.target.value)} style={{ flex: 1, padding: '8px' }}>
@@ -159,7 +164,7 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
   )
 }
 
-function buildSlipGajiHtml(user, customItems, totalBersih, periode) {
+function buildSlipGajiHtml(user, customItems, totalBersih, periode, namaKopSurat, rawBranchName) {
   return `
     <!doctype html>
     <html>
@@ -169,7 +174,7 @@ function buildSlipGajiHtml(user, customItems, totalBersih, periode) {
       <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; background: #fff; }
         .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 30px; }
-        .logo { font-size: 32px; font-weight: 800; color: #1e293b; letter-spacing: -1px; }
+        .logo { font-size: 32px; font-weight: 800; color: #1e293b; letter-spacing: -1px; text-transform: uppercase; }
         .title { font-size: 20px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 2px;}
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
         .info-col div { margin-bottom: 10px; font-size: 15px; }
@@ -184,12 +189,12 @@ function buildSlipGajiHtml(user, customItems, totalBersih, periode) {
         .total-title { font-size: 18px; font-weight: bold; letter-spacing: 1px;}
         .total-amount { font-size: 28px; font-weight: bold; color: #10b981; }
         .footer { display: grid; grid-template-columns: 1fr 1fr; text-align: center; margin-top: 50px; font-size: 15px; }
-        .sign-area { margin-top: 90px; font-weight: bold; text-decoration: underline; }
+        .sign-area { margin-top: 90px; font-weight: bold; text-decoration: underline; text-transform: uppercase; }
       </style>
     </head>
     <body onload="window.print()">
       <div class="header">
-        <div class="logo">BIMBEL PRO</div>
+        <div class="logo">${namaKopSurat}</div>
         <div class="title">Slip Gaji Karyawan</div>
       </div>
 
@@ -200,7 +205,7 @@ function buildSlipGajiHtml(user, customItems, totalBersih, periode) {
         </div>
         <div class="info-col">
           <div><span class="label">Periode Gaji:</span> <span class="val">${periode}</span></div>
-          <div><span class="label">Penempatan:</span> <span class="val">${user.branch_nama || 'Pusat'}</span></div>
+          <div><span class="label">Penempatan:</span> <span class="val">${rawBranchName || 'Pusat'}</span></div>
         </div>
       </div>
 
@@ -243,7 +248,7 @@ function buildSlipGajiHtml(user, customItems, totalBersih, periode) {
         </div>
         <div>
           <p>Disetujui Oleh,</p>
-          <div class="sign-area">Manajemen Bimbel Pro</div>
+          <div class="sign-area">Manajemen ${namaKopSurat}</div>
         </div>
       </div>
     </body>
