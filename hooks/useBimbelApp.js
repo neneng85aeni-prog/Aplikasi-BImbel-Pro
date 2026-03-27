@@ -86,6 +86,10 @@ export function useBimbelApp() {
   const [searchTransaksi, setSearchTransaksi] = useState('')
   const [selectedBranchId, setSelectedBranchId] = useState('')
 
+  // MESIN WAKTU PAYROLL
+  const [payrollMonth, setPayrollMonth] = useState(new Date().getMonth() + 1)
+  const [payrollYear, setPayrollYear] = useState(new Date().getFullYear())
+
   const studentScannerRef = useRef(null)
   const employeeScannerRef = useRef(null)
 
@@ -139,7 +143,11 @@ export function useBimbelApp() {
   }, [perkembanganTampil, perkembanganForm.siswa_id])
 
   const guruOptions = useMemo(() => usersTampil.filter((item) => item.akses === 'guru'), [usersTampil])
-  const payrollRows = useMemo(() => computePayroll({ users: usersTampil, absensiSiswa: absensiSiswaTampil, absensiKaryawan: absensiKaryawanTampil, bonusManual: bonusManualTampil }), [usersTampil, absensiSiswaTampil, absensiKaryawanTampil, bonusManualTampil])
+  
+  // PAYROLL SEKARANG MENGGUNAKAN MESIN WAKTU
+  const targetPayrollDate = useMemo(() => new Date(payrollYear, payrollMonth - 1, 1), [payrollMonth, payrollYear])
+  const payrollRows = useMemo(() => computePayroll({ users: usersTampil, absensiSiswa: absensiSiswaTampil, absensiKaryawan: absensiKaryawanTampil, bonusManual: bonusManualTampil, targetDate: targetPayrollDate }), [usersTampil, absensiSiswaTampil, absensiKaryawanTampil, bonusManualTampil, targetPayrollDate])
+  
   const overview = useMemo(() => computeOverview({ pembayaran: pembayaranTampil, pengeluaran: pengeluaranTampil, siswa: siswaTampil, users: usersTampil, branches: selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches, payrollRows }), [pembayaranTampil, pengeluaranTampil, siswaTampil, usersTampil, branches, selectedBranchId, payrollRows])
   const financeSummary = useMemo(() => buildFinanceSummary(pembayaranTampil, pengeluaranTampil, payrollRows, bonusManualTampil, selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches), [pembayaranTampil, pengeluaranTampil, payrollRows, bonusManualTampil, branches, selectedBranchId])
   const stats = useMemo(() => ({ siswa: siswaTampil.length, pegawai: usersTampil.length, program: programs.length, pemasukan: pembayaranTampil.reduce((sum, item) => sum + Number(item.nominal || 0), 0) }), [siswaTampil, usersTampil, programs, pembayaranTampil])
@@ -259,12 +267,11 @@ export function useBimbelApp() {
       const payload = { tanggal: TODAY(), kategori: 'Gaji Karyawan', keterangan, nominal: Number(nominal), branch_id: branch_id || null, user_id: user?.id }
       const res = await savePengeluaran(payload)
       if (res.error) throw res.error
-      setMessage(`Slip gaji berhasil dibuat & Pengeluaran gaji otomatis tercatat di laporan.`)
+      setMessage(`Slip gaji berhasil dibuat & Pengeluaran otomatis tercatat di laporan.`)
       await loadAllData()
     } catch (error) { setErrorMsg(error.message || 'Gagal mencatat otomatis pengeluaran gaji.') }
   }
 
-  // FUNGSI INVENTORY BARU
   async function submitInventory(event) {
     event.preventDefault()
     try {
@@ -300,7 +307,6 @@ export function useBimbelApp() {
   function selectStudentById(id) { if (!id) return setSelectedStudent(null); const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, nominal: String(info.nominal || '') }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
   async function selectProgressStudentById(id, source = 'manual') { try { if (!id) { setSelectedProgressStudent(null); setPerkembanganForm((prev) => ({ ...prev, siswa_id: '' })); return } const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; await ensureStudentSession(matched, source); setStudentScanInfo(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
-  // LOGIKA KASIR BARU DENGAN FITUR POTONG STOK OTOMATIS
   async function submitKasir() { 
     try { 
       if (!selectedStudent) throw new Error('Pilih siswa dulu.')
@@ -311,11 +317,9 @@ export function useBimbelApp() {
         if (!selectedItem) throw new Error('Barang tidak ditemukan.')
         if (selectedItem.stok < 1) throw new Error('Stok barang habis!')
         
-        // 1. Kurangi stok barang
         const stockRes = await updateInventoryStock(selectedItem.id, selectedItem.stok - 1)
         if (stockRes.error) throw stockRes.error
         
-        // 2. Catat ke transaksi pemasukan
         const res = await saveKasirTransaction({ p_siswa_id: selectedStudent.id, p_program_id: selectedStudent.program_id || null, p_kasir_id: user?.id, p_tanggal: TODAY(), p_nominal: selectedItem.harga, p_status: kasirForm.status, p_metode_bayar: kasirForm.metode_bayar, p_keterangan: `Pembelian Barang: ${selectedItem.nama}` })
         if (res.error) throw res.error
         
@@ -370,12 +374,13 @@ export function useBimbelApp() {
       studentScanInfo, employeeScanInfo, selectedStudent, selectedGuruStudent, selectedProgressStudent,
       exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode,
       guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats,
-      searchSiswa, searchTransaksi
+      searchSiswa, searchTransaksi, payrollMonth, payrollYear // <--- MESIN WAKTU DI-EXPORT
     },
     actions: {
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId,
       setBranchForm, setProgramForm, setUserForm, setSiswaForm, setPerkembanganForm, setKasirForm, setBonusForm, setEmployeeManualForm, setStudentAttendanceForm, setReviewForm, setPengeluaranForm, setInventoryForm,
       setPermissionUserId, setPermissionDraft, setScanStudentActive, setScanEmployeeActive, setEmployeeMode, setExportType, setExportDateFrom, setExportDateTo, setProgressInputMode,
+      setPayrollMonth, setPayrollYear, // <--- AKSI MESIN WAKTU DI-EXPORT
       login, logout, loadAllData,
       submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa, submitPengeluaran, deletePengeluaran, submitInventory, deleteInventory,
       submitPerkembangan, submitKasir, submitBonus, submitEmployeeManualAttendance, submitStudentAttendance, submitReview,
