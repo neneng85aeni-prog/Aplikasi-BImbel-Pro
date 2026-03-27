@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatTanggal } from '../../lib/format'
 import { EMPLOYEE_STATUS_OPTIONS } from '../../lib/constants'
 
@@ -6,6 +7,31 @@ export function KaryawanTab({
   employeeScanInfo, employeeScanText, absensiKaryawan, employeeManualForm, setEmployeeManualForm, 
   users, onSubmitManual 
 }) {
+  // STATE LOKAL UNTUK PENCARIAN
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // 1. CEK HAK AKSES (Bisa lihat semua atau hanya punya sendiri)
+  const canViewAll = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('permissions')
+
+  // 2. FILTER BERDASARKAN USER YANG LOGIN
+  const roleFilteredAbsensi = (absensiKaryawan || []).filter(item => {
+    if (canViewAll) return true;
+    return item.user_id === currentUser?.id;
+  })
+
+  // 3. FILTER PENCARIAN PINTAR
+  const finalFilteredAbsensi = roleFilteredAbsensi.filter(item => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      item.users?.nama?.toLowerCase().includes(q) ||
+      item.status?.toLowerCase().includes(q) ||
+      item.jam_datang?.includes(q) ||
+      item.jam_pulang?.includes(q) ||
+      formatTanggal(item.tanggal).toLowerCase().includes(q)
+    );
+  })
+
   return (
     <div className="grid gap-lg">
       <div className="grid grid-2">
@@ -94,18 +120,38 @@ export function KaryawanTab({
 
       </div>
 
-      {/* 3. TABEL RIWAYAT */}
+      {/* 3. TABEL RIWAYAT DENGAN FILTER & PENCARIAN */}
       <div className="glass-card">
-        <h2 className="section-title">Riwayat Absensi Karyawan</h2>
+        <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <h2 className="section-title" style={{ margin: 0 }}>Riwayat Absensi Karyawan</h2>
+          
+          <input 
+            type="text" 
+            placeholder="🔍 Cari nama / status / tanggal..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ 
+              padding: '10px 14px', 
+              borderRadius: '8px', 
+              width: '100%', 
+              maxWidth: '350px',
+              border: '1px solid rgba(255,255,255,0.2)', 
+              background: 'rgba(255,255,255,0.05)', 
+              color: 'inherit',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+
         <div className="table-wrap">
           <table>
             <thead>
               <tr><th>Tanggal</th><th>Karyawan</th><th>Status</th><th>Jam Masuk - Pulang</th></tr>
             </thead>
             <tbody>
-              {absensiKaryawan && absensiKaryawan.map((item) => (
+              {finalFilteredAbsensi.map((item) => (
                 <tr key={item.id}>
-                  <td>{formatTanggal(item.tanggal)}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{formatTanggal(item.tanggal)}</td>
                   <td><b>{item.users?.nama || '-'}</b></td>
                   <td>
                     <span style={{ 
@@ -120,7 +166,13 @@ export function KaryawanTab({
                   <td>{item.jam_datang || '--:--'} s/d {item.jam_pulang || '--:--'}</td>
                 </tr>
               ))}
-              {(!absensiKaryawan || absensiKaryawan.length === 0) && <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>Belum ada data absensi.</td></tr>}
+              {finalFilteredAbsensi.length === 0 && (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                    {searchQuery ? 'Data pencarian tidak ditemukan.' : 'Belum ada data absensi untuk ditampilkan.'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
