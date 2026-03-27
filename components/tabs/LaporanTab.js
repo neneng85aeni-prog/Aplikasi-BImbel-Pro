@@ -1,6 +1,6 @@
 import { formatRupiah, formatTanggal } from '../../lib/format'
 
-export function LaporanTab({ financeSummary, pembayaran, branches, selectedBranchId, setSelectedBranchId, payrollRows, bonusManual, searchTransaksi, setSearchTransaksi }) {
+export function LaporanTab({ financeSummary, pembayaran, branches, selectedBranchId, setSelectedBranchId, payrollRows, bonusManual, searchTransaksi, setSearchTransaksi, onEditTransaksi, onDeleteTransaksi }) {
   return (
     <div className="grid gap-lg">
       <div className="glass-card">
@@ -21,8 +21,6 @@ export function LaporanTab({ financeSummary, pembayaran, branches, selectedBranc
         </div>
         <div className="glass-card">
           <h2 className="section-title">Daftar Transaksi</h2>
-          
-          {/* KOTAK PENCARIAN TRANSAKSI DITAMBAHKAN DI SINI */}
           <div style={{ marginBottom: '16px' }}>
             <input 
               type="text" 
@@ -32,8 +30,7 @@ export function LaporanTab({ financeSummary, pembayaran, branches, selectedBranc
               style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #d7dfef', fontSize: '14px' }}
             />
           </div>
-
-          <div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Siswa</th><th>Metode</th><th>Nominal</th></tr></thead><tbody>{(searchTransaksi ? pembayaran : pembayaran.slice(0, 10)).map((item) => <tr key={item.id}><td>{formatTanggal(item.tanggal)}</td><td><b>{item.siswa?.nama || '-'}</b><br/><span style={{fontSize: '12px', color: '#64748b'}}>{item.programs?.nama || item.siswa?.programs?.nama || '-'}</span></td><td>{item.metode_bayar}</td><td>{formatRupiah(item.nominal)}</td></tr>)}</tbody></table></div>
+          <div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Siswa</th><th>Metode</th><th>Nominal</th><th>Aksi</th></tr></thead><tbody>{(searchTransaksi ? pembayaran : pembayaran.slice(0, 10)).map((item) => <tr key={item.id}><td>{formatTanggal(item.tanggal)}</td><td><b>{item.siswa?.nama || '-'}</b><br/><span style={{fontSize: '12px', color: '#64748b'}}>{item.programs?.nama || item.siswa?.programs?.nama || '-'}</span></td><td>{item.metode_bayar}</td><td>{formatRupiah(item.nominal)}</td><td><div className="btn-row"><button className="btn btn-secondary btn-small" onClick={() => onEditTransaksi(item)}>Edit</button><button className="btn btn-danger btn-small" onClick={() => onDeleteTransaksi(item.id)}>Hapus</button></div></td></tr>)}</tbody></table></div>
         </div>
       </div>
       <div className="grid grid-2">
