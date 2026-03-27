@@ -73,7 +73,7 @@ export function PerkembanganTab({
         {/* BAGIAN KANAN: TABEL RIWAYAT UNTUK KASIR KIRIM WA */}
         <div className="glass-card">
           <h2 className="section-title">Riwayat Input Terakhir (Semua Siswa)</h2>
-          <p className="text-muted" style={{ fontSize: '13px', marginBottom: '15px' }}>Tabel ini memudahkan Kasir/Admin untuk langsung mengirimkan laporan ke WA Orang Tua tanpa perlu HP Guru.</p>
+          <p className="text-muted" style={{ fontSize: '13px', marginBottom: '15px' }}>Tabel ini memudahkan Kasir/Admin untuk langsung mengirimkan laporan ke WA Orang Tua.</p>
           
           <div className="table-wrap" style={{ maxHeight: '500px', overflowY: 'auto' }}>
             <table style={{ minWidth: '100%' }}>
