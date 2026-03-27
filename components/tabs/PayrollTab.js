@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { formatRupiah, formatTanggal, formatMonthYear } from '../../lib/format'
 
-export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusManual, onSubmitBonus, onCatatGaji, branches, payrollMonth, setPayrollMonth, payrollYear, setPayrollYear }) {
+// KITA TAMBAHKAN openSmartWA SEBAGAI PROPS DARI useBimbelApp
+export function PayrollTab({ 
+  payrollRows, bonusForm, setBonusForm, users, bonusManual, onSubmitBonus, 
+  onCatatGaji, branches, payrollMonth, setPayrollMonth, payrollYear, setPayrollYear, openSmartWA 
+}) {
   const [slipModal, setSlipModal] = useState(null)
   const [customItems, setCustomItems] = useState([])
 
@@ -55,7 +59,6 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
     setSlipModal(null)
   }
 
-  // FUNGSI BARU UNTUK KIRIM SLIP GAJI VIA WHATSAPP
   function handleSendWAAndSave() {
     if (!slipModal) return
 
@@ -67,10 +70,8 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
     const branchObj = branches?.find(b => b.id === slipModal.branch_id)
     const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
 
-    // 1. Catat pengeluaran otomatis di Laporan Keuangan
     onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${periodeCetak} (Via WA)`, totalBersih, slipModal.branch_id)
 
-    // 2. Format teks untuk dikirim ke WhatsApp
     let text = `*SLIP GAJI - ${namaKopSurat}*\n\n`;
     text += `Nama Pegawai: ${slipModal.nama}\n`;
     text += `Posisi: ${slipModal.akses}\n`;
@@ -98,13 +99,10 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
     text += `\n*TAKE HOME PAY: ${formatRupiah(totalBersih)}*\n\n`;
     text += `Terima kasih atas dedikasi dan kerja keras Anda.\n_Pesan otomatis dikirim dari Aplikasi Manajemen ${namaKopSurat}_`;
 
-    // 3. Buka link WhatsApp Web / App
-    const encodedText = encodeURIComponent(text);
-    let phone = slipModal.no_telepon || '';
-    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-
-    const w = window.open(`https://wa.me/${phone}?text=${encodedText}`, '_blank');
-    if (!w) alert('Popup diblokir browser. Izinkan popup untuk membuka WA.');
+    // GUNAKAN FUNGSI SMART ROUTING YANG ANTI BERANAK-PINAK TAB
+    if (openSmartWA) {
+      openSmartWA(slipModal.no_telepon, text);
+    }
 
     setSlipModal(null)
   }
@@ -115,7 +113,6 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
         <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Data Payroll Karyawan</h2>
           
-          {/* FILTER PERIODE BULAN & TAHUN */}
           <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div>
               <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Periode Bulan</label>
@@ -226,7 +223,6 @@ export function PayrollTab({ payrollRows, bonusForm, setBonusForm, users, bonusM
               <b style={{ fontSize: '24px', color: '#10b981' }}>{formatRupiah(slipModal.totalGaji + customItems.filter(i=>i.type==='tunjangan').reduce((a,b)=>a+Number(b.amount||0),0) - customItems.filter(i=>i.type==='potongan').reduce((a,b)=>a+Number(b.amount||0),0))}</b>
             </div>
 
-            {/* TOMBOL WA DITAMBAHKAN DI SINI */}
             <div className="btn-row">
               <button className="btn btn-primary" onClick={handlePrintAndSave} style={{ flex: 1, padding: '14px', fontSize: '15px' }}>🖨️ Cetak PDF</button>
               <button className="btn btn-primary" onClick={handleSendWAAndSave} style={{ flex: 1, padding: '14px', fontSize: '15px', background: '#10b981', borderColor: '#10b981' }}>💬 Kirim WA</button>
