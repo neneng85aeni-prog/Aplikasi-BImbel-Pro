@@ -140,10 +140,21 @@ export function useBimbelApp() {
     let rows = siswaScoped
     if (selectedBranchId) rows = rows.filter((item) => item.branch_id === selectedBranchId)
     if (user?.akses === 'guru') rows = rows.filter((item) => item.guru_id === user.id || !item.guru_id)
+    if (searchSiswa) {
+      const q = searchSiswa.toLowerCase()
+      rows = rows.filter(item => item.nama?.toLowerCase().includes(q) || item.no_hp?.includes(q))
+    }
     return rows
-  }, [siswaScoped, selectedBranchId, user])
+  }, [siswaScoped, selectedBranchId, user, searchSiswa])
 
-  const pembayaranTampil = useMemo(() => selectedBranchId ? pembayaranScoped.filter((item) => item.branch_id === selectedBranchId) : pembayaranScoped, [pembayaranScoped, selectedBranchId])
+  const pembayaranTampil = useMemo(() => {
+    let rows = selectedBranchId ? pembayaranScoped.filter((item) => item.branch_id === selectedBranchId) : pembayaranScoped;
+    if (searchTransaksi) {
+      const q = searchTransaksi.toLowerCase()
+      rows = rows.filter(item => item.siswa?.nama?.toLowerCase().includes(q) || item.programs?.nama?.toLowerCase().includes(q))
+    }
+    return rows;
+  }, [pembayaranScoped, selectedBranchId, searchTransaksi])
   const perkembanganTampil = useMemo(() => selectedBranchId ? perkembanganScoped.filter((item) => item.siswa?.branch_id === selectedBranchId || item.users?.branch_id === selectedBranchId) : perkembanganScoped, [perkembanganScoped, selectedBranchId])
   const absensiKaryawanTampil = useMemo(() => selectedBranchId ? absensiKaryawanScoped.filter((item) => item.users?.branch_id === selectedBranchId) : absensiKaryawanScoped, [absensiKaryawanScoped, selectedBranchId])
   const bonusManualTampil = useMemo(() => selectedBranchId ? bonusManualScoped.filter((item) => item.branch_id === selectedBranchId) : bonusManualScoped, [bonusManualScoped, selectedBranchId])
