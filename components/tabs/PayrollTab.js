@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { formatRupiah, formatTanggal, formatMonthYear } from '../../lib/format'
 
-// KITA TAMBAHKAN openSmartWA SEBAGAI PROPS DARI useBimbelApp
 export function PayrollTab({ 
   payrollRows, bonusForm, setBonusForm, users, bonusManual, onSubmitBonus, 
-  onCatatGaji, branches, payrollMonth, setPayrollMonth, payrollYear, setPayrollYear, openSmartWA 
+  onCatatGaji, branches, payrollMonth, setPayrollMonth, payrollYear, setPayrollYear, openSmartWA,
+  actions // Tambahkan actions agar bisa memanggil setDeleteConfirm
 }) {
   const [slipModal, setSlipModal] = useState(null)
   const [customItems, setCustomItems] = useState([])
@@ -39,44 +39,34 @@ export function PayrollTab({
 
   function handlePrintAndSave() {
     if (!slipModal) return
-
     const totalCustomTunjangan = customItems.filter(i => i.type === 'tunjangan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
     const totalCustomPotongan = customItems.filter(i => i.type === 'potongan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
     const totalBersih = slipModal.totalGaji + totalCustomTunjangan - totalCustomPotongan
-    
     const periodeCetak = formatMonthYear(payrollMonth, payrollYear)
     const branchObj = branches?.find(b => b.id === slipModal.branch_id)
     const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
-
     onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${periodeCetak}`, totalBersih, slipModal.branch_id)
-
     const html = buildSlipGajiHtml(slipModal, customItems, totalBersih, periodeCetak, namaKopSurat, branchObj?.nama)
     const w = window.open('', '_blank', 'width=800,height=900')
     if (!w) { alert('Popup diblokir browser. Izinkan popup untuk mencetak slip.'); return }
     w.document.write(html)
     w.document.close()
-
     setSlipModal(null)
   }
 
   function handleSendWAAndSave() {
     if (!slipModal) return
-
     const totalCustomTunjangan = customItems.filter(i => i.type === 'tunjangan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
     const totalCustomPotongan = customItems.filter(i => i.type === 'potongan').reduce((acc, i) => acc + Number(i.amount || 0), 0)
     const totalBersih = slipModal.totalGaji + totalCustomTunjangan - totalCustomPotongan
-    
     const periodeCetak = formatMonthYear(payrollMonth, payrollYear)
     const branchObj = branches?.find(b => b.id === slipModal.branch_id)
     const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
-
     onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${periodeCetak} (Via WA)`, totalBersih, slipModal.branch_id)
-
     let text = `*SLIP GAJI - ${namaKopSurat}*\n\n`;
     text += `Nama Pegawai: ${slipModal.nama}\n`;
     text += `Posisi: ${slipModal.akses}\n`;
     text += `Periode: ${periodeCetak}\n\n`;
-    
     text += `*PENDAPATAN:*\n`;
     if (slipModal.gajiPokok) text += `- Gaji Pokok: ${formatRupiah(slipModal.gajiPokok)}\n`;
     if (slipModal.feeSiswa) text += `- Honor Mengajar: ${formatRupiah(slipModal.feeSiswa)}\n`;
@@ -84,26 +74,15 @@ export function PayrollTab({
     if (slipModal.tunjanganHadir) text += `- Tunjangan Hadir: ${formatRupiah(slipModal.tunjanganHadir)}\n`;
     if (slipModal.bonusOtomatis) text += `- Bonus Target: ${formatRupiah(slipModal.bonusOtomatis)}\n`;
     if (slipModal.bonusManual) text += `- Bonus Tambahan: ${formatRupiah(slipModal.bonusManual)}\n`;
-    customItems.filter(i => i.type === 'tunjangan').forEach(i => {
-      text += `- ${i.name || 'Tunjangan Lain'}: ${formatRupiah(i.amount)}\n`;
-    });
-    
+    customItems.filter(i => i.type === 'tunjangan').forEach(i => { text += `- ${i.name || 'Tunjangan Lain'}: ${formatRupiah(i.amount)}\n`; });
     let hasPotongan = false;
     let potText = `\n*POTONGAN:*\n`;
     if (slipModal.potongan) { potText += `- Potongan Absen: ${formatRupiah(slipModal.potongan)}\n`; hasPotongan = true; }
-    customItems.filter(i => i.type === 'potongan').forEach(i => {
-      potText += `- ${i.name || 'Potongan Lain'}: ${formatRupiah(i.amount)}\n`; hasPotongan = true;
-    });
+    customItems.filter(i => i.type === 'potongan').forEach(i => { potText += `- ${i.name || 'Potongan Lain'}: ${formatRupiah(i.amount)}\n`; hasPotongan = true; });
     if (hasPotongan) text += potText;
-
     text += `\n*TAKE HOME PAY: ${formatRupiah(totalBersih)}*\n\n`;
     text += `Terima kasih atas dedikasi dan kerja keras Anda.\n_Pesan otomatis dikirim dari Aplikasi Manajemen ${namaKopSurat}_`;
-
-    // GUNAKAN FUNGSI SMART ROUTING YANG ANTI BERANAK-PINAK TAB
-    if (openSmartWA) {
-      openSmartWA(slipModal.no_telepon, text);
-    }
-
+    if (openSmartWA) { openSmartWA(slipModal.no_telepon, text); }
     setSlipModal(null)
   }
 
@@ -112,7 +91,6 @@ export function PayrollTab({
       <div className="glass-card">
         <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Data Payroll Karyawan</h2>
-          
           <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div>
               <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Periode Bulan</label>
@@ -169,13 +147,27 @@ export function PayrollTab({
           <h2 className="section-title">Riwayat Bonus Sesuai Periode</h2>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Tanggal</th><th>Karyawan</th><th>Nominal</th></tr></thead>
+              <thead><tr><th>Tanggal</th><th>Karyawan</th><th>Nominal</th><th>Aksi</th></tr></thead>
               <tbody>
                 {bonusManual.map(b => (
                   <tr key={b.id}>
                     <td>{formatTanggal(b.bonus_date)}</td>
                     <td><b>{b.user_nama}</b><div className="text-muted">{b.description}</div></td>
                     <td>{formatRupiah(b.amount)}</td>
+                    <td>
+                      {/* TOMBOL HAPUS BARU */}
+                      <button 
+                        className="btn btn-danger btn-small" 
+                        onClick={() => actions.setDeleteConfirm({ 
+                          show: true, 
+                          table: 'bonus_manual', 
+                          id: b.id, 
+                          label: `Bonus ${b.user_nama} (${formatRupiah(b.amount)})` 
+                        })}
+                      >
+                        Hapus
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -189,12 +181,10 @@ export function PayrollTab({
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '30px', border: '1px solid rgba(255,255,255,0.2)' }}>
             <h2 className="section-title">Setup Slip Gaji: {slipModal.nama}</h2>
-
             <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.05)', padding: '15px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span>Total Hitungan Sistem (Auto)</span><b style={{fontSize: '18px'}}>{formatRupiah(slipModal.totalGaji)}</b></div>
               <div className="text-muted" style={{ fontSize: '12px', lineHeight: '1.5' }}>*Gaji pokok, bonus, dan potongan absen periode {formatMonthYear(payrollMonth, payrollYear)} sudah dihitung oleh sistem. Tambahkan tunjangan/potongan insidental di bawah ini jika diperlukan.</div>
             </div>
-
             <h3 style={{ fontSize: '14px', marginBottom: '12px', fontWeight: 'bold' }}>Tunjangan / Potongan Manual (Opsional)</h3>
             {customItems.map((item, idx) => (
               <div key={idx} className="grid grid-3" style={{ gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
@@ -209,12 +199,10 @@ export function PayrollTab({
                 </div>
               </div>
             ))}
-
             <div className="btn-row" style={{ marginBottom: '30px', marginTop: '10px' }}>
               <button type="button" className="btn btn-secondary btn-small" onClick={() => addCustomItem('tunjangan')}>+ Tambah Tunjangan</button>
               <button type="button" className="btn btn-secondary btn-small" onClick={() => addCustomItem('potongan')}>+ Tambah Potongan</button>
             </div>
-
             <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div>
                 <div style={{fontSize: '12px', color: '#94a3b8', marginBottom: '4px'}}>TAKE HOME PAY</div>
@@ -222,7 +210,6 @@ export function PayrollTab({
               </div>
               <b style={{ fontSize: '24px', color: '#10b981' }}>{formatRupiah(slipModal.totalGaji + customItems.filter(i=>i.type==='tunjangan').reduce((a,b)=>a+Number(b.amount||0),0) - customItems.filter(i=>i.type==='potongan').reduce((a,b)=>a+Number(b.amount||0),0))}</b>
             </div>
-
             <div className="btn-row">
               <button className="btn btn-primary" onClick={handlePrintAndSave} style={{ flex: 1, padding: '14px', fontSize: '15px' }}>🖨️ Cetak PDF</button>
               <button className="btn btn-primary" onClick={handleSendWAAndSave} style={{ flex: 1, padding: '14px', fontSize: '15px', background: '#10b981', borderColor: '#10b981' }}>💬 Kirim WA</button>
@@ -269,7 +256,6 @@ function buildSlipGajiHtml(user, customItems, totalBersih, periode, namaKopSurat
         <div class="logo">${namaKopSurat}</div>
         <div class="title">Slip Gaji Karyawan</div>
       </div>
-
       <div class="info-grid">
         <div class="info-col">
           <div><span class="label">Nama Pegawai:</span> <span class="val">${user.nama}</span></div>
@@ -280,7 +266,6 @@ function buildSlipGajiHtml(user, customItems, totalBersih, periode, namaKopSurat
           <div><span class="label">Penempatan:</span> <span class="val">${rawBranchName || 'Pusat'}</span></div>
         </div>
       </div>
-
       <div class="table-container">
         <div>
           <table>
@@ -307,12 +292,10 @@ function buildSlipGajiHtml(user, customItems, totalBersih, periode, namaKopSurat
           </table>
         </div>
       </div>
-
       <div class="total-box">
         <div class="total-title">TAKE HOME PAY</div>
         <div class="total-amount">${formatRupiah(totalBersih)}</div>
       </div>
-
       <div class="footer">
         <div>
           <p>Penerima,</p>
