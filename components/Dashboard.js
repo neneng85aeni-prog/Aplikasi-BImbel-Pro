@@ -38,6 +38,31 @@ export function Dashboard({ state, actions }) {
           .content-area { flex: 1; overflow-y: auto; padding: 12px !important; }
           .topbar h1 { font-size: 18px !important; }
           .topbar p { display: none !important; }
+          
+          /* KODE BARU: CARD STATISTIK JADI KE SAMPING DAN KECIL DI HP */
+          .compact-stats {
+            display: flex !important;
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            gap: 10px;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .compact-stats::-webkit-scrollbar {
+            display: none;
+          }
+          .compact-stats > div {
+            flex: 0 0 140px !important; 
+            padding: 12px !important;
+          }
+          .compact-stats h3, .compact-stats span, .compact-stats div.text-muted {
+            font-size: 12px !important; 
+          }
+          .compact-stats p, .compact-stats div.text-2xl, .compact-stats b {
+            font-size: 16px !important; 
+          }
         }
         @media (min-width: 769px) {
           .mobile-actions { display: none !important; }
@@ -103,23 +128,23 @@ export function Dashboard({ state, actions }) {
         {activeTab === 'inventory' && <InventoryTab inventoryForm={state.inventoryForm} setInventoryForm={actions.setInventoryForm} inventory={state.inventoryTampil} branches={state.branches} onSubmit={actions.submitInventory} onEdit={actions.startEditInventory} onDelete={actions.deleteInventory} />}
         
         {activeTab === 'payroll' && (
-  <PayrollTab 
-    payrollRows={state.payrollRows} 
-    bonusForm={state.bonusForm} 
-    setBonusForm={actions.setBonusForm} 
-    users={state.usersTampil} 
-    bonusManual={state.bonusManualTampil} 
-    onSubmitBonus={actions.submitBonus} 
-    onCatatGaji={actions.catatPengeluaranGaji} 
-    branches={state.branches} 
-    payrollMonth={state.payrollMonth} 
-    setPayrollMonth={actions.setPayrollMonth} 
-    payrollYear={state.payrollYear} 
-    setPayrollYear={actions.setPayrollYear} 
-    openSmartWA={actions.openSmartWA} 
-    actions={actions} // <--- PASTIKAN BARIS INI ADA
-  />
-)}
+          <PayrollTab 
+            payrollRows={state.payrollRows} 
+            bonusForm={state.bonusForm} 
+            setBonusForm={actions.setBonusForm} 
+            users={state.usersTampil} 
+            bonusManual={state.bonusManualTampil} 
+            onSubmitBonus={actions.submitBonus} 
+            onCatatGaji={actions.catatPengeluaranGaji} 
+            branches={state.branches} 
+            payrollMonth={state.payrollMonth} 
+            setPayrollMonth={actions.setPayrollMonth} 
+            payrollYear={state.payrollYear} 
+            setPayrollYear={actions.setPayrollYear} 
+            openSmartWA={actions.openSmartWA} 
+            actions={actions}
+          />
+        )}
         
         {activeTab === 'laporan' && (
           <LaporanTab 
