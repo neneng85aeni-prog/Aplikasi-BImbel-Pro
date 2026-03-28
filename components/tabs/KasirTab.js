@@ -132,7 +132,7 @@ export function KasirTab({
               <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '14px' }}>
                 <div style={{ flex: 1 }}>
                   <b>{item.nama}</b>
-                  <div style={{ color: '#94a3b8', fontSize: '12px' }}>{item.qty} x {formatRupiah(item.harga)}</div>
+                  <div style={{ color: '##fff', fontSize: '12px' }}>{item.qty} x {formatRupiah(item.harga)}</div>
                 </div>
                 <b style={{ marginRight: '15px' }}>{formatRupiah(item.harga * item.qty)}</b>
                 <button style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', width: '24px', height: '24px', cursor: 'pointer' }} onClick={() => removeFromCart(idx)}>×</button>
