@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatRupiah } from '../../lib/format'
 import { PAYMENT_METHOD_OPTIONS, PAYMENT_STATUS_OPTIONS } from '../../lib/constants'
 
@@ -5,28 +6,54 @@ export function KasirTab({
   branches, selectedBranchId, setSelectedBranchId, siswaOptions, selectedStudent, 
   kasirForm, setKasirForm, studentScanInfo, scanStudentActive, setScanStudentActive, 
   studentScanText, onSelectStudent, onSubmitKasir, onPrintReceiptDesktop, onPrintReceiptAndroid, 
-  onSendReceiptWA, programs, inventoryTampil, showReceiptPopup, setShowReceiptPopup, lastReceipt
+  onSendReceiptWA, inventoryTampil, showReceiptPopup, setShowReceiptPopup, lastReceipt
 }) {
   
-  // Kalkulasi Real-Time untuk Diskon & Total Bayar
-  const isBarang = kasirForm.jenis_transaksi === 'barang';
-  const selectedItem = isBarang ? inventoryTampil.find(i => i.id === kasirForm.inventory_id) : null;
-  const basePrice = isBarang ? (selectedItem?.harga || 0) : (Number(kasirForm.nominal) || 0);
-  const diskon = Number(kasirForm.diskon) || 0;
-  const totalBayar = Math.max(0, basePrice - diskon);
+  const [tempType, setTempType] = useState('barang')
+  const [tempInvId, setTempInvId] = useState('')
+  const [tempNama, setTempNama] = useState('')
+  const [tempHarga, setTempHarga] = useState('')
+  const [tempQty, setTempQty] = useState(1)
+
+  const cart = kasirForm.cart || []
+  const basePrice = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0)
+  const diskon = Number(kasirForm.diskon) || 0
+  const totalBayar = Math.max(0, basePrice - diskon)
+
+  function handleAddToCart() {
+    let newItem = { id: Date.now(), type: tempType, qty: Number(tempQty) }
+    if (tempType === 'barang') {
+      const inv = inventoryTampil.find(i => i.id === tempInvId)
+      if (!inv) return alert('Pilih barang terlebih dahulu!')
+      if (inv.stok < tempQty) return alert(`Stok ${inv.nama} tidak mencukupi! (Sisa: ${inv.stok})`)
+      newItem.nama = inv.nama
+      newItem.harga = inv.harga
+      newItem.inventory_id = inv.id
+    } else {
+      if (!tempNama || !tempHarga) return alert('Nama dan nominal program harus diisi!')
+      newItem.nama = tempNama
+      newItem.harga = Number(tempHarga)
+    }
+    setKasirForm({ ...kasirForm, cart: [...cart, newItem] })
+    setTempInvId(''); setTempNama(''); setTempHarga(''); setTempQty(1);
+  }
+
+  function handleRemoveFromCart(id) {
+    setKasirForm({ ...kasirForm, cart: cart.filter(item => item.id !== id) })
+  }
 
   return (
     <div className="grid gap-lg">
       <div className="glass-card">
         <div className="btn-row" style={{ justifyContent: 'space-between' }}>
-          <h2 className="section-title">Pencatatan Kasir</h2>
+          <h2 className="section-title">Pencatatan Kasir (Multi-Item)</h2>
           <div className="form-row slim"><label>Cabang</label><select value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)}><option value="">Semua cabang</option>{branches.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
         </div>
 
         <div className="grid grid-2">
           {/* KIRI: SCAN SISWA */}
           <div className="glass-card" style={{ padding: '20px' }}>
-            <h3 className="section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>1. Pilih / Scan Siswa</h3>
+            <h3 className="section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>1. Pilih Siswa</h3>
             <div style={{ marginBottom: '16px' }}>
               {!scanStudentActive ? (
                 <button type="button" className="btn btn-secondary" onClick={() => setScanStudentActive(true)} style={{ width: '100%', padding: '12px' }}>📷 Mulai Scan Barcode Siswa</button>
@@ -37,7 +64,6 @@ export function KasirTab({
                 </div>
               )}
             </div>
-            {studentScanText && <div className="text-muted" style={{ fontSize: '13px', marginBottom: '10px' }}>Hasil Scan Terakhir: {studentScanText}</div>}
             
             <div style={{ textAlign: 'center', margin: '15px 0', fontSize: '12px', fontWeight: 'bold' }} className="text-muted">ATAU CARI MANUAL</div>
             
@@ -50,65 +76,89 @@ export function KasirTab({
             
             <div style={{ marginTop: '20px', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent' }}>
               <span className="text-muted" style={{ fontSize: '12px' }}>Status Siswa:</span><br/>
-              <b style={{ fontSize: '15px' }}>{studentScanInfo}</b>
+              <b style={{ fontSize: '15px', color: '#3b82f6' }}>{studentScanInfo}</b>
             </div>
           </div>
 
-          {/* KANAN: FORM TRANSAKSI */}
+          {/* KANAN: KERANJANG & PEMBAYARAN */}
           <div>
-            <form onSubmit={onSubmitKasir} className="glass-card" style={{ padding: '20px', marginBottom: '20px' }}>
-              <h3 className="section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>2. Detail Transaksi</h3>
+            <div className="glass-card" style={{ padding: '20px', marginBottom: '20px', background: 'rgba(0,0,0,0.2)' }}>
+              <h3 className="section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>2. Keranjang Belanja</h3>
               
-              <div className="form-row">
-                <label>Jenis Transaksi</label>
-                <div style={{ display: 'flex', gap: '20px', padding: '10px 0', background: 'transparent' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-                    <input type="radio" name="jenis" value="program" checked={kasirForm.jenis_transaksi === 'program' || !kasirForm.jenis_transaksi} onChange={(e) => setKasirForm({ ...kasirForm, jenis_transaksi: e.target.value })} /> Jasa Program (SPP)
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-                    <input type="radio" name="jenis" value="barang" checked={kasirForm.jenis_transaksi === 'barang'} onChange={(e) => setKasirForm({ ...kasirForm, jenis_transaksi: e.target.value })} /> Beli Barang (Fisik)
-                  </label>
+              {/* TOMBOL PINTAS TAMBAH SPP (HANYA MUNCUL JIKA SISWA DIPILIH) */}
+              {selectedStudent && (
+                <div style={{ marginBottom: '15px' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      if (cart.find(c => c.type === 'spp')) return alert('SPP sudah ada di keranjang!');
+                      setKasirForm({ ...kasirForm, cart: [...cart, { id: Date.now(), type: 'spp', nama: `SPP ${selectedStudent.programNama}`, harga: selectedStudent.nominal, qty: 1 }] })
+                    }}
+                    style={{ width: '100%', padding: '10px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px dashed #3b82f6', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    + Masukkan SPP {selectedStudent.programNama} ({formatRupiah(selectedStudent.nominal)})
+                  </button>
                 </div>
-              </div>
-
-              {kasirForm.jenis_transaksi === 'barang' ? (
-                <div className="form-row">
-                  <label>Pilih Barang (Stok & Harga otomatis)</label>
-                  <select value={kasirForm.inventory_id || ''} onChange={(e) => setKasirForm({ ...kasirForm, inventory_id: e.target.value })} required style={{ background: 'rgba(255,255,255,0.05)', color: 'inherit' }}>
-                    <option value="" style={{ color: '#000' }}>-- Pilih Barang --</option>
-                    {inventoryTampil.map((item) => (
-                      <option key={item.id} value={item.id} disabled={item.stok < 1} style={{ color: '#000' }}>
-                        {item.nama} - {formatRupiah(item.harga)} {item.stok < 1 ? '(HABIS)' : `(Sisa: ${item.stok})`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <>
-                  <div className="form-row"><label>Nominal Dasar Program (Rp)</label><input type="number" value={kasirForm.nominal} onChange={(e) => setKasirForm({ ...kasirForm, nominal: e.target.value })} placeholder={`Saran: ${selectedStudent?.nominal || '0'}`} required /></div>
-                  <div className="form-row"><label>Keterangan Tambahan</label><input type="text" value={kasirForm.keterangan} onChange={(e) => setKasirForm({ ...kasirForm, keterangan: e.target.value })} placeholder="Cth: SPP Bulan Agustus" /></div>
-                </>
               )}
 
-              {/* INPUT DISKON */}
-              <div className="form-row">
-                <label>Diskon / Potongan Harga (Rp)</label>
-                <input type="number" value={kasirForm.diskon} onChange={(e) => setKasirForm({ ...kasirForm, diskon: e.target.value })} placeholder="0 (Kosongkan jika tidak ada diskon)" />
+              {cart.length > 0 ? (
+                <table style={{ width: '100%', marginBottom: '15px', fontSize: '13px' }}>
+                  <thead><tr><th style={{ textAlign: 'left' }}>Item</th><th>Qty</th><th>Harga</th><th>Sub</th><th></th></tr></thead>
+                  <tbody>
+                    {cart.map(c => (
+                      <tr key={c.id}>
+                        <td>{c.nama}</td>
+                        <td style={{ textAlign: 'center' }}>x{c.qty}</td>
+                        <td style={{ textAlign: 'right' }}>{formatRupiah(c.harga)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatRupiah(c.harga * c.qty)}</td>
+                        <td style={{ textAlign: 'center' }}><button type="button" onClick={() => handleRemoveFromCart(c.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>×</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: '8px', marginBottom: '15px', color: '#94a3b8', fontSize: '13px' }}>Keranjang kosong. Tambahkan SPP atau barang di bawah.</div>
+              )}
+
+              {/* FORM TAMBAH ITEM */}
+              <div style={{ padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ display: 'flex', gap: '15px', marginBottom: '10px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '13px' }}><input type="radio" checked={tempType === 'barang'} onChange={() => setTempType('barang')} /> Barang Fisik</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '13px' }}><input type="radio" checked={tempType === 'program'} onChange={() => setTempType('program')} /> Jasa / Lainnya</label>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  {tempType === 'barang' ? (
+                    <select value={tempInvId} onChange={(e) => setTempInvId(e.target.value)} style={{ flex: 2, padding: '8px', background: 'rgba(255,255,255,0.1)', color: 'inherit', border: '1px solid rgba(255,255,255,0.2)' }}>
+                      <option value="" style={{ color: '#000' }}>Pilih Barang...</option>
+                      {inventoryTampil.map((item) => <option key={item.id} value={item.id} disabled={item.stok < 1} style={{ color: '#000' }}>{item.nama} - {formatRupiah(item.harga)} {item.stok < 1 ? '(HABIS)' : `(${item.stok})`}</option>)}
+                    </select>
+                  ) : (
+                    <div style={{ flex: 2, display: 'flex', gap: '5px' }}>
+                      <input type="text" placeholder="Keterangan" value={tempNama} onChange={(e) => setTempNama(e.target.value)} style={{ width: '60%', padding: '8px' }} />
+                      <input type="number" placeholder="Rp" value={tempHarga} onChange={(e) => setTempHarga(e.target.value)} style={{ width: '40%', padding: '8px' }} />
+                    </div>
+                  )}
+                  <input type="number" value={tempQty} onChange={(e) => setTempQty(e.target.value)} min="1" style={{ width: '60px', padding: '8px', textAlign: 'center' }} title="Jumlah" />
+                  <button type="button" onClick={handleAddToCart} className="btn btn-secondary btn-small" style={{ padding: '8px 12px' }}>+ Tambah</button>
+                </div>
+              </div>
+            </div>
+
+            {/* FORM PEMBAYARAN */}
+            <form onSubmit={onSubmitKasir} className="glass-card" style={{ padding: '20px' }}>
+              <h3 className="section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>3. Pembayaran</h3>
+              
+              <div className="grid grid-2">
+                <div className="form-row"><label>Diskon / Potongan (Rp)</label><input type="number" value={kasirForm.diskon} onChange={(e) => setKasirForm({ ...kasirForm, diskon: e.target.value })} placeholder="0" /></div>
+                <div className="form-row"><label>Catatan Opsional</label><input type="text" value={kasirForm.keterangan} onChange={(e) => setKasirForm({ ...kasirForm, keterangan: e.target.value })} placeholder="Cth: Lunas via Transfer" /></div>
               </div>
 
-              {/* KOTAK KALKULASI TOTAL */}
+              {/* KOTAK TOTAL */}
               <div style={{ padding: '15px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '13px' }}>
-                  <span className="text-muted">Subtotal:</span> <b>{formatRupiah(basePrice)}</b>
-                </div>
-                {diskon > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', color: '#ef4444', fontSize: '13px' }}>
-                    <span>Diskon:</span> <b>-{formatRupiah(diskon)}</b>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '18px' }}>
-                  <span>Total Bayar:</span> <b style={{ color: '#10b981' }}>{formatRupiah(totalBayar)}</b>
-                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '13px' }}><span className="text-muted">Total Belanja:</span> <b>{formatRupiah(basePrice)}</b></div>
+                {diskon > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', color: '#ef4444', fontSize: '13px' }}><span>Diskon:</span> <b>-{formatRupiah(diskon)}</b></div>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '18px' }}><span>Total Bayar:</span> <b style={{ color: '#10b981' }}>{formatRupiah(totalBayar)}</b></div>
               </div>
 
               <div className="grid grid-2">
@@ -117,7 +167,7 @@ export function KasirTab({
               </div>
 
               <div className="btn-row" style={{ marginTop: '20px' }}>
-                <button className="btn btn-primary" type="submit" disabled={!selectedStudent} style={{ flex: 1, padding: '14px', fontSize: '15px' }}>💳 Simpan Transaksi</button>
+                <button className="btn btn-primary" type="submit" disabled={!selectedStudent || cart.length === 0} style={{ flex: 1, padding: '14px', fontSize: '15px' }}>💳 Proses Transaksi</button>
               </div>
             </form>
           </div>
@@ -126,31 +176,27 @@ export function KasirTab({
 
       {/* POPUP STRUK KASIR */}
       {showReceiptPopup && lastReceipt && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.2)' }}>
             <div style={{ fontSize: '40px', marginBottom: '10px' }}>✅</div>
             <h2 style={{ margin: '0 0 5px 0', color: '#10b981' }}>Transaksi Berhasil!</h2>
-            <p className="text-muted" style={{ marginBottom: '20px' }}>Pembayaran atas nama <b>{lastReceipt.nama}</b> telah tersimpan di sistem.</p>
+            <p className="text-muted" style={{ marginBottom: '20px', fontSize: '13px' }}>Pembayaran atas nama <b>{lastReceipt.nama}</b> telah tersimpan.</p>
             
             <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '12px', textAlign: 'left', marginBottom: '25px', fontSize: '13px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}><span className="text-muted">Item:</span> <b>{lastReceipt.programNama}</b></div>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}><span className="text-muted">Subtotal:</span> <b>{formatRupiah(lastReceipt.subtotal)}</b></div>
-              {lastReceipt.diskon > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', color: '#ef4444' }}><span>Diskon:</span> <b>-{formatRupiah(lastReceipt.diskon)}</b></div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', marginTop: '5px', paddingTop: '5px', borderTop: '1px dashed rgba(255,255,255,0.1)' }}><span className="text-muted">Total Bayar:</span> <b style={{ color: '#10b981', fontSize: '15px' }}>{formatRupiah(lastReceipt.nominal)}</b></div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', marginTop: '10px' }}><span className="text-muted">Metode:</span> <b>{lastReceipt.metode_bayar.toUpperCase()}</b></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Status:</span> <b style={{ color: lastReceipt.status === 'lunas' ? '#10b981' : '#ef4444' }}>{lastReceipt.status.toUpperCase()}</b></div>
+              {lastReceipt.cart?.map((c, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span>{c.nama} <span className="text-muted">(x{c.qty})</span></span> <b>{formatRupiah(c.harga * c.qty)}</b></div>
+              ))}
+              <div style={{ borderTop: '1px dashed rgba(255,255,255,0.2)', margin: '8px 0' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span className="text-muted">Subtotal:</span> <b>{formatRupiah(lastReceipt.subtotal)}</b></div>
+              {lastReceipt.diskon > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', color: '#ef4444' }}><span>Diskon:</span> <b>-{formatRupiah(lastReceipt.diskon)}</b></div>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.1)' }}><span className="text-muted">Total Bayar:</span> <b style={{ color: '#10b981', fontSize: '16px' }}>{formatRupiah(lastReceipt.nominal)}</b></div>
             </div>
 
-            <h3 style={{ fontSize: '12px', marginBottom: '10px', color: '#94a3b8' }}>Aksi Cetak / Kirim Struk:</h3>
             <div className="btn-row column" style={{ gap: '10px' }}>
-              <button type="button" className="btn btn-primary" onClick={() => onSendReceiptWA()} style={{ background: '#10b981', borderColor: '#10b981', padding: '12px', fontSize: '15px' }}>💬 Kirim via WhatsApp</button>
+              <button type="button" className="btn btn-primary" onClick={() => onSendReceiptWA()} style={{ background: '#10b981', borderColor: '#10b981', padding: '12px' }}>💬 Kirim via WhatsApp</button>
               <div className="btn-row" style={{ width: '100%' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => onPrintReceiptDesktop()} style={{ flex: 1 }}>🖨️ Print Desktop</button>
-                <button type="button" className="btn btn-secondary" onClick={() => onPrintReceiptAndroid()} style={{ flex: 1 }}>📱 Print Android</button>
+                <button type="button" className="btn btn-secondary" onClick={() => onPrintReceiptDesktop()} style={{ flex: 1 }}>🖨️ Desktop</button>
+                <button type="button" className="btn btn-secondary" onClick={() => onPrintReceiptAndroid()} style={{ flex: 1 }}>📱 Android</button>
               </div>
               <button type="button" className="btn btn-danger" onClick={() => setShowReceiptPopup(false)} style={{ marginTop: '10px', background: 'transparent', color: '#ef4444' }}>Tutup & Layani Siswa Lain</button>
             </div>
