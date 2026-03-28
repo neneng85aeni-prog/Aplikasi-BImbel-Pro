@@ -86,6 +86,23 @@ export function Dashboard({ state, actions }) {
         )}
         
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
+      
+        {/* === MODAL KONFIRMASI HAPUS GLOBAL === */}
+        {state.deleteConfirm.show && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div className="glass-card" style={{ width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.2s ease-out' }}>
+              <div style={{ fontSize: '60px', marginBottom: '20px' }}>🗑️</div>
+              <h2 style={{ margin: '0 0 10px 0', fontSize: '20px' }}>Konfirmasi Hapus</h2>
+              <p className="text-muted" style={{ marginBottom: '25px', fontSize: '14px' }}>
+                Apakah Anda yakin ingin menghapus <b style={{ color: '#ef4444' }}>{state.deleteConfirm.label}</b>? Data yang dihapus tidak dapat dikembalikan.
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="btn btn-danger" onClick={actions.confirmDelete} style={{ flex: 1, padding: '12px' }}>Ya, Hapus</button>
+                <button className="btn btn-secondary" onClick={() => actions.setDeleteConfirm({ show: false, table: '', id: '', label: '' })} style={{ flex: 1, padding: '12px' }}>Batal</button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </main>
   )
