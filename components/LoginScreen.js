@@ -18,8 +18,8 @@ export function LoginScreen({ email, password, loginError, loadingLogin, setEmai
         {loginError ? <div className="banner banner-warning">{loginError}</div> : null}
         <button className="btn btn-primary btn-block" onClick={onLogin} disabled={loadingLogin}>{loadingLogin ? 'Memproses...' : 'Login ke Dashboard'}</button>
         <div className="helper-box">
-          <div><b>Akun demo default</b></div>
-          <div>master@gmail.com / 123456</div>
+          <div><b>Pastikan Email dan Password yang dimasukkan sudah Benar</b></div>
+          
         </div>
       </section>
     </main>
