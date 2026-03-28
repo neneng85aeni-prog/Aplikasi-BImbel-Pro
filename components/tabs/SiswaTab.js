@@ -73,9 +73,6 @@ async function openAndroidQrSharePage(item) {
 }
 
 export function SiswaTab({ user, siswaForm, setSiswaForm, siswaTampil, programs, guruOptions, branches, onGenerateBarcode, onSubmit, onReset, onEdit, onDelete, onPrintBarcode, perkembanganForm, setPerkembanganForm, onSubmitPerkembangan, searchSiswa, setSearchSiswa }) {
-  
-  // Gembok paksa "if (user?.akses === 'guru')" SUDAH DIHAPUS!
-  // Sekarang patuh 100% pada Checklist Hak Akses.
 
   return (
     <div className="grid grid-2">
@@ -106,7 +103,6 @@ export function SiswaTab({ user, siswaForm, setSiswaForm, siswaTampil, programs,
       <div className="glass-card">
         <h2 className="section-title">Daftar siswa</h2>
         
-        {/* KOTAK PENCARIAN DITAMBAHKAN DI SINI */}
         <div style={{ marginBottom: '16px' }}>
           <input 
             type="text" 
@@ -117,7 +113,7 @@ export function SiswaTab({ user, siswaForm, setSiswaForm, siswaTampil, programs,
           />
         </div>
 
-        <div className="table-wrap"><table><thead><tr><th>Nama</th><th>Cabang</th><th>Program</th><th>Alamat</th><th>Barcode</th><th>Aksi</th></tr></thead><tbody>{siswaTampil.map((item) => <tr key={item.id}><td><b>{item.nama}</b><div className="text-muted">{item.kelas || '-'} • Guru default: {item.users?.nama || '-'}</div></td><td>{item.branches?.nama || '-'}</td><td>{item.programs?.nama || '-'}</td><td>{item.alamat || '-'}</td><td><code>{item.kode_qr || '-'}</code></td><td><div className="btn-row" style={{ flexWrap: 'wrap' }}><button className="btn btn-secondary btn-small" type="button" onClick={() => onEdit(item)}>Edit</button><button className="btn btn-secondary btn-small" type="button" onClick={() => onPrintBarcode(item)}>Print Desktop</button><button className="btn btn-primary btn-small" type="button" onClick={() => openAndroidQrSharePage(item)}>Print Android</button><button className="btn btn-danger btn-small" type="button" onClick={() => onDelete(item.id)}>Hapus</button></div></td></tr>)}</tbody></table></div>
+        <div className="table-wrap"><table><thead><tr><th>Nama</th><th>Cabang</th><th>Program</th><th>Alamat</th><th>Barcode</th><th>Aksi</th></tr></thead><tbody>{siswaTampil.map((item) => <tr key={item.id}><td><b>{item.nama}</b><div className="text-muted">{item.kelas || '-'} • Guru default: {item.users?.nama || '-'}</div></td><td>{item.branches?.nama || '-'}</td><td>{item.programs?.nama || '-'}</td><td>{item.alamat || '-'}</td><td><code>{item.kode_qr || '-'}</code></td><td><div className="btn-row" style={{ flexWrap: 'wrap' }}><button className="btn btn-secondary btn-small" type="button" onClick={() => onEdit(item)}>Edit</button><button className="btn btn-secondary btn-small" type="button" onClick={() => onPrintBarcode(item)}>Print Desktop</button><button className="btn btn-primary btn-small" type="button" onClick={() => openAndroidQrSharePage(item)}>Print Android</button><button className="btn btn-danger btn-small" type="button" onClick={() => onDelete(item.id, item.nama)}>Hapus</button></div></td></tr>)}</tbody></table></div>
       </div>
     </div>
   )
