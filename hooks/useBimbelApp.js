@@ -90,6 +90,9 @@ export function useBimbelApp() {
   const [showReceiptPopup, setShowReceiptPopup] = useState(false)
   const [editTransaksiForm, setEditTransaksiForm] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, table: '', id: '', label: '' })
+  
+  // STATE MODAL PASSWORD ARSIP (Menyimpan pilihan buffer yang dipilih user)
+  const [archiveState, setArchiveState] = useState({ show: false, forced: false, password: '', loading: false, months: 6 })
 
   const studentScannerRef = useRef(null)
   const employeeScannerRef = useRef(null)
@@ -166,6 +169,26 @@ export function useBimbelApp() {
     setSelectedProgressStudent(selected)
   }, [perkembanganForm.siswa_id, siswaTampil])
 
+  // === RADAR ALARM PAKSA (Tetap Diset 6 Bulan sebagai "Batas Kritis Maksimal") ===
+  useEffect(() => {
+    const hasMaintenanceAccess = user?.menu_permissions?.includes('maintenance') || user?.akses === 'master';
+    if (hasMaintenanceAccess && (pembayaran.length > 0 || perkembanganTampil.length > 0)) {
+      const now = new Date();
+      // Titik potong tetap 6 bulan mundur
+      const cutoff = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+      const cutoffDate = cutoff.toISOString().slice(0, 10);
+      
+      const oldTrans = pembayaran.filter(item => item.tanggal && item.tanggal < cutoffDate);
+      const oldPerk = perkembanganTampil.filter(item => item.tanggal && item.tanggal < cutoffDate);
+      
+      if (oldTrans.length > 0 || oldPerk.length > 0) {
+        setArchiveState(prev => ({ ...prev, show: true, forced: true, months: 6 }))
+      } else {
+        setArchiveState(prev => ({ ...prev, show: false, forced: false }))
+      }
+    }
+  }, [pembayaran, perkembanganTampil, user])
+
   useEffect(() => {
     if (!scanStudentActive) return undefined
     const scanner = new Html5QrcodeScanner('reader-siswa', { qrbox: { width: 220, height: 220 }, fps: 5, rememberLastUsedCamera: true }, false)
@@ -235,7 +258,6 @@ export function useBimbelApp() {
   const deletePengeluaran = (id, label) => setDeleteConfirm({ show: true, table: 'pengeluaran', id, label })
   const deleteInventory = (id, label) => setDeleteConfirm({ show: true, table: 'inventory', id, label })
 
-  // === FUNGSI HAPUS PINTAR (KEMBALIKAN STOK BARANG OTOMATIS) ===
   async function confirmDelete() {
     const { table, id, label } = deleteConfirm
     try {
@@ -264,6 +286,80 @@ export function useBimbelApp() {
     }
   }
 
+  // === FUNGSI MANUAL ARSIP MENERIMA PARAMETER BULAN DINAMIS ===
+  function triggerManualArchive(months = 6) {
+    setArchiveState({ show: true, forced: false, password: '', loading: false, months: months })
+  }
+
+  function downloadBlobFile(blob, fileName) {
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  async function executeArchive() {
+    if (!archiveState.password) return setErrorMsg('Password wajib diisi!')
+    
+    setArchiveState(prev => ({ ...prev, loading: true }))
+    try {
+      // 1. VERIFIKASI PASSWORD
+      await loginWithRpc(user.email, archiveState.password)
+
+      // 2. HITUNG JENDELA WAKTU BERDASARKAN PILIHAN USER (1, 3, atau 6 Bulan)
+      const now = new Date();
+      const bufferMonths = archiveState.months || 6;
+      const cutoff = new Date(now.getFullYear(), now.getMonth() - bufferMonths, 1);
+      const cutoffDate = cutoff.toISOString().slice(0, 10);
+      
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+      const fileLabel = `Sblm_${monthNames[cutoff.getMonth()]}_${cutoff.getFullYear()}`;
+
+      const oldTrans = pembayaranTampil.filter(item => item.tanggal && item.tanggal < cutoffDate);
+      const oldPerk = perkembanganTampil.filter(item => item.tanggal && item.tanggal < cutoffDate);
+
+      if (oldTrans.length === 0 && oldPerk.length === 0) {
+        setArchiveState({ show: false, forced: false, password: '', loading: false, months: 6 })
+        return setMessage(`Aman! Tidak ada data usang sebelum ${formatTanggal(cutoffDate)}.`)
+      }
+
+      // 3. GENERATE & DOWNLOAD CSV TRANSAKSI
+      if (oldTrans.length > 0) {
+        const rowsT = oldTrans.map(item => [ item.tanggal, `"${item.siswa?.nama || '-'}"`, `"${item.keterangan || item.programs?.nama || '-'}"`, item.nominal, item.metode_bayar || 'cash', item.status || 'lunas' ].join(','))
+        const csvContentT = ['Tanggal,Siswa,Keterangan,Nominal,Metode,Status', ...rowsT].join('\n')
+        const blobT = new Blob([csvContentT], { type: 'text/csv;charset=utf-8;' })
+        downloadBlobFile(blobT, `Backup_Transaksi_${fileLabel}.csv`);
+      }
+
+      // Jeda 500ms agar browser tidak memblokir download ganda beruntun
+      await new Promise(res => setTimeout(res, 500));
+
+      // 4. GENERATE & DOWNLOAD CSV PERKEMBANGAN
+      if (oldPerk.length > 0) {
+        const rowsP = oldPerk.map(item => [ item.tanggal, `"${item.siswa?.nama || '-'}"`, `"${item.users?.nama || '-'}"`, `"${(item.catatan || '').replace(/"/g, '""')}"` ].join(','))
+        const csvContentP = ['Tanggal,Siswa,Guru,Catatan', ...rowsP].join('\n')
+        const blobP = new Blob([csvContentP], { type: 'text/csv;charset=utf-8;' })
+        downloadBlobFile(blobP, `Backup_Perkembangan_${fileLabel}.csv`);
+      }
+
+      // 5. HAPUS MASSAL DARI DATABASE
+      setMessage('Memproses penghapusan data dari sistem...')
+      const delPromisesTrans = oldTrans.map(item => removeById('pembayaran', item.id))
+      const delPromisesPerk = oldPerk.map(item => removeById('perkembangan', item.id))
+      await Promise.all([...delPromisesTrans, ...delPromisesPerk])
+
+      setMessage(`${oldTrans.length} Transaksi & ${oldPerk.length} Laporan Perkembangan (${bufferMonths} Bulan) berhasil dibersihkan!`)
+      setArchiveState({ show: false, forced: false, password: '', loading: false, months: 6 })
+      await loadAllData()
+    } catch (error) {
+      const displayError = (error.message === 'Login gagal.' || error.message.includes('Invalid login')) ? 'Password Anda salah!' : error.message
+      setErrorMsg(displayError)
+      setArchiveState(prev => ({ ...prev, loading: false }))
+    }
+  }
+
   function startEditTransaksi(item) { setEditTransaksiForm({ id: item.id, nominal: item.nominal, keterangan: item.keterangan || (item.programs ? item.programs.nama : ''), }) }
   async function submitEditTransaksi(event) { event.preventDefault(); try { const { error } = await updatePembayaran(editTransaksiForm.id, { nominal: Number(editTransaksiForm.nominal), keterangan: editTransaksiForm.keterangan }); if (error) throw error; setEditTransaksiForm(null); setMessage('Transaksi diupdate.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
@@ -282,7 +378,6 @@ export function useBimbelApp() {
   async function submitPerkembangan(event) { event.preventDefault(); try { const payload = validatePerkembanganForm(perkembanganForm); const matched = siswaTampil.find((item) => item.id === payload.siswa_id); if (!matched) throw new Error('Siswa tidak ditemukan.'); await ensureStudentSession(matched, progressInputMode === 'scan' ? 'scan' : 'manual'); const res = await savePerkembangan({ ...payload, guru_id: user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || null) }); if (res.error) throw res.error; setPerkembanganForm((prev) => ({ ...INITIAL_PERKEMBANGAN_FORM, siswa_id: matched.id, guru_handle_id: user?.akses === 'guru' ? user.id : (prev.guru_handle_id || matched.guru_id || ''), tanggal: TODAY() })); setMessage('Perkembangan & kehadiran disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function prosesScanPerkembangan(decodedText) { try { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedProgressStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } await ensureStudentSession(matched, 'scan'); setStudentScanInfo(`Siswa ${matched.nama} discan.`); setMessage(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
-  // SCAN & SELECT SISWA
   async function prosesScanSiswa(decodedText) { 
     const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); 
     if (!matched) { setSelectedStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } 
@@ -291,7 +386,6 @@ export function useBimbelApp() {
     setStudentScanInfo(`Siswa: ${matched.nama}`) 
   }
   
-  // FUNGSI PENTING YANG SEMPAT HILANG
   async function selectProgressStudentById(id, source = 'manual') { 
     try { 
       if (!id) { 
@@ -318,7 +412,6 @@ export function useBimbelApp() {
     setStudentScanInfo(`Siswa: ${matched.nama}`) 
   }
   
-  // === SUBMIT KASIR KERANJANG (CART) ===
   async function submitKasir(event) { 
     event.preventDefault(); 
     try { 
@@ -331,7 +424,6 @@ export function useBimbelApp() {
       const subtotalCart = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
       const totalBayar = Math.max(0, subtotalCart - diskon);
 
-      // Cek dan Potong Stok Barang Fisik
       for (const item of cart) {
         if (item.type === 'barang' && item.inventory_id) {
           const invItem = inventoryTampil.find(i => i.id === item.inventory_id)
@@ -343,12 +435,10 @@ export function useBimbelApp() {
         }
       }
 
-      // Susun Keterangan Transaksi Gabungan
       let details = cart.map(item => `${item.nama} (${item.qty}x)`).join(', ')
       let finalKeterangan = details
       if (kasirForm.keterangan) finalKeterangan += ` | Catatan: ${kasirForm.keterangan}`
 
-      // Ambil Program ID dari keranjang (jika ada SPP) untuk validasi DB
       const sppItem = cart.find(i => i.type === 'spp')
       const safeProgId = sppItem ? (selectedStudent.program_id || null) : null
 
@@ -391,7 +481,6 @@ export function useBimbelApp() {
   async function submitStudentAttendance(event) { event.preventDefault(); try { const payload = validateStudentAttendanceForm(studentAttendanceForm); const res = await saveStudentAttendance({ p_siswa_id: payload.siswa_id, p_guru_handle_id: payload.guru_handle_id, p_tanggal: payload.tanggal, p_mode: payload.mode, p_status: payload.status, p_catatan: payload.catatan, p_sumber: 'manual' }); if (res.error) throw res.error; setStudentAttendanceForm(INITIAL_STUDENT_ATTENDANCE_FORM); setMessage('Absensi siswa disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function submitEmployeeManualAttendance(event) { event.preventDefault(); try { const payload = validateEmployeeManualForm(employeeManualForm); const res = await saveEmployeeManualAttendance({ p_user_id: payload.user_id, p_tanggal: payload.tanggal, p_status: payload.status, p_jam_datang: payload.jam_datang || null, p_jam_pulang: payload.jam_pulang || null, p_catatan: payload.catatan }); if (res.error) throw res.error; setEmployeeManualForm(INITIAL_EMPLOYEE_MANUAL_FORM); setMessage('Absensi manual disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
-  // HTML STRUK UNTUK MULTI-ITEM
   function buildReceiptHtml(data, withAutoPrint = true) { 
     const cartHtml = (data.cart || []).map(c => `<div class="row"><span>${c.nama} (${c.qty}x)</span><span>${formatRupiah(c.harga * c.qty)}</span></div>`).join('');
     const diskonHtml = data.diskon > 0 ? `<div class="row" style="margin-top:5px; border-top:1px dashed #ddd; padding-top:5px"><span class="label">Subtotal:</span><span>${formatRupiah(data.subtotal || 0)}</span></div><div class="row"><span class="label">Diskon:</span><span>-${formatRupiah(data.diskon)}</span></div>` : '';
@@ -403,18 +492,10 @@ export function useBimbelApp() {
   
   function openSmartWA(phone, text) {
     if (!phone) { alert('Maaf, nomor HP belum tersimpan di sistem.'); return; }
-    
-    // Rapikan nomor HP (Ubah 0 jadi 62 dan hilangkan spasi/strip)
     let formattedPhone = phone.startsWith('0') ? '62' + phone.substring(1) : phone;
     formattedPhone = formattedPhone.replace(/\D/g, ''); 
-    
-    // Encode teks pesan agar rapi (enter & spasi terbaca)
     const encodedText = encodeURIComponent(text);
-    
-    // Gunakan Universal Link Resmi WhatsApp API (Paling stabil untuk HP & Laptop)
     const waLink = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedText}`;
-    
-    // Eksekusi buka link
     window.open(waLink, '_blank');
   }
 
@@ -430,14 +511,9 @@ export function useBimbelApp() {
     text += `Status: ${(data.status || 'LUNAS').toUpperCase()}\n\n`;
     
     text += `*Rincian Pembelian:*\n`;
-    (data.cart || []).forEach(c => {
-      text += `- ${c.nama} (${c.qty}x): ${formatRupiah(c.harga * c.qty)}\n`;
-    });
+    (data.cart || []).forEach(c => { text += `- ${c.nama} (${c.qty}x): ${formatRupiah(c.harga * c.qty)}\n`; });
 
-    if (data.diskon > 0) {
-      text += `\nSubtotal: ${formatRupiah(data.subtotal || 0)}\n`;
-      text += `Diskon: -${formatRupiah(data.diskon)}\n`;
-    }
+    if (data.diskon > 0) { text += `\nSubtotal: ${formatRupiah(data.subtotal || 0)}\n`; text += `Diskon: -${formatRupiah(data.diskon)}\n`; }
     
     text += `\n*Total Bayar: ${formatRupiah(data.nominal || 0)}*\n\n`;
     text += `Terima kasih atas kepercayaannya.`;
@@ -482,7 +558,7 @@ export function useBimbelApp() {
       exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode,
       guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats,
       searchSiswa, searchTransaksi, payrollMonth, payrollYear,
-      showReceiptPopup, editTransaksiForm, deleteConfirm
+      showReceiptPopup, editTransaksiForm, deleteConfirm, archiveState
     },
     actions: {
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId,
@@ -496,7 +572,8 @@ export function useBimbelApp() {
       startEditBranch, startEditProgram, startEditUser, startEditSiswa, startEditPengeluaran, startEditInventory, handleDownload, printThermalReceiptDesktop, printThermalReceiptAndroid,
       selectStudentById, selectProgressStudentById, generateStudentBarcodeAction, printStudentBarcode,
       addReviewItem, changeReviewItem, removeReviewItem, printEmployeeReview, togglePermissionDraft, savePermissions, selectAllPermissions, resetPermissionDraft, setQuickExportRange,
-      setSearchSiswa, setSearchTransaksi, deleteTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA, openSmartWA, startEditTransaksi
+      setSearchSiswa, setSearchTransaksi, deleteTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA, openSmartWA, startEditTransaksi,
+      setArchiveState, triggerManualArchive, executeArchive
     },
   }
 }
