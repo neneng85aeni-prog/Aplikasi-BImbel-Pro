@@ -239,11 +239,37 @@ export function useBimbelApp() {
   const deleteInventory = (id, label) => setDeleteConfirm({ show: true, table: 'inventory', id, label })
 
   // FUNGSI EKSEKUSI HAPUS (DIPANGGIL DARI MODAL)
+  // FUNGSI EKSEKUSI HAPUS (DIPANGGIL DARI MODAL)
   async function confirmDelete() {
     const { table, id, label } = deleteConfirm
     try {
+      // === LOGIKA PINTAR: OTOMATIS KEMBALIKAN STOK BARANG ===
+      if (table === 'pembayaran') {
+        const trx = pembayaranTampil.find((t) => t.id === id)
+        
+        // Cek apakah ini transaksi barang fisik (dari keterangannya)
+        if (trx && trx.keterangan && trx.keterangan.startsWith('Pembelian Barang: ')) {
+          
+          // Ambil nama barang (Hapus teks awalan dan teks diskon jika ada)
+          let itemName = trx.keterangan.replace('Pembelian Barang: ', '').trim()
+          if (itemName.includes(' (Diskon')) {
+            itemName = itemName.split(' (Diskon')[0].trim()
+          }
+          
+          // Cari barang tersebut di tabel Inventory
+          const matchedItem = inventoryTampil.find((i) => i.nama === itemName)
+          if (matchedItem) {
+            // Kembalikan stoknya (+1) ke database
+            await updateInventoryStock(matchedItem.id, matchedItem.stok + 1)
+          }
+        }
+      }
+      // =======================================================
+
+      // Lanjut hapus data utamanya
       const { error } = await removeById(table, id)
       if (error) throw error
+      
       setMessage(`Data ${label} berhasil dihapus.`)
       setDeleteConfirm({ show: false, table: '', id: '', label: '' })
       await loadAllData()
