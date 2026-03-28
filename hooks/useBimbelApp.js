@@ -89,6 +89,9 @@ export function useBimbelApp() {
 
   const [showReceiptPopup, setShowReceiptPopup] = useState(false)
   const [editTransaksiForm, setEditTransaksiForm] = useState(null)
+  
+  // STATE BARU UNTUK MODAL HAPUS PINTAR
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, table: '', id: '', label: '' })
 
   const studentScannerRef = useRef(null)
   const employeeScannerRef = useRef(null)
@@ -220,17 +223,35 @@ export function useBimbelApp() {
   function logout() { setUser(null); setEmail(''); setPassword(''); setActiveTab('overview'); clearSession(); setMessage('Logout berhasil.') }
 
   async function submitBranch(event) { event.preventDefault(); try { const res = await upsertBranch(validateBranchForm(branchForm), branchForm.id); if (res.error) throw res.error; setBranchForm(INITIAL_BRANCH_FORM); setMessage('Cabang disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  async function deleteBranch(id) { if (!window.confirm('Hapus cabang ini?')) return; const { error } = await removeById('branches', id); if (error) return setErrorMsg(error.message); setMessage('Cabang dihapus.'); await loadAllData() }
   async function submitProgram(event) { event.preventDefault(); try { const res = await upsertProgram(validateProgramForm(programForm), programForm.id); if (res.error) throw res.error; setProgramForm(INITIAL_PROGRAM_FORM); setMessage('Program disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  async function deleteProgram(id) { if (!window.confirm('Hapus program ini?')) return; const { error } = await removeById('programs', id); if (error) return setErrorMsg(error.message); setMessage('Program dihapus.'); await loadAllData() }
   async function submitUser(event) { event.preventDefault(); try { const payload = validateUserForm({ ...userForm, menu_permissions: userForm.menu_permissions?.length ? userForm.menu_permissions : defaultPermissionsByRole(userForm.akses) }); const res = await upsertUserViaRpc(payload, userForm.id); if (res.error) throw res.error; setUserForm(INITIAL_USER_FORM); setMessage('Karyawan disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  async function deleteUser(id) { if (!window.confirm('Hapus user ini?')) return; const { error } = await removeById('users', id); if (error) return setErrorMsg(error.message); setMessage('User dihapus.'); await loadAllData() }
   
   function generateStudentBarcodeAction() { const branchCode = branches.find((item) => item.id === siswaForm.branch_id)?.kode || selectedBranch?.kode || 'PUSAT'; setSiswaForm((prev) => ({ ...prev, kode_qr: generateStudentBarcode({ nama: prev.nama, kelas: prev.kelas, branchCode }) })) }
   async function submitSiswa(event) { event.preventDefault(); try { const enriched = siswaForm.kode_qr ? siswaForm : { ...siswaForm, kode_qr: generateStudentBarcode({ nama: siswaForm.nama, kelas: siswaForm.kelas, branchCode: branches.find((item) => item.id === siswaForm.branch_id)?.kode }) }; const res = await upsertSiswa(validateSiswaForm(enriched), siswaForm.id); if (res.error) throw res.error; setSiswaForm(INITIAL_SISWA_FORM); setMessage('Siswa disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  async function deleteSiswa(id) { if (!window.confirm('Hapus siswa ini?')) return; const { error } = await removeById('siswa', id); if (error) return setErrorMsg(error.message); setMessage('Siswa dihapus.'); await loadAllData() }
-  async function deleteTransaksi(id) { if (!window.confirm('Hapus transaksi ini?')) return; const { error } = await removeById('pembayaran', id); if (error) return setErrorMsg(error.message); setMessage('Transaksi dihapus.'); await loadAllData() }
   
+  // FUNGSI BARU UNTUK MEMICU MODAL HAPUS
+  const deleteBranch = (id, label) => setDeleteConfirm({ show: true, table: 'branches', id, label })
+  const deleteProgram = (id, label) => setDeleteConfirm({ show: true, table: 'programs', id, label })
+  const deleteUser = (id, label) => setDeleteConfirm({ show: true, table: 'users', id, label })
+  const deleteSiswa = (id, label) => setDeleteConfirm({ show: true, table: 'siswa', id, label })
+  const deleteTransaksi = (id, label) => setDeleteConfirm({ show: true, table: 'pembayaran', id, label })
+  const deletePengeluaran = (id, label) => setDeleteConfirm({ show: true, table: 'pengeluaran', id, label })
+  const deleteInventory = (id, label) => setDeleteConfirm({ show: true, table: 'inventory', id, label })
+
+  // FUNGSI EKSEKUSI HAPUS (DIPANGGIL DARI MODAL)
+  async function confirmDelete() {
+    const { table, id, label } = deleteConfirm
+    try {
+      const { error } = await removeById(table, id)
+      if (error) throw error
+      setMessage(`Data ${label} berhasil dihapus.`)
+      setDeleteConfirm({ show: false, table: '', id: '', label: '' })
+      await loadAllData()
+    } catch (error) {
+      setErrorMsg(error.message)
+    }
+  }
+
   function startEditTransaksi(item) {
     setEditTransaksiForm({
       id: item.id,
@@ -267,14 +288,6 @@ export function useBimbelApp() {
     } catch (error) { setErrorMsg(error.message || 'Gagal menyimpan pengeluaran.') }
   }
 
-  async function deletePengeluaran(id) {
-    if (!window.confirm('Hapus pengeluaran ini? Laporan laba/rugi akan disesuaikan otomatis.')) return
-    const { error } = await removeById('pengeluaran', id)
-    if (error) return setErrorMsg(error.message)
-    setMessage('Pengeluaran dihapus.')
-    await loadAllData()
-  }
-
   function startEditPengeluaran(item) {
     setPengeluaranForm({ id: item.id, tanggal: item.tanggal, kategori: item.kategori, keterangan: item.keterangan || '', nominal: item.nominal, branch_id: item.branch_id || '' })
     setActiveTab('pengeluaran')
@@ -300,14 +313,6 @@ export function useBimbelApp() {
       setMessage('Barang berhasil disimpan.')
       await loadAllData()
     } catch (error) { setErrorMsg(error.message || 'Gagal menyimpan barang.') }
-  }
-
-  async function deleteInventory(id) {
-    if (!window.confirm('Hapus barang ini?')) return
-    const { error } = await removeById('inventory', id)
-    if (error) return setErrorMsg(error.message)
-    setMessage('Barang berhasil dihapus.')
-    await loadAllData()
   }
 
   function startEditInventory(item) {
@@ -437,14 +442,14 @@ export function useBimbelApp() {
       exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode,
       guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats,
       searchSiswa, searchTransaksi, payrollMonth, payrollYear,
-      showReceiptPopup, editTransaksiForm
+      showReceiptPopup, editTransaksiForm, deleteConfirm
     },
     actions: {
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId,
       setBranchForm, setProgramForm, setUserForm, setSiswaForm, setPerkembanganForm, setKasirForm, setBonusForm, setEmployeeManualForm, setStudentAttendanceForm, setReviewForm, setPengeluaranForm, setInventoryForm,
       setPermissionUserId, setPermissionDraft, setScanStudentActive, setScanEmployeeActive, setEmployeeMode, setExportType, setExportDateFrom, setExportDateTo, setProgressInputMode,
       setPayrollMonth, setPayrollYear, setShowReceiptPopup, setEditTransaksiForm, submitEditTransaksi,
-      login, logout, loadAllData,
+      login, logout, loadAllData, setDeleteConfirm, confirmDelete,
       submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa, submitPengeluaran, deletePengeluaran, submitInventory, deleteInventory,
       submitPerkembangan, submitKasir, submitBonus, submitEmployeeManualAttendance, submitStudentAttendance, submitReview,
       prosesScanSiswa, prosesScanPerkembangan, prosesScanKaryawan,
