@@ -51,7 +51,7 @@ export function InventoryTab({ inventoryForm, setInventoryForm, inventory, branc
                   <td>
                     <div className="btn-row">
                       <button className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>Edit</button>
-                      <button className="btn btn-danger btn-small" onClick={() => onDelete(item.id)}>Hapus</button>
+                      <button className="btn btn-danger btn-small" onClick={() => actions.deleteInventory(item.id, item.nama)}>Hapus</button>
                     </div>
                   </td>
                 </tr>
