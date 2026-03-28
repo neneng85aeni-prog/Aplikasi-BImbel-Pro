@@ -98,7 +98,9 @@ export function Dashboard({ state, actions }) {
         {activeTab === 'karyawan' && <KaryawanTab currentUser={state.user} employeeMode={state.employeeMode} setEmployeeMode={actions.setEmployeeMode} scanEmployeeActive={state.scanEmployeeActive} setScanEmployeeActive={actions.setScanEmployeeActive} employeeScanInfo={state.employeeScanInfo} employeeScanText={state.employeeScanText} absensiKaryawan={state.absensiKaryawanTampil} employeeBarcodeIn={state.employeeBarcodeIn} employeeBarcodeOut={state.employeeBarcodeOut} employeeManualForm={state.employeeManualForm} setEmployeeManualForm={actions.setEmployeeManualForm} users={state.usersTampil} onSubmitManual={actions.submitEmployeeManualAttendance} />}
         {activeTab === 'review' && <ReviewsTab reviewForm={state.reviewForm} setReviewForm={actions.setReviewForm} users={state.usersTampil} reviews={state.reviewsTampil} onAddItem={actions.addReviewItem} onChangeItem={actions.changeReviewItem} onRemoveItem={actions.removeReviewItem} onSubmitReview={actions.submitReview} onPrintReview={actions.printEmployeeReview} />}
         {activeTab === 'pengeluaran' && <PengeluaranTab pengeluaranForm={state.pengeluaranForm} setPengeluaranForm={actions.setPengeluaranForm} pengeluaran={state.pengeluaranTampil} branches={state.branches} onSubmit={actions.submitPengeluaran} onEdit={actions.startEditPengeluaran} onDelete={actions.deletePengeluaran} onReset={actions.setPengeluaranForm} />}
-       {activeTab === 'inventory' && <InventoryTab inventoryForm={state.inventoryForm} setInventoryForm={actions.setInventoryForm} inventory={state.inventoryTampil} branches={state.branches} onSubmit={actions.submitInventory} onEdit={actions.startEditInventory} onDelete={actions.deleteInventory} />}
+        
+        {/* INVENTORY TAB FIX */}
+        {activeTab === 'inventory' && <InventoryTab inventoryForm={state.inventoryForm} setInventoryForm={actions.setInventoryForm} inventory={state.inventoryTampil} branches={state.branches} onSubmit={actions.submitInventory} onEdit={actions.startEditInventory} onDelete={actions.deleteInventory} />}
         
         {activeTab === 'payroll' && <PayrollTab payrollRows={state.payrollRows} bonusForm={state.bonusForm} setBonusForm={actions.setBonusForm} users={state.usersTampil} bonusManual={state.bonusManualTampil} onSubmitBonus={actions.submitBonus} onCatatGaji={actions.catatPengeluaranGaji} branches={state.branches} payrollMonth={state.payrollMonth} setPayrollMonth={actions.setPayrollMonth} payrollYear={state.payrollYear} setPayrollYear={actions.setPayrollYear} openSmartWA={actions.openSmartWA} />}
         
@@ -175,8 +177,20 @@ export function Dashboard({ state, actions }) {
                   {state.archiveState.loading ? 'Memproses...' : '📦 Eksekusi'}
                 </button>
                 
-                {/* Tombol batal hanya muncul jika tidak dipaksa (Forced = false) */}
                 {!state.archiveState.forced && (
                   <button 
                     className="btn btn-secondary" 
-                    onClick={() =>
+                    onClick={() => actions.setArchiveState({ show: false, forced: false, password: '', loading: false, months: 6 })} 
+                    style={{ flex: 1, padding: '12px' }}
+                  >
+                    Batal
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    </main>
+  )
+}
