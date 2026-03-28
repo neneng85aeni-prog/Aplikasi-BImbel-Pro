@@ -454,12 +454,19 @@ export function useBimbelApp() {
   
   function openSmartWA(phone, text) {
     if (!phone) { alert('Maaf, nomor HP belum tersimpan di sistem.'); return; }
+    
+    // Rapikan nomor HP (Ubah 0 jadi 62 dan hilangkan spasi/strip)
     let formattedPhone = phone.startsWith('0') ? '62' + phone.substring(1) : phone;
     formattedPhone = formattedPhone.replace(/\D/g, ''); 
+    
+    // Encode teks pesan agar rapi (enter & spasi terbaca)
     const encodedText = encodeURIComponent(text);
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) { window.location.href = `whatsapp://send?phone=${formattedPhone}&text=${encodedText}`; } 
-    else { window.open(`https://web.whatsapp.com/send?phone=${formattedPhone}&text=${encodedText}`, 'BIMBEL_PRO_WA_WEB'); }
+    
+    // Gunakan Universal Link Resmi WhatsApp API (Paling stabil untuk HP & Laptop)
+    const waLink = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedText}`;
+    
+    // Eksekusi buka link
+    window.open(waLink, '_blank');
   }
 
   function sendThermalReceiptWA() { 
