@@ -17,12 +17,12 @@ import { PayrollTab } from './tabs/PayrollTab'
 import { DownloadTab } from './tabs/DownloadTab'
 import { PengeluaranTab } from './tabs/PengeluaranTab'
 import { InventoryTab } from './tabs/InventoryTab'
+import { MaintenanceTab } from './tabs/MaintenanceTab'
 
 export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
   return (
     <main className="app-shell">
-      {/* SUNTIKAN CSS KHUSUS MOBILE (MENU KESAMPING DI ATAS) */}
       <style>{`
         @media (max-width: 768px) {
           .app-shell { display: flex !important; flex-direction: column !important; height: 100vh; overflow: hidden; }
@@ -45,26 +45,22 @@ export function Dashboard({ state, actions }) {
       `}</style>
 
       <aside className="sidebar glass-card">
-        {/* Wrapper header agar di HP nama aplikasi dan tombol sejajar */}
         <div className="sidebar-header">
           <div>
             <div className="eyebrow">Bimbel Pro</div>
             <h1 className="sidebar-title">Final Stable</h1>
             <p className="text-muted hide-on-mobile">{user.nama}<br />{user.email}</p>
           </div>
-          {/* Tombol aksi khusus muncul di HP */}
           <div className="mobile-actions">
             <button className="btn btn-secondary btn-small" onClick={actions.loadAllData}>↻</button>
             <button className="btn btn-danger btn-small" onClick={actions.logout}>Logout</button>
           </div>
         </div>
 
-        {/* Menu Tabs yang akan otomatis ke samping di HP */}
         <div className="nav-stack">
           {visibleTabs.map((tab) => <button key={tab} className={`tab ${activeTab === tab ? 'active' : ''}`} onClick={() => actions.setActiveTab(tab)}>{TAB_LABELS[tab] || tab}</button>)}
         </div>
 
-        {/* Tombol aksi versi Desktop (Akan hilang di HP karena ada class sidebar-actions) */}
         <div className="btn-row column sidebar-actions">
           <button className="btn btn-secondary" onClick={actions.loadAllData}>{loadingData ? 'Refreshing...' : 'Refresh data'}</button>
           <button className="btn btn-danger" onClick={actions.logout}>Logout</button>
@@ -124,8 +120,11 @@ export function Dashboard({ state, actions }) {
         )}
         
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
+        
+        {/* === TAB MAINTENANCE BARU === */}
+        {activeTab === 'maintenance' && <MaintenanceTab pembayaran={state.pembayaranTampil} perkembangan={state.perkembanganTampil} onTriggerArchive={actions.triggerManualArchive} />}
       
-        {/* === MODAL KONFIRMASI HAPUS GLOBAL === */}
+        {/* MODAL KONFIRMASI HAPUS GLOBAL */}
         {state.deleteConfirm.show && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
             <div className="glass-card" style={{ width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.2s ease-out' }}>
@@ -141,7 +140,43 @@ export function Dashboard({ state, actions }) {
             </div>
           </div>
         )}
-      </section>
-    </main>
-  )
-}
+
+        {/* === MODAL INPUT PASSWORD UNTUK ARSIP & HAPUS MASAL === */}
+        {state.archiveState.show && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999 }}>
+            <div className="glass-card" style={{ width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: `1px solid ${state.archiveState.forced ? '#ef4444' : '#eab308'}`, animation: 'fadeIn 0.2s ease-out' }}>
+              <div style={{ fontSize: '50px', marginBottom: '15px' }}>{state.archiveState.forced ? '🚨' : '🔒'}</div>
+              <h2 style={{ margin: '0 0 10px 0', color: state.archiveState.forced ? '#ef4444' : '#eab308' }}>
+                {state.archiveState.forced ? 'Wajib Bersihkan Database!' : 'Otorisasi Required'}
+              </h2>
+              
+              <p style={{ color: '#f8fafc', marginBottom: '20px', fontSize: '14px', lineHeight: '1.5' }}>
+                {state.archiveState.forced 
+                  ? 'Kapasitas database menumpuk! Anda diwajibkan melakukan Backup & Bersihkan (Batas 6 Bulan) sebelum bisa menggunakan aplikasi.' 
+                  : `Sistem akan mem-backup riwayat Transaksi & Perkembangan lama (${state.archiveState.months} Bulan) ke Excel, lalu MENGHAPUSNYA permanen dari server.`}
+                <br/><br/>Masukkan <b>Password Akun Anda</b> untuk mengeksekusi:
+              </p>
+
+              <input 
+                type="password" 
+                placeholder="Masukkan Password..." 
+                value={state.archiveState.password}
+                onChange={(e) => actions.setArchiveState(prev => ({ ...prev, password: e.target.value }))}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center', letterSpacing: '2px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
+              />
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={actions.executeArchive} 
+                  disabled={state.archiveState.loading}
+                  style={{ flex: 1, padding: '12px', background: '#eab308', borderColor: '#eab308', color: '#000', fontWeight: 'bold' }}
+                >
+                  {state.archiveState.loading ? 'Memproses...' : '📦 Eksekusi'}
+                </button>
+                
+                {/* Tombol batal hanya muncul jika tidak dipaksa (Forced = false) */}
+                {!state.archiveState.forced && (
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() =>
