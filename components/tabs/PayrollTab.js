@@ -123,7 +123,7 @@ export function PayrollTab({
                     Tunjangan: {formatRupiah(item.tunjanganTetap + item.tunjanganHadir)}
                   </td>
                   <td>{formatRupiah(item.potongan)}</td>
-                  <td><b style={{color: '#1e293b'}}>{formatRupiah(item.totalGaji)}</b></td>
+                  <td><b style={{color: '#ffffff'}}>{formatRupiah(item.totalGaji)}</b></td>
                   <td><button className="btn btn-primary btn-small" onClick={() => openModal(item)}>Kirim / Cetak</button></td>
                 </tr>
               ))}
