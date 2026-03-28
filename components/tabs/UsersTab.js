@@ -148,7 +148,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
                   <td>
                     <div className="btn-row" style={{ flexWrap: 'nowrap' }}>
                       <button className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>Edit</button>
-                      <button className="btn btn-danger btn-small" onClick={() => onDelete(item.id)}>Hapus</button>
+                      <button className="btn btn-danger btn-small" onClick={() => actions.deleteUser(item.id, item.nama)}>Hapus</button>
                     </div>
                   </td>
                 </tr>
