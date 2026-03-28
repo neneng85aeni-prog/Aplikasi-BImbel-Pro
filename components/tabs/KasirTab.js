@@ -179,10 +179,21 @@ export function KasirTab({
         </div>
 
         <div className="grid grid-2" style={{ gap: '10px', marginBottom: '20px' }}>
-          <select value={kasirForm.metode_bayar} onChange={(e) => setKasirForm({ ...kasirForm, metode_bayar: e.target.value })} style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <option value="cash" style={{ color: '#000' }}>Uang Tunai (Cash)</option>
-            <option value="qris" style={{ color: '#000' }}>Transfer / QRIS</option>
-          </select>
+          // GANTI BAGIAN SELECT METODE BAYAR MENJADI SEPERTI INI:
+<select 
+  value={kasirForm.metode_bayar} 
+  onChange={(e) => setKasirForm({ ...kasirForm, metode_bayar: e.target.value })} 
+  style={{ 
+    background: 'rgba(255,255,255,0.05)', 
+    color: '#ffffff', // Membuat teks menjadi putih terang
+    fontWeight: 'bold', // Membuat font lebih tebal agar jelas
+    fontSize: '15px',
+    padding: '12px'
+  }}
+>
+  <option value="cash" style={{ color: '#000000' }}>Uang Tunai (Cash)</option>
+  <option value="qris" style={{ color: '#000000' }}>Transfer / QRIS</option>
+</select>
           <input type="text" placeholder="Catatan Opsional" value={kasirForm.keterangan} onChange={(e) => setKasirForm({ ...kasirForm, keterangan: e.target.value })} />
         </div>
 
