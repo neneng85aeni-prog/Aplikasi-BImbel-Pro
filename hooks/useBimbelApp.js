@@ -420,8 +420,14 @@ export function useBimbelApp() {
     text += `Nama Siswa: ${data.nama || '-'}\n`;
     text += `Transaksi: ${data.programNama || '-'}\n`;
     text += `Metode Bayar: ${(data.metode_bayar || 'cash').toUpperCase()}\n`;
-    text += `Status: ${(data.status || 'LUNAS').toUpperCase()}\n`;
-    text += `*Nominal: ${formatRupiah(data.nominal || 0)}*\n\n`;
+    text += `Status: ${(data.status || 'LUNAS').toUpperCase()}\n\n`;
+    
+    if (data.diskon > 0) {
+      text += `Subtotal: ${formatRupiah(data.subtotal || 0)}\n`;
+      text += `Diskon: -${formatRupiah(data.diskon)}\n`;
+    }
+    
+    text += `*Total Bayar: ${formatRupiah(data.nominal || 0)}*\n\n`;
     text += `Terima kasih atas kepercayaannya.`;
     
     openSmartWA(data.no_hp, text);
