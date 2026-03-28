@@ -22,17 +22,55 @@ export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
   return (
     <main className="app-shell">
+      {/* SUNTIKAN CSS KHUSUS MOBILE (MENU KESAMPING DI ATAS) */}
+      <style>{`
+        @media (max-width: 768px) {
+          .app-shell { display: flex !important; flex-direction: column !important; height: 100vh; overflow: hidden; }
+          .sidebar { position: sticky; top: 0; z-index: 100; width: 100% !important; border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 12px 16px !important; border-radius: 0 !important; }
+          .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+          .hide-on-mobile { display: none !important; }
+          .nav-stack { display: flex !important; flex-direction: row !important; overflow-x: auto !important; gap: 8px; padding-bottom: 4px; margin: 0 !important; }
+          .nav-stack::-webkit-scrollbar { display: none; }
+          .nav-stack { -ms-overflow-style: none; scrollbar-width: none; }
+          .nav-stack .tab { white-space: nowrap; padding: 8px 16px; border-radius: 20px; text-align: center; flex-shrink: 0; }
+          .sidebar-actions { display: none !important; }
+          .mobile-actions { display: flex !important; gap: 8px; }
+          .content-area { flex: 1; overflow-y: auto; padding: 12px !important; }
+          .topbar h1 { font-size: 18px !important; }
+          .topbar p { display: none !important; }
+        }
+        @media (min-width: 769px) {
+          .mobile-actions { display: none !important; }
+        }
+      `}</style>
+
       <aside className="sidebar glass-card">
-        <div>
-          <div className="eyebrow">Bimbel Pro</div>
-          <h1 className="sidebar-title">Final Stable</h1>
-          <p className="text-muted">{user.nama}<br />{user.email}</p>
+        {/* Wrapper header agar di HP nama aplikasi dan tombol sejajar */}
+        <div className="sidebar-header">
+          <div>
+            <div className="eyebrow">Bimbel Pro</div>
+            <h1 className="sidebar-title">Final Stable</h1>
+            <p className="text-muted hide-on-mobile">{user.nama}<br />{user.email}</p>
+          </div>
+          {/* Tombol aksi khusus muncul di HP */}
+          <div className="mobile-actions">
+            <button className="btn btn-secondary btn-small" onClick={actions.loadAllData}>↻</button>
+            <button className="btn btn-danger btn-small" onClick={actions.logout}>Logout</button>
+          </div>
         </div>
+
+        {/* Menu Tabs yang akan otomatis ke samping di HP */}
         <div className="nav-stack">
           {visibleTabs.map((tab) => <button key={tab} className={`tab ${activeTab === tab ? 'active' : ''}`} onClick={() => actions.setActiveTab(tab)}>{TAB_LABELS[tab] || tab}</button>)}
         </div>
-        <div className="btn-row column"><button className="btn btn-secondary" onClick={actions.loadAllData}>{loadingData ? 'Refreshing...' : 'Refresh data'}</button><button className="btn btn-danger" onClick={actions.logout}>Logout</button></div>
+
+        {/* Tombol aksi versi Desktop (Akan hilang di HP karena ada class sidebar-actions) */}
+        <div className="btn-row column sidebar-actions">
+          <button className="btn btn-secondary" onClick={actions.loadAllData}>{loadingData ? 'Refreshing...' : 'Refresh data'}</button>
+          <button className="btn btn-danger" onClick={actions.logout}>Logout</button>
+        </div>
       </aside>
+
       <section className="content-area">
         <div className="glass-card topbar">
           <div>
@@ -58,7 +96,7 @@ export function Dashboard({ state, actions }) {
         {activeTab === 'permissions' && <PermissionsTab users={state.usersTampil} permissionUserId={state.permissionUserId} setPermissionUserId={actions.setPermissionUserId} permissionDraft={state.permissionDraft} onTogglePermission={actions.togglePermissionDraft} onSavePermissions={actions.savePermissions} onSelectAllPermissions={actions.selectAllPermissions} onResetPermissions={actions.resetPermissionDraft} />}
         {activeTab === 'siswa' && <SiswaTab user={state.user} siswaForm={state.siswaForm} setSiswaForm={actions.setSiswaForm} siswaTampil={state.siswaTampil} programs={state.programs} guruOptions={state.guruOptions} branches={state.branches} onGenerateBarcode={actions.generateStudentBarcodeAction} onSubmit={actions.submitSiswa} onReset={actions.setSiswaForm} onEdit={actions.startEditSiswa} onDelete={actions.deleteSiswa} onPrintBarcode={actions.printStudentBarcode} perkembanganForm={state.perkembanganForm} setPerkembanganForm={actions.setPerkembanganForm} onSubmitPerkembangan={actions.submitPerkembangan} searchSiswa={state.searchSiswa} setSearchSiswa={actions.setSearchSiswa} />}
         
-        {activeTab === 'kasir' && <KasirTab branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} siswaOptions={state.siswaTampil} selectedStudent={state.selectedStudent} kasirForm={state.kasirForm} setKasirForm={actions.setKasirForm} studentScanInfo={state.studentScanInfo} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanText={state.studentScanText} onSelectStudent={actions.selectStudentById} onSubmitKasir={actions.submitKasir} onPrintReceiptDesktop={actions.printThermalReceiptDesktop} onPrintReceiptAndroid={actions.printThermalReceiptAndroid} onSendReceiptWA={actions.sendThermalReceiptWA} programs={state.programs} inventoryTampil={state.inventoryTampil} showReceiptPopup={state.showReceiptPopup} setShowReceiptPopup={actions.setShowReceiptPopup} lastReceipt={state.lastReceipt} />}
+        {activeTab === 'kasir' && <KasirTab branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} siswaOptions={state.siswaTampil} selectedStudent={state.selectedStudent} kasirForm={state.kasirForm} setKasirForm={actions.setKasirForm} studentScanInfo={state.studentScanInfo} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanText={state.studentScanText} onSelectStudent={actions.selectStudentById} onSubmitKasir={actions.submitKasir} onPrintReceiptDesktop={actions.printThermalReceiptDesktop} onPrintReceiptAndroid={actions.printThermalReceiptAndroid} onSendReceiptWA={actions.sendThermalReceiptWA} inventoryTampil={state.inventoryTampil} showReceiptPopup={state.showReceiptPopup} setShowReceiptPopup={actions.setShowReceiptPopup} lastReceipt={state.lastReceipt} />}
         
         {activeTab === 'perkembangan' && <PerkembanganTab user={state.user} perkembanganForm={state.perkembanganForm} setPerkembanganForm={actions.setPerkembanganForm} siswaTampil={state.siswaTampil} guruOptions={state.guruOptions} perkembanganHistory={state.perkembanganHistory} selectedProgressStudent={state.selectedProgressStudent} progressInputMode={state.progressInputMode} setProgressInputMode={actions.setProgressInputMode} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanInfo={state.studentScanInfo} onSelectProgressStudent={actions.selectProgressStudentById} onSubmit={actions.submitPerkembangan} onSendPerkembanganWA={actions.sendPerkembanganWA} perkembanganTampil={state.perkembanganTampil} />}
         {activeTab === 'karyawan' && <KaryawanTab currentUser={state.user} employeeMode={state.employeeMode} setEmployeeMode={actions.setEmployeeMode} scanEmployeeActive={state.scanEmployeeActive} setScanEmployeeActive={actions.setScanEmployeeActive} employeeScanInfo={state.employeeScanInfo} employeeScanText={state.employeeScanText} absensiKaryawan={state.absensiKaryawanTampil} employeeBarcodeIn={state.employeeBarcodeIn} employeeBarcodeOut={state.employeeBarcodeOut} employeeManualForm={state.employeeManualForm} setEmployeeManualForm={actions.setEmployeeManualForm} users={state.usersTampil} onSubmitManual={actions.submitEmployeeManualAttendance} />}
