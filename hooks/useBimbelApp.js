@@ -258,9 +258,11 @@ export function useBimbelApp() {
   const deletePengeluaran = (id, label) => setDeleteConfirm({ show: true, table: 'pengeluaran', id, label })
   const deleteInventory = (id, label) => setDeleteConfirm({ show: true, table: 'inventory', id, label })
 
+  // === FUNGSI HAPUS GLOBAL FIX ===
   async function confirmDelete() {
     const { table, id, label } = deleteConfirm
     try {
+      // 1. Logika khusus jika yang dihapus adalah Transaksi Pembayaran (Kembalikan stok)
       if (table === 'pembayaran') {
         const trx = pembayaranTampil.find((t) => t.id === id)
         if (trx && trx.keterangan) {
@@ -276,10 +278,15 @@ export function useBimbelApp() {
         }
       }
 
+      // 2. Eksekusi Hapus ke Supabase
       const { error } = await removeById(table, id)
       if (error) throw error
+      
+      // 3. Berikan notifikasi & tutup modal
       setMessage(`Data ${label} berhasil dihapus.`)
       setDeleteConfirm({ show: false, table: '', id: '', label: '' })
+      
+      // 4. Refresh data agar tampilan langsung berubah
       await loadAllData()
     } catch (error) {
       setErrorMsg(error.message)
