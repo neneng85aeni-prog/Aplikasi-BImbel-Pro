@@ -160,7 +160,7 @@ export function PayrollTab({
                         className="btn btn-danger btn-small" 
                         onClick={() => actions.setDeleteConfirm({ 
                           show: true, 
-                          table: 'bonus_manual', 
+                          table: 'bonusManual', 
                           id: b.id, 
                           label: `Bonus ${b.user_nama} (${formatRupiah(b.amount)})` 
                         })}
