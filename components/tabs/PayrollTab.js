@@ -4,7 +4,7 @@ import { formatRupiah, formatTanggal, formatMonthYear } from '../../lib/format'
 export function PayrollTab({ 
   payrollRows, bonusForm, setBonusForm, users, bonusManual, onSubmitBonus, 
   onCatatGaji, branches, payrollMonth, setPayrollMonth, payrollYear, setPayrollYear, openSmartWA,
-  actions // Tambahkan actions agar bisa memanggil setDeleteConfirm
+  actions // Pastikan actions diterima untuk memanggil setDeleteConfirm
 }) {
   const [slipModal, setSlipModal] = useState(null)
   const [customItems, setCustomItems] = useState([])
@@ -45,7 +45,9 @@ export function PayrollTab({
     const periodeCetak = formatMonthYear(payrollMonth, payrollYear)
     const branchObj = branches?.find(b => b.id === slipModal.branch_id)
     const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
+
     onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${periodeCetak}`, totalBersih, slipModal.branch_id)
+
     const html = buildSlipGajiHtml(slipModal, customItems, totalBersih, periodeCetak, namaKopSurat, branchObj?.nama)
     const w = window.open('', '_blank', 'width=800,height=900')
     if (!w) { alert('Popup diblokir browser. Izinkan popup untuk mencetak slip.'); return }
@@ -62,11 +64,14 @@ export function PayrollTab({
     const periodeCetak = formatMonthYear(payrollMonth, payrollYear)
     const branchObj = branches?.find(b => b.id === slipModal.branch_id)
     const namaKopSurat = branchObj?.nama || 'BIMBEL PRO PUSAT'
+
     onCatatGaji(`Slip Gaji Karyawan: ${slipModal.nama} - Periode ${periodeCetak} (Via WA)`, totalBersih, slipModal.branch_id)
+
     let text = `*SLIP GAJI - ${namaKopSurat}*\n\n`;
     text += `Nama Pegawai: ${slipModal.nama}\n`;
     text += `Posisi: ${slipModal.akses}\n`;
     text += `Periode: ${periodeCetak}\n\n`;
+    
     text += `*PENDAPATAN:*\n`;
     if (slipModal.gajiPokok) text += `- Gaji Pokok: ${formatRupiah(slipModal.gajiPokok)}\n`;
     if (slipModal.feeSiswa) text += `- Honor Mengajar: ${formatRupiah(slipModal.feeSiswa)}\n`;
@@ -74,15 +79,24 @@ export function PayrollTab({
     if (slipModal.tunjanganHadir) text += `- Tunjangan Hadir: ${formatRupiah(slipModal.tunjanganHadir)}\n`;
     if (slipModal.bonusOtomatis) text += `- Bonus Target: ${formatRupiah(slipModal.bonusOtomatis)}\n`;
     if (slipModal.bonusManual) text += `- Bonus Tambahan: ${formatRupiah(slipModal.bonusManual)}\n`;
-    customItems.filter(i => i.type === 'tunjangan').forEach(i => { text += `- ${i.name || 'Tunjangan Lain'}: ${formatRupiah(i.amount)}\n`; });
+    customItems.filter(i => i.type === 'tunjangan').forEach(i => {
+      text += `- ${i.name || 'Tunjangan Lain'}: ${formatRupiah(i.amount)}\n`;
+    });
+    
     let hasPotongan = false;
     let potText = `\n*POTONGAN:*\n`;
     if (slipModal.potongan) { potText += `- Potongan Absen: ${formatRupiah(slipModal.potongan)}\n`; hasPotongan = true; }
-    customItems.filter(i => i.type === 'potongan').forEach(i => { potText += `- ${i.name || 'Potongan Lain'}: ${formatRupiah(i.amount)}\n`; hasPotongan = true; });
+    customItems.filter(i => i.type === 'potongan').forEach(i => {
+      potText += `- ${i.name || 'Potongan Lain'}: ${formatRupiah(i.amount)}\n`; hasPotongan = true;
+    });
     if (hasPotongan) text += potText;
+
     text += `\n*TAKE HOME PAY: ${formatRupiah(totalBersih)}*\n\n`;
     text += `Terima kasih atas dedikasi dan kerja keras Anda.\n_Pesan otomatis dikirim dari Aplikasi Manajemen ${namaKopSurat}_`;
-    if (openSmartWA) { openSmartWA(slipModal.no_telepon, text); }
+
+    if (openSmartWA) {
+      openSmartWA(slipModal.no_telepon, text);
+    }
     setSlipModal(null)
   }
 
@@ -123,6 +137,7 @@ export function PayrollTab({
                     Tunjangan: {formatRupiah(item.tunjanganTetap + item.tunjanganHadir)}
                   </td>
                   <td>{formatRupiah(item.potongan)}</td>
+                  {/* WARNA TEKS DIUBAH MENJADI PUTIH AGAR KONTRAS */}
                   <td><b style={{color: '#ffffff'}}>{formatRupiah(item.totalGaji)}</b></td>
                   <td><button className="btn btn-primary btn-small" onClick={() => openModal(item)}>Kirim / Cetak</button></td>
                 </tr>
@@ -155,7 +170,7 @@ export function PayrollTab({
                     <td><b>{b.user_nama}</b><div className="text-muted">{b.description}</div></td>
                     <td>{formatRupiah(b.amount)}</td>
                     <td>
-                      {/* TOMBOL HAPUS BARU */}
+                      {/* TOMBOL HAPUS DENGAN TARGET TABEL bonusManual */}
                       <button 
                         className="btn btn-danger btn-small" 
                         onClick={() => actions.setDeleteConfirm({ 
