@@ -6,10 +6,8 @@ export function PengeluaranTab({
   pengeluaranForm, setPengeluaranForm, pengeluaran, branches, 
   onSubmit, onEdit, onDelete, onReset 
 }) {
-  // STATE LOKAL KHUSUS PENCARIAN PENGELUARAN
   const [searchQuery, setSearchQuery] = useState('')
 
-  // LOGIKA FILTER OTOMATIS
   const filteredPengeluaran = pengeluaran.filter(item => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
@@ -23,7 +21,6 @@ export function PengeluaranTab({
   return (
     <div className="grid gap-lg">
       
-      {/* 1. FORM PENGELUARAN */}
       <div className="glass-card">
         <h2 className="section-title">Pencatatan Pengeluaran</h2>
         <form onSubmit={onSubmit}>
@@ -69,12 +66,10 @@ export function PengeluaranTab({
         </form>
       </div>
 
-      {/* 2. TABEL RIWAYAT DENGAN PENCARIAN & SCROLL DI ATAS */}
       <div className="glass-card">
         <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Riwayat Pengeluaran</h2>
           
-          {/* KOLOM PENCARIAN */}
           <input 
             type="text" 
             placeholder="🔍 Cari keterangan / kategori / cabang..." 
@@ -93,7 +88,6 @@ export function PengeluaranTab({
           />
         </div>
         
-        {/* TRIK CSS SCALE-Y UNTUK SCROLLBAR DI ATAS */}
         <div className="table-wrap" style={{ overflowX: 'auto', transform: 'scaleY(-1)', paddingBottom: '10px' }}>
           <table style={{ transform: 'scaleY(-1)' }}>
             <thead>
@@ -114,7 +108,7 @@ export function PengeluaranTab({
                   <td>
                     <div className="btn-row" style={{ flexWrap: 'nowrap' }}>
                       <button type="button" className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>Edit</button>
-                      <button type="button" className="btn btn-danger btn-small" onClick={() => onDelete(item.id)}>Hapus</button>
+                      <button type="button" className="btn btn-danger btn-small" onClick={() => onDelete(item.id, item.keterangan)}>Hapus</button>
                     </div>
                   </td>
                 </tr>
