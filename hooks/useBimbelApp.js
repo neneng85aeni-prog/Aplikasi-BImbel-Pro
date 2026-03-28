@@ -241,25 +241,31 @@ export function useBimbelApp() {
   const deleteInventory = (id, label) => setDeleteConfirm({ show: true, table: 'inventory', id, label })
 
   async function confirmDelete() {
-    const { table, id, label } = deleteConfirm
+    const { table, id, label } = deleteConfirm;
     try {
       if (table === 'pembayaran') {
-        const trx = pembayaranTampil.find((t) => t.id === id)
+        const trx = pembayaranTampil.find((t) => t.id === id);
         if (trx && trx.keterangan) {
           for (const inv of inventoryTampil) {
-            const escapedName = inv.nama.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            const regex = new RegExp(escapedName + '\\s*\\((\\d+)x\\)')
-            const match = trx.keterangan.match(regex)
+            const escapedName = inv.nama.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedName + '\\s*\\((\\d+)x\\)');
+            const match = trx.keterangan.match(regex);
             if (match && match[1]) { await updateInventoryStock(inv.id, inv.stok + parseInt(match[1], 10)) }
           }
         }
       }
-      const { error } = await removeById(table, id)
-      if (error) throw error
-      setMessage(`Data ${label} berhasil dihapus.`)
-      setDeleteConfirm({ show: false, table: '', id: '', label: '' })
-      await loadAllData()
-    } catch (error) { setErrorMsg(error.message) }
+      
+      const { error } = await removeById(table, id);
+      if (error) throw error;
+      
+      setMessage(`Data ${label} berhasil dihapus.`);
+      await loadAllData();
+    } catch (error) { 
+      setErrorMsg(error.message);
+    } finally {
+      // Modal wajib ditutup baik berhasil maupun gagal
+      setDeleteConfirm({ show: false, table: '', id: '', label: '' });
+    }
   }
 
   function triggerManualArchive(months = 6) { setArchiveState({ show: true, forced: false, password: '', loading: false, months: months }) }
@@ -332,8 +338,10 @@ export function useBimbelApp() {
     },
     actions: {
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId, setBranchForm, setProgramForm, setUserForm, setSiswaForm, setPerkembanganForm, setKasirForm, setBonusForm, setEmployeeManualForm, setStudentAttendanceForm, setReviewForm, setPengeluaranForm, setInventoryForm, setPermissionUserId, setPermissionDraft, setScanStudentActive, setScanEmployeeActive, setEmployeeMode, setExportType, setExportDateFrom, setExportDateTo, setProgressInputMode, setPayrollMonth, setPayrollYear, setShowReceiptPopup, setEditTransaksiForm, submitEditTransaksi, login, logout, loadAllData, setDeleteConfirm, confirmDelete, submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa, submitPengeluaran, deletePengeluaran, submitInventory, deleteInventory,
-      // DAFTARKAN FUNGSI HAPUS BONUS DI SINI
-      deleteBonus: (id, label) => setDeleteConfirm({ show: true, table: 'bonus_manual', id, label }),
+      
+      // MENGUNCI NAMA TABEL KE 'employee_bonus_safe' SESUAI SUPABASE MAS HAMZAH
+      deleteBonus: (id, label) => setDeleteConfirm({ show: true, table: 'employee_bonus_safe', id, label }),
+      
       submitPerkembangan, submitKasir, submitBonus, submitEmployeeManualAttendance, submitStudentAttendance, submitReview, prosesScanSiswa, prosesScanPerkembangan, prosesScanKaryawan, startEditBranch, startEditProgram, startEditUser, startEditSiswa, startEditPengeluaran, startEditInventory, handleDownload, printThermalReceiptDesktop, printThermalReceiptAndroid, selectStudentById, selectProgressStudentById, generateStudentBarcodeAction, printStudentBarcode, addReviewItem, changeReviewItem, removeReviewItem, printEmployeeReview, togglePermissionDraft, savePermissions, selectAllPermissions, resetPermissionDraft, setQuickExportRange, setSearchSiswa, setSearchTransaksi, deleteTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA, openSmartWA, startEditTransaksi, setArchiveState, triggerManualArchive, executeArchive
     },
   }
