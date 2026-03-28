@@ -179,7 +179,6 @@ export function KasirTab({
         </div>
 
         <div className="grid grid-2" style={{ gap: '10px', marginBottom: '20px' }}>
-          // GANTI BAGIAN SELECT METODE BAYAR MENJADI SEPERTI INI:
 <select 
   value={kasirForm.metode_bayar} 
   onChange={(e) => setKasirForm({ ...kasirForm, metode_bayar: e.target.value })} 
