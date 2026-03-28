@@ -3,7 +3,7 @@ import { formatRupiah } from '../../lib/format'
 
 export function InventoryTab({ 
   inventoryForm, setInventoryForm, inventory, branches, 
-  onSubmit, onEdit, onDelete, onReset 
+  onSubmit, onEdit, onDelete 
 }) {
   // STATE LOKAL UNTUK PENCARIAN
   const [searchQuery, setSearchQuery] = useState('')
@@ -20,9 +20,14 @@ export function InventoryTab({
 
   // FUNGSI PINTAR PENENTU WARNA INDIKATOR STOK
   const getStockStyle = (stok) => {
-    if (stok < 5) return { bg: 'rgba(239, 68, 68, 0.1)', text: '#ef4444', border: 'rgba(239, 68, 68, 0.3)' } // MERAH (Kritis/Habis)
+    if (stok < 5) return { bg: 'rgba(239, 68, 68, 0.1)', text: '#ef4444', border: 'rgba(239, 68, 68, 0.3)' } // MERAH (Kritis)
     if (stok < 10) return { bg: 'rgba(234, 179, 8, 0.1)', text: '#eab308', border: 'rgba(234, 179, 8, 0.3)' } // KUNING (Menipis)
     return { bg: 'rgba(16, 185, 129, 0.1)', text: '#10b981', border: 'rgba(16, 185, 129, 0.3)' } // HIJAU (Aman)
+  }
+
+  // FUNGSI KHUSUS UNTUK MEMBATALKAN EDIT & MENGOSONGKAN FORM
+  const handleBatalEdit = () => {
+    setInventoryForm({ id: '', nama: '', harga: '', stok: '', branch_id: '' });
   }
 
   return (
@@ -37,7 +42,7 @@ export function InventoryTab({
             </div>
             <div className="form-row">
               <label>Cabang</label>
-              <select value={inventoryForm.branch_id} onChange={(e) => setInventoryForm({ ...inventoryForm, branch_id: e.target.value })} style={{ background: 'rgba(255,255,255,0.05)', color: 'inherit' }}>
+              <select value={inventoryForm.branch_id || ''} onChange={(e) => setInventoryForm({ ...inventoryForm, branch_id: e.target.value })} style={{ background: 'rgba(255,255,255,0.05)', color: 'inherit' }}>
                 <option value="" style={{ color: 'black' }}>Pusat / Semua Cabang</option>
                 {branches.map(b => <option key={b.id} value={b.id} style={{ color: 'black' }}>{b.nama}</option>)}
               </select>
@@ -55,7 +60,11 @@ export function InventoryTab({
           </div>
           <div className="btn-row" style={{ marginTop: '10px' }}>
             <button type="submit" className="btn btn-primary">{inventoryForm.id ? '💾 Update Barang' : '💾 Simpan Barang'}</button>
-            {inventoryForm.id && <button type="button" className="btn btn-secondary" onClick={onReset}>Batal Edit</button>}
+            
+            {/* TOMBOL BATAL EDIT YANG SUDAH DIPERBAIKI */}
+            {inventoryForm.id && (
+              <button type="button" className="btn btn-secondary" onClick={handleBatalEdit}>Batal Edit</button>
+            )}
           </div>
         </form>
       </div>
@@ -96,14 +105,13 @@ export function InventoryTab({
             </thead>
             <tbody>
               {filteredInventory.map((item) => {
-                const stockStyle = getStockStyle(item.stok); // Ambil warna sesuai jumlah stok
+                const stockStyle = getStockStyle(item.stok);
                 return (
                   <tr key={item.id}>
                     <td><b>{item.nama}</b></td>
                     <td>{item.branches?.nama || 'Pusat'}</td>
                     <td>{formatRupiah(item.harga)}</td>
                     <td>
-                      {/* INDIKATOR WARNA STOK DINAMIS (3 LEVEL) */}
                       <span style={{
                         padding: '4px 10px',
                         borderRadius: '12px',
