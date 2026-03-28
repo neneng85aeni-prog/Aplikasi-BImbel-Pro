@@ -102,7 +102,24 @@ export function Dashboard({ state, actions }) {
         {/* INVENTORY TAB FIX */}
         {activeTab === 'inventory' && <InventoryTab inventoryForm={state.inventoryForm} setInventoryForm={actions.setInventoryForm} inventory={state.inventoryTampil} branches={state.branches} onSubmit={actions.submitInventory} onEdit={actions.startEditInventory} onDelete={actions.deleteInventory} />}
         
-        {activeTab === 'payroll' && <PayrollTab payrollRows={state.payrollRows} bonusForm={state.bonusForm} setBonusForm={actions.setBonusForm} users={state.usersTampil} bonusManual={state.bonusManualTampil} onSubmitBonus={actions.submitBonus} onCatatGaji={actions.catatPengeluaranGaji} branches={state.branches} payrollMonth={state.payrollMonth} setPayrollMonth={actions.setPayrollMonth} payrollYear={state.payrollYear} setPayrollYear={actions.setPayrollYear} openSmartWA={actions.openSmartWA} />}
+        {activeTab === 'payroll' && (
+  <PayrollTab 
+    payrollRows={state.payrollRows} 
+    bonusForm={state.bonusForm} 
+    setBonusForm={actions.setBonusForm} 
+    users={state.usersTampil} 
+    bonusManual={state.bonusManualTampil} 
+    onSubmitBonus={actions.submitBonus} 
+    onCatatGaji={actions.catatPengeluaranGaji} 
+    branches={state.branches} 
+    payrollMonth={state.payrollMonth} 
+    setPayrollMonth={actions.setPayrollMonth} 
+    payrollYear={state.payrollYear} 
+    setPayrollYear={actions.setPayrollYear} 
+    openSmartWA={actions.openSmartWA} 
+    actions={actions} // <--- PASTIKAN BARIS INI ADA
+  />
+)}
         
         {activeTab === 'laporan' && (
           <LaporanTab 
