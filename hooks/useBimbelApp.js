@@ -352,59 +352,85 @@ export function useBimbelApp() {
   async function ensureStudentSession(matched, source = 'manual') { const guruHandleId = user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || ''); const attendancePayload = validateStudentAttendanceForm({ ...studentAttendanceForm, siswa_id: matched.id, guru_handle_id: guruHandleId, tanggal: perkembanganForm.tanggal || TODAY(), mode: 'masuk', status: 'hadir', catatan: source === 'scan' ? 'Scan sesi perkembangan' : 'Input sesi perkembangan' }); const attendanceRes = await saveStudentAttendance({ p_siswa_id: attendancePayload.siswa_id, p_guru_handle_id: attendancePayload.guru_handle_id, p_tanggal: attendancePayload.tanggal, p_mode: attendancePayload.mode, p_status: attendancePayload.status, p_catatan: attendancePayload.catatan, p_sumber: source }); if (attendanceRes.error) throw attendanceRes.error; setPerkembanganForm((prev) => ({ ...prev, siswa_id: matched.id, guru_handle_id: attendancePayload.guru_handle_id || '', tanggal: attendancePayload.tanggal })); setStudentAttendanceForm((prev) => ({ ...prev, siswa_id: matched.id, guru_handle_id: attendancePayload.guru_handle_id || '', tanggal: attendancePayload.tanggal, mode: 'masuk', status: 'hadir' })); setSelectedProgressStudent(matched); return attendancePayload }
   async function submitPerkembangan(event) { event.preventDefault(); try { const payload = validatePerkembanganForm(perkembanganForm); const matched = siswaTampil.find((item) => item.id === payload.siswa_id); if (!matched) throw new Error('Siswa tidak ditemukan.'); await ensureStudentSession(matched, progressInputMode === 'scan' ? 'scan' : 'manual'); const res = await savePerkembangan({ ...payload, guru_id: user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || null) }); if (res.error) throw res.error; setPerkembanganForm((prev) => ({ ...INITIAL_PERKEMBANGAN_FORM, siswa_id: matched.id, guru_handle_id: user?.akses === 'guru' ? user.id : (prev.guru_handle_id || matched.guru_id || ''), tanggal: TODAY() })); setMessage('Perkembangan & kehadiran disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function prosesScanPerkembangan(decodedText) { try { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedProgressStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } await ensureStudentSession(matched, 'scan'); setStudentScanInfo(`Siswa ${matched.nama} discan.`); setMessage(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  async function prosesScanSiswa(decodedText) { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, nominal: String(info.nominal || '') }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
-  function selectStudentById(id) { if (!id) return setSelectedStudent(null); const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, nominal: String(info.nominal || '') }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
-  async function selectProgressStudentById(id, source = 'manual') { try { if (!id) { setSelectedProgressStudent(null); setPerkembanganForm((prev) => ({ ...prev, siswa_id: '' })); return } const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; await ensureStudentSession(matched, source); setStudentScanInfo(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
+  // SCAN & SELECT SISWA (Keranjang Dikosongkan di Awal)
+  async function prosesScanSiswa(decodedText) { 
+    const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); 
+    if (!matched) { setSelectedStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } 
+    const info = buildStudentInfo(matched); setSelectedStudent(info); 
+    // PERUBAHAN: Keranjang dimulai dalam keadaan kosong []
+    setKasirForm({ ...INITIAL_KASIR_FORM, cart: [] }); 
+    setStudentScanInfo(`Siswa: ${matched.nama}`) 
+  }
   
+  function selectStudentById(id) { 
+    if (!id) return setSelectedStudent(null); 
+    const matched = siswaTampil.find((item) => item.id === id); 
+    if (!matched) return; 
+    const info = buildStudentInfo(matched); setSelectedStudent(info); 
+    // PERUBAHAN: Keranjang dimulai dalam keadaan kosong []
+    setKasirForm({ ...INITIAL_KASIR_FORM, cart: [] }); 
+    setStudentScanInfo(`Siswa: ${matched.nama}`) 
+  }
+  
+  // === SUBMIT KASIR KERANJANG (CART) ===
   async function submitKasir(event) { 
     event.preventDefault(); 
     try { 
       if (!selectedStudent) throw new Error('Pilih siswa dulu.')
       
+      const cart = kasirForm.cart || []
+      if (cart.length === 0) throw new Error('Keranjang belanja masih kosong!')
+
       const diskon = Number(kasirForm.diskon) || 0;
+      const subtotalCart = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      const totalBayar = Math.max(0, subtotalCart - diskon);
 
-      if (kasirForm.jenis_transaksi === 'barang') {
-        if (!kasirForm.inventory_id) throw new Error('Pilih barang yang akan dibeli.')
-        const selectedItem = inventoryTampil.find(i => i.id === kasirForm.inventory_id)
-        if (!selectedItem) throw new Error('Barang tidak ditemukan.')
-        if (selectedItem.stok < 1) throw new Error('Stok barang habis!')
-        
-        const subtotal = selectedItem.harga;
-        const totalBayar = Math.max(0, subtotal - diskon);
-        let finalKeterangan = `Pembelian Barang: ${selectedItem.nama}`;
-        if (diskon > 0) finalKeterangan += ` (Diskon Rp ${formatRupiah(diskon).replace('Rp', '').trim()})`;
-
-        const stockRes = await updateInventoryStock(selectedItem.id, selectedItem.stok - 1)
-        if (stockRes.error) throw stockRes.error
-        
-        // Obat Error UUID: paksa jadi null jika kosong
-        const safeProgId = selectedStudent.program_id ? selectedStudent.program_id : null;
-
-        const res = await saveKasirTransaction({ p_siswa_id: selectedStudent.id, p_program_id: safeProgId, p_kasir_id: user?.id, p_tanggal: TODAY(), p_nominal: totalBayar, p_status: kasirForm.status, p_metode_bayar: kasirForm.metode_bayar, p_keterangan: finalKeterangan })
-        if (res.error) throw res.error
-        
-        if (kasirForm.status === 'lunas') { 
-          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedBranch?.nama || '-', programNama: `Beli Barang: ${selectedItem.nama}`, guruNama: selectedStudent.guruNama, nominal: totalBayar, subtotal, diskon, metode_bayar: kasirForm.metode_bayar, status: kasirForm.status }) 
-          setShowReceiptPopup(true);
+      // Cek dan Potong Stok Barang Fisik
+      for (const item of cart) {
+        if (item.type === 'barang' && item.inventory_id) {
+          const invItem = inventoryTampil.find(i => i.id === item.inventory_id)
+          if (!invItem) throw new Error(`Barang ${item.nama} tidak ditemukan di gudang.`)
+          if (invItem.stok < item.qty) throw new Error(`Stok ${invItem.nama} tidak mencukupi (Sisa: ${invItem.stok})`)
+          
+          const stockRes = await updateInventoryStock(invItem.id, invItem.stok - item.qty)
+          if (stockRes.error) throw stockRes.error
         }
-      } else {
-        const payload = validateKasirForm(kasirForm, selectedStudent.nominal)
-        const subtotal = payload.nominal;
-        const totalBayar = Math.max(0, subtotal - diskon);
-        let finalKeterangan = payload.keterangan || 'Pembayaran Program';
-        if (diskon > 0) finalKeterangan += ` (Diskon Rp ${formatRupiah(diskon).replace('Rp', '').trim()})`;
+      }
 
-        // Obat Error UUID: paksa jadi null jika kosong
-        const progId = payload.program_id || selectedStudent.program_id;
-        const safeProgId = progId ? progId : null;
+      // Susun Keterangan Transaksi Gabungan
+      let details = cart.map(item => `${item.nama} (${item.qty}x)`).join(', ')
+      let finalKeterangan = details
+      if (kasirForm.keterangan) finalKeterangan += ` | Catatan: ${kasirForm.keterangan}`
 
-        const res = await saveKasirTransaction({ p_siswa_id: selectedStudent.id, p_program_id: safeProgId, p_kasir_id: user?.id, p_tanggal: TODAY(), p_nominal: totalBayar, p_status: payload.status, p_metode_bayar: payload.metode_bayar, p_keterangan: finalKeterangan })
-        if (res.error) throw res.error
-        
-        if (payload.status === 'lunas') { 
-          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedBranch?.nama || '-', programNama: selectedStudent.programNama, guruNama: selectedStudent.guruNama, nominal: totalBayar, subtotal, diskon, metode_bayar: payload.metode_bayar, status: payload.status }) 
-          setShowReceiptPopup(true);
-        }
+      // PERUBAHAN: Cek apakah SPP benar-benar dibeli di keranjang ini
+      const sppItem = cart.find(i => i.type === 'spp')
+      const safeProgId = sppItem ? (selectedStudent.program_id || null) : null
+
+      const res = await saveKasirTransaction({ 
+        p_siswa_id: selectedStudent.id, 
+        p_program_id: safeProgId, // Jika murni beli buku, ini akan jadi NULL (Aman)
+        p_kasir_id: user?.id, 
+        p_tanggal: TODAY(), 
+        p_nominal: totalBayar, 
+        p_status: kasirForm.status, 
+        p_metode_bayar: kasirForm.metode_bayar, 
+        p_keterangan: finalKeterangan 
+      })
+      if (res.error) throw res.error
+      
+      if (kasirForm.status === 'lunas') { 
+        setLastReceipt({ 
+          nama: selectedStudent.nama, 
+          no_hp: selectedStudent.no_hp, 
+          cabang: selectedBranch?.nama || '-', 
+          cart: [...cart], 
+          nominal: totalBayar, 
+          subtotal: subtotalCart,
+          diskon,
+          metode_bayar: kasirForm.metode_bayar, 
+          status: kasirForm.status 
+        }) 
+        setShowReceiptPopup(true);
       }
       
       setMessage('Transaksi berhasil disimpan.')
