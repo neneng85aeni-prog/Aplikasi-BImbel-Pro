@@ -38,7 +38,8 @@ export function LaporanTab({
                   <td>
                     <div className="btn-row">
                       <button className="btn btn-secondary btn-small" onClick={() => onStartEditTransaksi(item)}>Edit</button>
-                      <button className="btn btn-danger btn-small" onClick={() => onDeleteTransaksi(item.id)}>Hapus</button>
+                      {/* PEMBARUAN: Memanggil onDeleteTransaksi dengan Nama Siswa / Keterangan Transaksi */}
+                      <button className="btn btn-danger btn-small" onClick={() => onDeleteTransaksi(item.id, item.keterangan || item.siswa?.nama || 'Transaksi ini')}>Hapus</button>
                     </div>
                   </td>
                 </tr>
