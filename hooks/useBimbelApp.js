@@ -335,29 +335,48 @@ export function useBimbelApp() {
     try { 
       if (!selectedStudent) throw new Error('Pilih siswa dulu.')
       
+      const diskon = Number(kasirForm.diskon) || 0;
+
       if (kasirForm.jenis_transaksi === 'barang') {
         if (!kasirForm.inventory_id) throw new Error('Pilih barang yang akan dibeli.')
         const selectedItem = inventoryTampil.find(i => i.id === kasirForm.inventory_id)
         if (!selectedItem) throw new Error('Barang tidak ditemukan.')
         if (selectedItem.stok < 1) throw new Error('Stok barang habis!')
         
+        const subtotal = selectedItem.harga;
+        const totalBayar = Math.max(0, subtotal - diskon);
+        let finalKeterangan = `Pembelian Barang: ${selectedItem.nama}`;
+        if (diskon > 0) finalKeterangan += ` (Diskon Rp ${formatRupiah(diskon).replace('Rp', '').trim()})`;
+
         const stockRes = await updateInventoryStock(selectedItem.id, selectedItem.stok - 1)
         if (stockRes.error) throw stockRes.error
         
-        const res = await saveKasirTransaction({ p_siswa_id: selectedStudent.id, p_program_id: selectedStudent.program_id || null, p_kasir_id: user?.id, p_tanggal: TODAY(), p_nominal: selectedItem.harga, p_status: kasirForm.status, p_metode_bayar: kasirForm.metode_bayar, p_keterangan: `Pembelian Barang: ${selectedItem.nama}` })
+        // Obat Error UUID: paksa jadi null jika kosong
+        const safeProgId = selectedStudent.program_id ? selectedStudent.program_id : null;
+
+        const res = await saveKasirTransaction({ p_siswa_id: selectedStudent.id, p_program_id: safeProgId, p_kasir_id: user?.id, p_tanggal: TODAY(), p_nominal: totalBayar, p_status: kasirForm.status, p_metode_bayar: kasirForm.metode_bayar, p_keterangan: finalKeterangan })
         if (res.error) throw res.error
         
         if (kasirForm.status === 'lunas') { 
-          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedBranch?.nama || '-', programNama: `Beli Barang: ${selectedItem.nama}`, guruNama: selectedStudent.guruNama, nominal: selectedItem.harga, metode_bayar: kasirForm.metode_bayar, status: kasirForm.status }) 
+          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedBranch?.nama || '-', programNama: `Beli Barang: ${selectedItem.nama}`, guruNama: selectedStudent.guruNama, nominal: totalBayar, subtotal, diskon, metode_bayar: kasirForm.metode_bayar, status: kasirForm.status }) 
           setShowReceiptPopup(true);
         }
       } else {
         const payload = validateKasirForm(kasirForm, selectedStudent.nominal)
-        const res = await saveKasirTransaction({ p_siswa_id: selectedStudent.id, p_program_id: payload.program_id || selectedStudent.program_id, p_kasir_id: user?.id, p_tanggal: TODAY(), p_nominal: payload.nominal, p_status: payload.status, p_metode_bayar: payload.metode_bayar, p_keterangan: payload.keterangan })
+        const subtotal = payload.nominal;
+        const totalBayar = Math.max(0, subtotal - diskon);
+        let finalKeterangan = payload.keterangan || 'Pembayaran Program';
+        if (diskon > 0) finalKeterangan += ` (Diskon Rp ${formatRupiah(diskon).replace('Rp', '').trim()})`;
+
+        // Obat Error UUID: paksa jadi null jika kosong
+        const progId = payload.program_id || selectedStudent.program_id;
+        const safeProgId = progId ? progId : null;
+
+        const res = await saveKasirTransaction({ p_siswa_id: selectedStudent.id, p_program_id: safeProgId, p_kasir_id: user?.id, p_tanggal: TODAY(), p_nominal: totalBayar, p_status: payload.status, p_metode_bayar: payload.metode_bayar, p_keterangan: finalKeterangan })
         if (res.error) throw res.error
         
         if (payload.status === 'lunas') { 
-          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedBranch?.nama || '-', programNama: selectedStudent.programNama, guruNama: selectedStudent.guruNama, nominal: payload.nominal, metode_bayar: payload.metode_bayar, status: payload.status }) 
+          setLastReceipt({ nama: selectedStudent.nama, no_hp: selectedStudent.no_hp, cabang: selectedBranch?.nama || '-', programNama: selectedStudent.programNama, guruNama: selectedStudent.guruNama, nominal: totalBayar, subtotal, diskon, metode_bayar: payload.metode_bayar, status: payload.status }) 
           setShowReceiptPopup(true);
         }
       }
@@ -374,7 +393,10 @@ export function useBimbelApp() {
   async function submitStudentAttendance(event) { event.preventDefault(); try { const payload = validateStudentAttendanceForm(studentAttendanceForm); const res = await saveStudentAttendance({ p_siswa_id: payload.siswa_id, p_guru_handle_id: payload.guru_handle_id, p_tanggal: payload.tanggal, p_mode: payload.mode, p_status: payload.status, p_catatan: payload.catatan, p_sumber: 'manual' }); if (res.error) throw res.error; setStudentAttendanceForm(INITIAL_STUDENT_ATTENDANCE_FORM); setMessage('Absensi siswa disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function submitEmployeeManualAttendance(event) { event.preventDefault(); try { const payload = validateEmployeeManualForm(employeeManualForm); const res = await saveEmployeeManualAttendance({ p_user_id: payload.user_id, p_tanggal: payload.tanggal, p_status: payload.status, p_jam_datang: payload.jam_datang || null, p_jam_pulang: payload.jam_pulang || null, p_catatan: payload.catatan }); if (res.error) throw res.error; setEmployeeManualForm(INITIAL_EMPLOYEE_MANUAL_FORM); setMessage('Absensi manual disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
-  function buildReceiptHtml(data, withAutoPrint = true) { return `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000;background:#fff}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:15px;font-weight:bold}.help{margin-top:12px;font-size:11px;color:#374151;background:#f8fafc;padding:8px;border-radius:8px}@media print{body{width:72mm}}</style></head><body ${withAutoPrint ? 'onload="window.print();window.close()"' : ''}><div class="receipt"><div class="center big">BIMBEL PRO</div><div class="center">Bukti Pembayaran</div><div class="line"></div><div><span class="label">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class="label">Cabang:</span> ${data.cabang || '-'}</div><div><span class="label">Nama siswa:</span> ${data.nama || '-'}</div><div><span class="label">Transaksi:</span> ${data.programNama || '-'}</div><div><span class="label">Guru default:</span> ${data.guruNama || '-'}</div><div><span class="label">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class="label">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class="row"><span class="label">Nominal</span><span>${formatRupiah(data.nominal || 0)}</span></div><div class="line"></div><div class="center">Terima kasih</div>${withAutoPrint ? '' : '<div class="help"><b>Cara print di Android:</b><br/>1. Buka menu browser<br/>2. Pilih Share atau bagikan ke aplikasi printer bluetooth<br/>3. Jika aplikasi printer mendukung print halaman web/teks, gunakan halaman ini sebagai sumber cetak.</div>'}</div></body></html>` }
+  function buildReceiptHtml(data, withAutoPrint = true) { 
+    const diskonHtml = data.diskon > 0 ? `<div class="row"><span class="label">Subtotal:</span><span>${formatRupiah(data.subtotal || 0)}</span></div><div class="row"><span class="label">Diskon:</span><span>-${formatRupiah(data.diskon)}</span></div>` : '';
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000;background:#fff}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:15px;font-weight:bold}.help{margin-top:12px;font-size:11px;color:#374151;background:#f8fafc;padding:8px;border-radius:8px}@media print{body{width:72mm}}</style></head><body ${withAutoPrint ? 'onload="window.print();window.close()"' : ''}><div class="receipt"><div class="center big">BIMBEL PRO</div><div class="center">Bukti Pembayaran</div><div class="line"></div><div><span class="label">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class="label">Cabang:</span> ${data.cabang || '-'}</div><div><span class="label">Nama siswa:</span> ${data.nama || '-'}</div><div><span class="label">Transaksi:</span> ${data.programNama || '-'}</div><div><span class="label">Guru default:</span> ${data.guruNama || '-'}</div><div><span class="label">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class="label">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class="line"></div>${diskonHtml}<div class="row"><span class="label">Total Bayar:</span><span class="big">${formatRupiah(data.nominal || 0)}</span></div><div class="line"></div><div class="center">Terima kasih</div>${withAutoPrint ? '' : '<div class="help"><b>Cara print di Android:</b><br/>1. Buka menu browser<br/>2. Pilih Share atau bagikan ke aplikasi printer bluetooth<br/>3. Jika aplikasi printer mendukung print halaman web/teks, gunakan halaman ini sebagai sumber cetak.</div>'}</div></body></html>` 
+  }
   function printThermalReceiptDesktop(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank', 'width=420,height=700'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, true)); w.document.close() }
   function printThermalReceiptAndroid(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, false)); w.document.close() }
   
