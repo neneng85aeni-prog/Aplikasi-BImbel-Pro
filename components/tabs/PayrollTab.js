@@ -175,7 +175,7 @@ export function PayrollTab({
                         className="btn btn-danger btn-small" 
                         onClick={() => actions.setDeleteConfirm({ 
                           show: true, 
-                          table: 'employee_bonus_safe', // <--- UBAH JADI NAMA TABEL ASLI INI
+                          table: 'employee_bonus', // <--- UBAH JADI NAMA TABEL ASLI INI
                           id: b.id, 
                           label: `Bonus ${b.user_nama} (${formatRupiah(b.amount)})` 
                          })}
