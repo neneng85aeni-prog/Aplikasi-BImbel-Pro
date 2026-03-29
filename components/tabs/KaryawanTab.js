@@ -5,7 +5,6 @@ import { EMPLOYEE_STATUS_OPTIONS } from '../../lib/constants'
 // FUNGSI BANTUAN: Menyulap teks waktu berantakan (ISO 8601) menjadi jam rapi (09:31)
 function formatJam(timeString) {
   if (!timeString) return '--:--';
-  // Jika formatnya sudah pendek dari input manual (misal: "09:00"), biarkan saja
   if (timeString.length === 5 && timeString.includes(':')) return timeString;
   
   try {
@@ -25,9 +24,9 @@ export function KaryawanTab({
   // STATE LOKAL UNTUK PENCARIAN & PAGINASI
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 10 // Bisa diubah jika ingin menampilkan lebih banyak/sedikit baris per halaman
+  const ITEMS_PER_PAGE = 10 
 
-  // 1. CEK HAK AKSES (Bisa lihat semua atau hanya punya sendiri)
+  // 1. CEK HAK AKSES
   const canViewAll = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('permissions')
 
   // 2. FILTER BERDASARKAN USER YANG LOGIN
@@ -49,7 +48,7 @@ export function KaryawanTab({
     );
   })
 
-  // 4. POTONG DATA UNTUK PAGINASI (HALAMAN) AGAR TIDAK BERAT
+  // 4. POTONG DATA UNTUK PAGINASI (HALAMAN)
   const totalPages = Math.ceil(finalFilteredAbsensi.length / ITEMS_PER_PAGE);
   const paginatedData = finalFilteredAbsensi.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -62,12 +61,17 @@ export function KaryawanTab({
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset kembali ke halaman 1 setiap kali mengetik pencarian
+    setCurrentPage(1); 
   };
 
   return (
     <div className="grid gap-lg">
-      <div className="grid grid-2">
+      
+      {/* PERBAIKAN MOBILE-FRIENDLY DI SINI:
+        Menggunakan gridTemplateColumns auto-fit agar di HP otomatis jadi 1 kolom, 
+        sedangkan di Laptop tetap 2 kolom. 
+      */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         
         {/* 1. SCANNER ABSENSI */}
         <div className="glass-card">
@@ -78,7 +82,8 @@ export function KaryawanTab({
           
           <div className="form-row">
             <label>Pilih Mode Absen:</label>
-            <div style={{ display: 'flex', gap: '20px', padding: '10px 0' }}>
+            {/* flexWrap agar tombol mode absen tidak saling bertumpuk di layar sempit */}
+            <div style={{ display: 'flex', gap: '15px', padding: '10px 0', flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
                 <input type="radio" value="datang" checked={employeeMode === 'datang'} onChange={(e) => setEmployeeMode(e.target.value)} /> Masuk / Datang
               </label>
@@ -95,8 +100,8 @@ export function KaryawanTab({
               </button>
             ) : (
               <div className="scanner-container">
-                <div id="reader-karyawan" style={{ width: '100%' }}></div>
-                <button className="btn btn-danger" onClick={() => setScanEmployeeActive(false)} style={{ width: '100%', marginTop: '10px' }}>Tutup Kamera</button>
+                <div id="reader-karyawan" style={{ width: '100%', borderRadius: '12px', overflow: 'hidden' }}></div>
+                <button className="btn btn-danger" onClick={() => setScanEmployeeActive(false)} style={{ width: '100%', marginTop: '10px', padding: '12px' }}>Tutup Kamera</button>
               </div>
             )}
           </div>
@@ -126,7 +131,7 @@ export function KaryawanTab({
                   {users.map((u) => <option key={u.id} value={u.id} style={{ color: 'black' }}>{u.nama} ({u.akses})</option>)}
                 </select>
               </div>
-              <div className="grid grid-2">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px' }}>
                 <div className="form-row">
                   <label>Tanggal</label>
                   <input type="date" value={employeeManualForm.tanggal} onChange={(e) => setEmployeeManualForm({ ...employeeManualForm, tanggal: e.target.value })} required />
@@ -155,7 +160,7 @@ export function KaryawanTab({
 
       {/* 3. TABEL RIWAYAT DENGAN FILTER & PENCARIAN & PAGINASI */}
       <div className="glass-card">
-        <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Riwayat Absensi Karyawan</h2>
           
           <input 
@@ -196,7 +201,6 @@ export function KaryawanTab({
                       color: item.status === 'hadir' ? '#10b981' : '#ef4444'
                     }}>{item.status.toUpperCase()}</span>
                   </td>
-                  {/* PENGGUNAAN FUNGSI FORMAT JAM DI SINI */}
                   <td>{formatJam(item.jam_datang)} s/d {formatJam(item.jam_pulang)}</td>
                 </tr>
               ))}
@@ -213,7 +217,7 @@ export function KaryawanTab({
 
         {/* KONTROL PAGINASI */}
         {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', gap: '15px' }}>
             <span style={{ fontSize: '13px', color: '#94a3b8' }}>
               Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, finalFilteredAbsensi.length)} dari {finalFilteredAbsensi.length} data
             </span>
@@ -226,7 +230,7 @@ export function KaryawanTab({
                 ◀ Prev
               </button>
               <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '14px', fontWeight: 'bold' }}>
-                Halaman {currentPage} / {totalPages}
+                {currentPage} / {totalPages}
               </div>
               <button 
                 className="btn btn-secondary btn-small" 
