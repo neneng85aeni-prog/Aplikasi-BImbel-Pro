@@ -2,13 +2,30 @@ import { useState } from 'react'
 import { formatTanggal } from '../../lib/format'
 import { EMPLOYEE_STATUS_OPTIONS } from '../../lib/constants'
 
+// FUNGSI BANTUAN: Menyulap teks waktu berantakan (ISO 8601) menjadi jam rapi (09:31)
+function formatJam(timeString) {
+  if (!timeString) return '--:--';
+  // Jika formatnya sudah pendek dari input manual (misal: "09:00"), biarkan saja
+  if (timeString.length === 5 && timeString.includes(':')) return timeString;
+  
+  try {
+    const date = new Date(timeString);
+    if (isNaN(date.getTime())) return timeString; 
+    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return timeString;
+  }
+}
+
 export function KaryawanTab({ 
   currentUser, employeeMode, setEmployeeMode, scanEmployeeActive, setScanEmployeeActive, 
   employeeScanInfo, employeeScanText, absensiKaryawan, employeeManualForm, setEmployeeManualForm, 
   users, onSubmitManual 
 }) {
-  // STATE LOKAL UNTUK PENCARIAN
+  // STATE LOKAL UNTUK PENCARIAN & PAGINASI
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10 // Bisa diubah jika ingin menampilkan lebih banyak/sedikit baris per halaman
 
   // 1. CEK HAK AKSES (Bisa lihat semua atau hanya punya sendiri)
   const canViewAll = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('permissions')
@@ -26,11 +43,27 @@ export function KaryawanTab({
     return (
       item.users?.nama?.toLowerCase().includes(q) ||
       item.status?.toLowerCase().includes(q) ||
-      item.jam_datang?.includes(q) ||
-      item.jam_pulang?.includes(q) ||
+      (item.jam_datang && item.jam_datang.includes(q)) ||
+      (item.jam_pulang && item.jam_pulang.includes(q)) ||
       formatTanggal(item.tanggal).toLowerCase().includes(q)
     );
   })
+
+  // 4. POTONG DATA UNTUK PAGINASI (HALAMAN) AGAR TIDAK BERAT
+  const totalPages = Math.ceil(finalFilteredAbsensi.length / ITEMS_PER_PAGE);
+  const paginatedData = finalFilteredAbsensi.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset kembali ke halaman 1 setiap kali mengetik pencarian
+  };
 
   return (
     <div className="grid gap-lg">
@@ -76,7 +109,7 @@ export function KaryawanTab({
           </div>
         </div>
 
-        {/* 2. INPUT MANUAL (ADMIN/MASTER) */}
+        {/* 2. INPUT MANUAL (ADMIN/MASTER SAJA) */}
         {(currentUser?.akses === 'master' || currentUser?.akses === 'admin') && (
           <div className="glass-card">
             <h2 className="section-title">Input Absensi Manual</h2>
@@ -120,7 +153,7 @@ export function KaryawanTab({
 
       </div>
 
-      {/* 3. TABEL RIWAYAT DENGAN FILTER & PENCARIAN */}
+      {/* 3. TABEL RIWAYAT DENGAN FILTER & PENCARIAN & PAGINASI */}
       <div className="glass-card">
         <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Riwayat Absensi Karyawan</h2>
@@ -129,7 +162,7 @@ export function KaryawanTab({
             type="text" 
             placeholder="🔍 Cari nama / status / tanggal..." 
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearch}
             style={{ 
               padding: '10px 14px', 
               borderRadius: '8px', 
@@ -149,7 +182,7 @@ export function KaryawanTab({
               <tr><th>Tanggal</th><th>Karyawan</th><th>Status</th><th>Jam Masuk - Pulang</th></tr>
             </thead>
             <tbody>
-              {finalFilteredAbsensi.map((item) => (
+              {paginatedData.map((item) => (
                 <tr key={item.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatTanggal(item.tanggal)}</td>
                   <td><b>{item.users?.nama || '-'}</b></td>
@@ -163,10 +196,11 @@ export function KaryawanTab({
                       color: item.status === 'hadir' ? '#10b981' : '#ef4444'
                     }}>{item.status.toUpperCase()}</span>
                   </td>
-                  <td>{item.jam_datang || '--:--'} s/d {item.jam_pulang || '--:--'}</td>
+                  {/* PENGGUNAAN FUNGSI FORMAT JAM DI SINI */}
+                  <td>{formatJam(item.jam_datang)} s/d {formatJam(item.jam_pulang)}</td>
                 </tr>
               ))}
-              {finalFilteredAbsensi.length === 0 && (
+              {paginatedData.length === 0 && (
                 <tr>
                   <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
                     {searchQuery ? 'Data pencarian tidak ditemukan.' : 'Belum ada data absensi untuk ditampilkan.'}
@@ -176,6 +210,34 @@ export function KaryawanTab({
             </tbody>
           </table>
         </div>
+
+        {/* KONTROL PAGINASI */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+              Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, finalFilteredAbsensi.length)} dari {finalFilteredAbsensi.length} data
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="btn btn-secondary btn-small" 
+                disabled={currentPage === 1} 
+                onClick={() => goToPage(currentPage - 1)}
+              >
+                ◀ Prev
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '14px', fontWeight: 'bold' }}>
+                Halaman {currentPage} / {totalPages}
+              </div>
+              <button 
+                className="btn btn-secondary btn-small" 
+                disabled={currentPage === totalPages} 
+                onClick={() => goToPage(currentPage + 1)}
+              >
+                Next ▶
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>
