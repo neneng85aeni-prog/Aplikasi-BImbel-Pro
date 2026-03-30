@@ -6,6 +6,11 @@ export function PerkembanganTab({
   scanStudentActive, setScanStudentActive, studentScanInfo, onSelectProgressStudent, 
   onSubmit, onSendPerkembanganWA, perkembanganTampil 
 }) {
+  
+  // === GEMBOK UTAMA ===
+  // Mengecek apakah karyawan yang login punya hak akses ke Menu Siswa ('siswa')
+  const canAccessSiswaMenu = user?.akses === 'master' || user?.akses === 'admin' || user?.menu_permissions?.includes('siswa');
+
   return (
     <div className="grid gap-lg">
       <div className="grid grid-2">
@@ -87,12 +92,16 @@ export function PerkembanganTab({
                     <td><b>{item.siswa?.nama || '-'}</b><br/><span className="text-muted" style={{fontSize: '11px'}}>Guru: {item.users?.nama || '-'}</span></td>
                     <td><div style={{ maxHeight: '60px', overflowY: 'auto', fontSize: '13px' }}>{item.catatan}</div></td>
                     <td>
-                      {/* GEMBOK PINTAR: Cek apakah yang login BUKAN guru */}
-                      {user?.akses !== 'guru' ? (
+                      
+                      {/* === INI BAGIAN YANG DILINDUNGI === */}
+                      {/* Hanya muncul jika user punya izin Menu Siswa */}
+                      {canAccessSiswaMenu ? (
                         <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981', borderColor: '#10b981', whiteSpace: 'nowrap' }}>Kirim WA 💬</button>
                       ) : (
                         <span className="text-muted" style={{ fontSize: '12px', fontStyle: 'italic' }}>-</span>
                       )}
+                      {/* ================================== */}
+
                     </td>
                   </tr>
                 ))}
