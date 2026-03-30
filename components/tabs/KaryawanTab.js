@@ -105,7 +105,8 @@ export function KaryawanTab({
     }
 
     const rows = finalFilteredAbsensi.map(item => {
-      const ketWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang).join(' & ');
+      // ==== PENYESUAIAN DI SINI ====
+      const ketWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang, item.users?.batas_jam_masuk, item.users?.batas_jam_pulang).join(' & ');
       const statusKet = ketWaktu ? ` (${ketWaktu})` : '';
       
       return [
@@ -267,7 +268,8 @@ export function KaryawanTab({
             </thead>
             <tbody>
               {paginatedData.map((item) => {
-                const keteranganWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang);
+                // ==== PENYESUAIAN DI SINI ====
+                const keteranganWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang, item.users?.batas_jam_masuk, item.users?.batas_jam_pulang);
 
                 return (
                   <tr key={item.id}>
