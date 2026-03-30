@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { formatTanggal } from '../../lib/format'
 import { EMPLOYEE_STATUS_OPTIONS } from '../../lib/constants'
 
-
 // FUNGSI BANTUAN 1: Format ISO jadi Jam (09:31)
 function formatJam(timeString) {
   if (!timeString) return '--:--';
@@ -54,6 +53,10 @@ export function KaryawanTab({
 
   // 1. CEK HAK AKSES
   const canViewAll = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('permissions')
+  
+  // === PENYESUAIAN HAK AKSES INPUT MANUAL ===
+  // Cek apakah user punya hak akses menu 'users' (Daftar/Input Karyawan)
+  const canInputManual = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('users')
 
   // 2. FILTER BERDASARKAN USER YANG LOGIN
   const roleFilteredAbsensi = (absensiKaryawan || []).filter(item => {
@@ -97,7 +100,7 @@ export function KaryawanTab({
     setCurrentPage(1); 
   };
 
-  // FUNGSI BARU: DOWNLOAD CSV BERDASARKAN FILTER
+  // FUNGSI DOWNLOAD CSV BERDASARKAN FILTER
   const downloadFilteredData = () => {
     if (finalFilteredAbsensi.length === 0) {
       alert("Tidak ada data untuk di-download pada periode ini.");
@@ -105,7 +108,6 @@ export function KaryawanTab({
     }
 
     const rows = finalFilteredAbsensi.map(item => {
-      // ==== PENYESUAIAN DI SINI ====
       const ketWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang, item.users?.batas_jam_masuk, item.users?.batas_jam_pulang).join(' & ');
       const statusKet = ketWaktu ? ` (${ketWaktu})` : '';
       
@@ -173,8 +175,8 @@ export function KaryawanTab({
           </div>
         </div>
 
-        {/* 2. INPUT MANUAL (ADMIN/MASTER SAJA) */}
-        {(currentUser?.akses === 'master' || currentUser?.akses === 'admin') && (
+        {/* 2. INPUT MANUAL (SESUAI HAK AKSES) */}
+        {canInputManual && (
           <div className="glass-card">
             <h2 className="section-title">Input Absensi Manual</h2>
             <form onSubmit={onSubmitManual}>
@@ -268,7 +270,6 @@ export function KaryawanTab({
             </thead>
             <tbody>
               {paginatedData.map((item) => {
-                // ==== PENYESUAIAN DI SINI ====
                 const keteranganWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang, item.users?.batas_jam_masuk, item.users?.batas_jam_pulang);
 
                 return (
