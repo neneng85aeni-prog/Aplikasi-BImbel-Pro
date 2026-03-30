@@ -2,12 +2,6 @@ import { useState } from 'react'
 import { formatTanggal } from '../../lib/format'
 import { EMPLOYEE_STATUS_OPTIONS } from '../../lib/constants'
 
-// ==========================================
-// SETTING STANDAR JAM KERJA BIMBEL
-// Ubah angka ini sesuai jam operasional cabang
-const BATAS_JAM_MASUK = '08:00'; 
-const BATAS_JAM_PULANG = '17:00';
-// ==========================================
 
 // FUNGSI BANTUAN 1: Format ISO jadi Jam (09:31)
 function formatJam(timeString) {
@@ -22,16 +16,20 @@ function formatJam(timeString) {
   }
 }
 
-// FUNGSI BANTUAN 2: Cek Keterlambatan
-function getKeteranganWaktu(jamDatang, jamPulang) {
+// FUNGSI BANTUAN 2: Cek Keterlambatan (DINAMIS PER USER)
+function getKeteranganWaktu(jamDatang, jamPulang, batasMasuk, batasPulang) {
   const datang = jamDatang ? formatJam(jamDatang) : null;
   const pulang = jamPulang ? formatJam(jamPulang) : null;
   let keterangan = [];
 
-  if (datang && datang !== '--:--' && datang > BATAS_JAM_MASUK) {
+  // Ambil 5 karakter pertama HH:MM agar format konsisten dengan database
+  const limitMasuk = batasMasuk ? batasMasuk.substring(0, 5) : '08:00';
+  const limitPulang = batasPulang ? batasPulang.substring(0, 5) : '17:00';
+
+  if (datang && datang !== '--:--' && datang > limitMasuk) {
     keterangan.push('Telat Masuk');
   }
-  if (pulang && pulang !== '--:--' && pulang < BATAS_JAM_PULANG) {
+  if (pulang && pulang !== '--:--' && pulang < limitPulang) {
     keterangan.push('Pulang Cepat');
   }
   return keterangan;
