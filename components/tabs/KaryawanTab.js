@@ -2,18 +2,39 @@ import { useState } from 'react'
 import { formatTanggal } from '../../lib/format'
 import { EMPLOYEE_STATUS_OPTIONS } from '../../lib/constants'
 
-// FUNGSI BANTUAN: Menyulap teks waktu berantakan (ISO 8601) menjadi jam rapi (09:31)
+// ==========================================
+// SETTING STANDAR JAM KERJA BIMBEL
+// Ubah angka ini sesuai jam operasional cabang
+const BATAS_JAM_MASUK = '08:00'; 
+const BATAS_JAM_PULANG = '17:00';
+// ==========================================
+
+// FUNGSI BANTUAN 1: Format ISO jadi Jam (09:31)
 function formatJam(timeString) {
   if (!timeString) return '--:--';
   if (timeString.length === 5 && timeString.includes(':')) return timeString;
-  
   try {
     const date = new Date(timeString);
     if (isNaN(date.getTime())) return timeString; 
-    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
   } catch {
     return timeString;
   }
+}
+
+// FUNGSI BANTUAN 2: Cek Keterlambatan
+function getKeteranganWaktu(jamDatang, jamPulang) {
+  const datang = jamDatang ? formatJam(jamDatang) : null;
+  const pulang = jamPulang ? formatJam(jamPulang) : null;
+  let keterangan = [];
+
+  if (datang && datang !== '--:--' && datang > BATAS_JAM_MASUK) {
+    keterangan.push('Telat Masuk');
+  }
+  if (pulang && pulang !== '--:--' && pulang < BATAS_JAM_PULANG) {
+    keterangan.push('Pulang Cepat');
+  }
+  return keterangan;
 }
 
 export function KaryawanTab({ 
@@ -21,10 +42,17 @@ export function KaryawanTab({
   employeeScanInfo, employeeScanText, absensiKaryawan, employeeManualForm, setEmployeeManualForm, 
   users, onSubmitManual 
 }) {
-  // STATE LOKAL UNTUK PENCARIAN & PAGINASI
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+
   const [searchQuery, setSearchQuery] = useState('')
+  const [startDate, setStartDate] = useState(firstDay)
+  const [endDate, setEndDate] = useState(lastDay)
   const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 10 
+  
+  // PERMINTAAN: 5 ROWS PER HALAMAN
+  const ITEMS_PER_PAGE = 5 
 
   // 1. CEK HAK AKSES
   const canViewAll = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('permissions')
@@ -35,20 +63,27 @@ export function KaryawanTab({
     return item.user_id === currentUser?.id;
   })
 
-  // 3. FILTER PENCARIAN PINTAR
+  // 3. FILTER PERIODE & PENCARIAN PINTAR
   const finalFilteredAbsensi = roleFilteredAbsensi.filter(item => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      item.users?.nama?.toLowerCase().includes(q) ||
-      item.status?.toLowerCase().includes(q) ||
-      (item.jam_datang && item.jam_datang.includes(q)) ||
-      (item.jam_pulang && item.jam_pulang.includes(q)) ||
-      formatTanggal(item.tanggal).toLowerCase().includes(q)
-    );
+    const itemDate = item.tanggal;
+    if (startDate && itemDate < startDate) return false;
+    if (endDate && itemDate > endDate) return false;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const isMatch = (
+        item.users?.nama?.toLowerCase().includes(q) ||
+        item.status?.toLowerCase().includes(q) ||
+        (item.jam_datang && item.jam_datang.includes(q)) ||
+        (item.jam_pulang && item.jam_pulang.includes(q)) ||
+        formatTanggal(item.tanggal).toLowerCase().includes(q)
+      );
+      if (!isMatch) return false;
+    }
+    return true;
   })
 
-  // 4. POTONG DATA UNTUK PAGINASI (HALAMAN)
+  // 4. POTONG DATA UNTUK PAGINASI
   const totalPages = Math.ceil(finalFilteredAbsensi.length / ITEMS_PER_PAGE);
   const paginatedData = finalFilteredAbsensi.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -64,9 +99,39 @@ export function KaryawanTab({
     setCurrentPage(1); 
   };
 
+  // FUNGSI BARU: DOWNLOAD CSV BERDASARKAN FILTER
+  const downloadFilteredData = () => {
+    if (finalFilteredAbsensi.length === 0) {
+      alert("Tidak ada data untuk di-download pada periode ini.");
+      return;
+    }
+
+    const rows = finalFilteredAbsensi.map(item => {
+      const ketWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang).join(' & ');
+      const statusKet = ketWaktu ? ` (${ketWaktu})` : '';
+      
+      return [
+        item.tanggal,
+        `"${item.users?.nama || '-'}"`,
+        `"${item.status.toUpperCase()}${statusKet}"`,
+        `${formatJam(item.jam_datang)} s/d ${formatJam(item.jam_pulang)}`,
+        `"${item.catatan || '-'}"`
+      ].join(',')
+    });
+
+    const csvContent = ['Tanggal,Karyawan,Status & Pelanggaran Waktu,Jam Masuk - Pulang,Catatan'].join(',') + '\n' + rows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Laporan_Absensi_${startDate}_sd_${endDate}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="grid gap-lg">
-      
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         
         {/* 1. SCANNER ABSENSI */}
@@ -143,7 +208,6 @@ export function KaryawanTab({
                 </div>
               </div>
 
-              {/* === KOLOM JAM YANG HILANG SUDAH DIKEMBALIKAN DI SINI === */}
               {employeeManualForm.status === 'hadir' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px', marginBottom: '15px' }}>
                   <div className="form-row" style={{ margin: 0 }}>
@@ -156,7 +220,6 @@ export function KaryawanTab({
                   </div>
                 </div>
               )}
-              {/* ======================================================== */}
 
               <div className="form-row">
                 <label>Catatan</label>
@@ -169,27 +232,34 @@ export function KaryawanTab({
 
       </div>
 
-      {/* 3. TABEL RIWAYAT DENGAN FILTER & PENCARIAN & PAGINASI */}
+      {/* 3. TABEL RIWAYAT DENGAN FILTER PERIODE, PENCARIAN & DOWNLOAD */}
       <div className="glass-card">
-        <div className="btn-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Riwayat Absensi Karyawan</h2>
           
-          <input 
-            type="text" 
-            placeholder="🔍 Cari nama / status / tanggal..." 
-            value={searchQuery}
-            onChange={handleSearch}
-            style={{ 
-              padding: '10px 14px', 
-              borderRadius: '8px', 
-              width: '100%', 
-              maxWidth: '350px',
-              border: '1px solid rgba(255,255,255,0.2)', 
-              background: 'rgba(255,255,255,0.05)', 
-              color: 'inherit',
-              fontSize: '14px'
-            }}
-          />
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px' }} />
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>s/d</span>
+              <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px' }} />
+            </div>
+
+            <input 
+              type="text" 
+              placeholder="🔍 Cari nama/status..." 
+              value={searchQuery}
+              onChange={handleSearch}
+              style={{ 
+                padding: '10px 14px', borderRadius: '8px', width: '200px',
+                border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', 
+                color: 'inherit', fontSize: '13px'
+              }}
+            />
+
+            <button className="btn btn-primary" onClick={downloadFilteredData} style={{ padding: '10px 14px', fontSize: '13px' }}>
+              ⬇️ Download CSV
+            </button>
+          </div>
         </div>
 
         <div className="table-wrap">
@@ -198,27 +268,40 @@ export function KaryawanTab({
               <tr><th>Tanggal</th><th>Karyawan</th><th>Status</th><th>Jam Masuk - Pulang</th></tr>
             </thead>
             <tbody>
-              {paginatedData.map((item) => (
-                <tr key={item.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{formatTanggal(item.tanggal)}</td>
-                  <td><b>{item.users?.nama || '-'}</b></td>
-                  <td>
-                    <span style={{ 
-                      fontWeight: 'bold', 
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      background: item.status === 'hadir' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                      color: item.status === 'hadir' ? '#10b981' : '#ef4444'
-                    }}>{item.status.toUpperCase()}</span>
-                  </td>
-                  <td>{formatJam(item.jam_datang)} s/d {formatJam(item.jam_pulang)}</td>
-                </tr>
-              ))}
+              {paginatedData.map((item) => {
+                const keteranganWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang);
+
+                return (
+                  <tr key={item.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatTanggal(item.tanggal)}</td>
+                    <td><b>{item.users?.nama || '-'}</b></td>
+                    <td>
+                      <span style={{ 
+                        fontWeight: 'bold', padding: '4px 8px', borderRadius: '6px', fontSize: '12px',
+                        background: item.status === 'hadir' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        color: item.status === 'hadir' ? '#10b981' : '#ef4444'
+                      }}>{item.status.toUpperCase()}</span>
+                    </td>
+                    <td>
+                      {formatJam(item.jam_datang)} s/d {formatJam(item.jam_pulang)}
+                      
+                      {keteranganWaktu.length > 0 && (
+                        <div style={{ marginTop: '6px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          {keteranganWaktu.map((ket, i) => (
+                            <span key={i} style={{ background: '#ef4444', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
+                              ⚠️ {ket}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
               {paginatedData.length === 0 && (
                 <tr>
                   <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
-                    {searchQuery ? 'Data pencarian tidak ditemukan.' : 'Belum ada data absensi untuk ditampilkan.'}
+                    {searchQuery || startDate || endDate ? 'Data pencarian / periode tidak ditemukan.' : 'Belum ada data absensi untuk ditampilkan.'}
                   </td>
                 </tr>
               )}
@@ -226,28 +309,19 @@ export function KaryawanTab({
           </table>
         </div>
 
-        {/* KONTROL PAGINASI */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', gap: '15px' }}>
             <span style={{ fontSize: '13px', color: '#94a3b8' }}>
               Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, finalFilteredAbsensi.length)} dari {finalFilteredAbsensi.length} data
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className="btn btn-secondary btn-small" 
-                disabled={currentPage === 1} 
-                onClick={() => goToPage(currentPage - 1)}
-              >
+              <button className="btn btn-secondary btn-small" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>
                 ◀ Prev
               </button>
               <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '14px', fontWeight: 'bold' }}>
                 {currentPage} / {totalPages}
               </div>
-              <button 
-                className="btn btn-secondary btn-small" 
-                disabled={currentPage === totalPages} 
-                onClick={() => goToPage(currentPage + 1)}
-              >
+              <button className="btn btn-secondary btn-small" disabled={currentPage === totalPages} onClick={() => goToPage(currentPage + 1)}>
                 Next ▶
               </button>
             </div>
