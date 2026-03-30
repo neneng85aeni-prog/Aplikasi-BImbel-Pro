@@ -9,7 +9,8 @@ export function PerkembanganTab({
   
   // === GEMBOK UTAMA ===
   // Mengecek apakah karyawan yang login punya hak akses ke Menu Siswa ('siswa')
-  const canAccessSiswaMenu = user?.akses === 'master' || user?.akses === 'admin' || user?.menu_permissions?.includes('siswa');
+  // Master & Admin tidak otomatis dapat akses, WAJIB punya centang menu 'siswa'
+const canAccessSiswaMenu = user?.menu_permissions?.includes('siswa');
 
   return (
     <div className="grid gap-lg">
