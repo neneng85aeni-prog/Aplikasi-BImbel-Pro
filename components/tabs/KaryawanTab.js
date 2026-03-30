@@ -67,10 +67,6 @@ export function KaryawanTab({
   return (
     <div className="grid gap-lg">
       
-      {/* PERBAIKAN MOBILE-FRIENDLY DI SINI:
-        Menggunakan gridTemplateColumns auto-fit agar di HP otomatis jadi 1 kolom, 
-        sedangkan di Laptop tetap 2 kolom. 
-      */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         
         {/* 1. SCANNER ABSENSI */}
@@ -82,7 +78,6 @@ export function KaryawanTab({
           
           <div className="form-row">
             <label>Pilih Mode Absen:</label>
-            {/* flexWrap agar tombol mode absen tidak saling bertumpuk di layar sempit */}
             <div style={{ display: 'flex', gap: '15px', padding: '10px 0', flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
                 <input type="radio" value="datang" checked={employeeMode === 'datang'} onChange={(e) => setEmployeeMode(e.target.value)} /> Masuk / Datang
@@ -147,6 +142,22 @@ export function KaryawanTab({
                   </select>
                 </div>
               </div>
+
+              {/* === KOLOM JAM YANG HILANG SUDAH DIKEMBALIKAN DI SINI === */}
+              {employeeManualForm.status === 'hadir' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+                  <div className="form-row" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '12px' }}>Jam Datang (Opsional)</label>
+                    <input type="time" value={employeeManualForm.jam_datang || ''} onChange={(e) => setEmployeeManualForm({ ...employeeManualForm, jam_datang: e.target.value })} style={{ width: '100%' }} />
+                  </div>
+                  <div className="form-row" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '12px' }}>Jam Pulang (Opsional)</label>
+                    <input type="time" value={employeeManualForm.jam_pulang || ''} onChange={(e) => setEmployeeManualForm({ ...employeeManualForm, jam_pulang: e.target.value })} style={{ width: '100%' }} />
+                  </div>
+                </div>
+              )}
+              {/* ======================================================== */}
+
               <div className="form-row">
                 <label>Catatan</label>
                 <input type="text" value={employeeManualForm.catatan} onChange={(e) => setEmployeeManualForm({ ...employeeManualForm, catatan: e.target.value })} placeholder="Cth: Lupa scan / Sakit" />
