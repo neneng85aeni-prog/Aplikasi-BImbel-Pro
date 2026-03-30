@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Banner } from './ui/Banner'
 import { StatCard } from './ui/StatCard'
 import { TAB_LABELS } from '../lib/constants'
@@ -21,6 +22,19 @@ import { MaintenanceTab } from './tabs/MaintenanceTab'
 
 export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
+
+  // === FITUR AUTO-REDIRECT TAB ===
+  // Jika tab yang sedang aktif saat ini TIDAK ADA di daftar izin tab user, 
+  // langsung lempar user ke tab urutan pertama yang mereka miliki aksesnya.
+  useEffect(() => {
+    if (visibleTabs && visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
+      actions.setActiveTab(visibleTabs[0]);
+    }
+  }, [activeTab, visibleTabs, actions]);
+
+  // Cek apakah user punya izin melihat Overview untuk memunculkan Kartu Statistik
+  const canSeeStats = visibleTabs.includes('overview');
+
   return (
     <main className="app-shell">
       <style>{`
@@ -101,11 +115,14 @@ export function Dashboard({ state, actions }) {
           </div>
         </div>
         
-        <div className="grid grid-3 compact-stats">
-          <StatCard label="Siswa" value={stats.siswa} />
-          <StatCard label="Karyawan" value={stats.pegawai} />
-          <StatCard label="Net bulan ini (Laba)" value={formatRupiah(overview.labaBulanan)} />
-        </div>
+        {/* SEMBUNYIKAN STATS JIKA BUKAN MASTER/ADMIN/YANG PUNYA AKSES OVERVIEW */}
+        {canSeeStats && (
+          <div className="grid grid-3 compact-stats">
+            <StatCard label="Siswa" value={stats.siswa} />
+            <StatCard label="Karyawan" value={stats.pegawai} />
+            <StatCard label="Net bulan ini (Laba)" value={formatRupiah(overview.labaBulanan)} />
+          </div>
+        )}
 
         {message ? <Banner>{message}</Banner> : null}
         {errorMsg ? <Banner warning>{errorMsg}</Banner> : null}
@@ -167,7 +184,7 @@ export function Dashboard({ state, actions }) {
         
         {/* === TAB MAINTENANCE BARU === */}
         {activeTab === 'maintenance' && <MaintenanceTab pembayaran={state.pembayaranTampil} perkembangan={state.perkembanganTampil} onTriggerArchive={actions.triggerManualArchive} />}
-      
+       
         {/* MODAL KONFIRMASI HAPUS GLOBAL */}
         {state.deleteConfirm.show && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
