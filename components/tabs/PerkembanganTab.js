@@ -7,10 +7,10 @@ export function PerkembanganTab({
   onSubmit, onSendPerkembanganWA, perkembanganTampil 
 }) {
   
-  // === GEMBOK UTAMA ===
-  // Mengecek apakah karyawan yang login punya hak akses ke Menu Siswa ('siswa')
-  // Master & Admin tidak otomatis dapat akses, WAJIB punya centang menu 'siswa'
-const canAccessSiswaMenu = user?.menu_permissions?.includes('siswa');
+  // === GEMBOK UTAMA (SUPER KETAT) ===
+  // Mengabaikan jabatan. Hanya ngecek: "Apakah di database ada kata 'siswa' di dalam menu_permissions-nya?"
+  // Jika menu_permissions kosong/error, maka otomatis FALSE (tombol hilang).
+  const canAccessSiswaMenu = Array.isArray(user?.menu_permissions) && user.menu_permissions.includes('siswa');
 
   return (
     <div className="grid gap-lg">
@@ -95,11 +95,11 @@ const canAccessSiswaMenu = user?.menu_permissions?.includes('siswa');
                     <td>
                       
                       {/* === INI BAGIAN YANG DILINDUNGI === */}
-                      {/* Hanya muncul jika user punya izin Menu Siswa */}
+                      {/* Hanya muncul jika user PUNYA centang di Menu Siswa */}
                       {canAccessSiswaMenu ? (
                         <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981', borderColor: '#10b981', whiteSpace: 'nowrap' }}>Kirim WA 💬</button>
                       ) : (
-                        <span className="text-muted" style={{ fontSize: '12px', fontStyle: 'italic' }}>-</span>
+                        <span className="text-muted" style={{ fontSize: '12px', fontStyle: 'italic', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>Terkunci</span>
                       )}
                       {/* ================================== */}
 
