@@ -95,7 +95,17 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
               ))}
             </div>
           </div>
-
+          <h3 style={{ marginTop: '20px', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Setup Jam Kerja Standar</h3>
+          <div className="grid grid-2">
+            <div className="form-row">
+              <label>Batas Jam Masuk</label>
+              <input type="time" value={userForm.batas_jam_masuk || ''} onChange={(e) => setUserForm({ ...userForm, batas_jam_masuk: e.target.value })} required />
+            </div>
+            <div className="form-row">
+              <label>Batas Jam Pulang</label>
+              <input type="time" value={userForm.batas_jam_pulang || ''} onChange={(e) => setUserForm({ ...userForm, batas_jam_pulang: e.target.value })} required />
+            </div>
+          </div>
           <h3 style={{ marginTop: '20px', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Setup Gaji & Tunjangan</h3>
           <div className="form-row">
             <label>Sistem Gaji</label>
