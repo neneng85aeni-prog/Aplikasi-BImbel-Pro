@@ -138,7 +138,29 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
 
           <div className="btn-row" style={{ marginTop: '15px' }}>
             <button className="btn btn-primary" type="submit">{userForm.id ? '💾 Update Karyawan' : '💾 Simpan Karyawan'}</button>
-            <button className="btn btn-secondary" type="button" onClick={onReset}>Batal</button>
+            <button 
+  className="btn btn-secondary" 
+  type="button" 
+  onClick={() => onReset({
+    id: '',
+    nama: '',
+    email: '',
+    password: '',
+    akses: '',
+    branch_id: '',
+    no_telepon: '',
+    salary_type: 'fixed', // Kembalikan ke default 'fixed'
+    salary_fixed: '',
+    student_fee_daily: '',
+    monthly_bonus_target: '',
+    bonus_amount: '',
+    batas_jam_masuk: '',
+    batas_jam_pulang: '',
+    menu_permissions: []
+  })}
+>
+  Batal
+</button>
           </div>
         </form>
       </div>
