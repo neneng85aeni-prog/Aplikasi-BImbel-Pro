@@ -232,7 +232,36 @@ export function useBimbelApp() {
   async function submitUser(event) { event.preventDefault(); try { const payload = validateUserForm({ ...userForm, menu_permissions: userForm.menu_permissions?.length ? userForm.menu_permissions : defaultPermissionsByRole(userForm.akses) }); const res = await upsertUserViaRpc(payload, userForm.id); if (res.error) throw res.error; setUserForm(INITIAL_USER_FORM); setMessage('Karyawan disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   
   function generateStudentBarcodeAction() { const branchCode = branches.find((item) => item.id === siswaForm.branch_id)?.kode || selectedBranch?.kode || 'PUSAT'; setSiswaForm((prev) => ({ ...prev, kode_qr: generateStudentBarcode({ nama: prev.nama, kelas: prev.kelas, branchCode }) })) }
-  async function submitSiswa(event) { event.preventDefault(); try { const enriched = siswaForm.kode_qr ? siswaForm : { ...siswaForm, kode_qr: generateStudentBarcode({ nama: siswaForm.nama, kelas: siswaForm.kelas, branchCode: branches.find((item) => item.id === siswaForm.branch_id)?.kode }) }; const res = await upsertSiswa(validateSiswaForm(enriched), siswaForm.id); if (res.error) throw res.error; setSiswaForm(INITIAL_SISWA_FORM); setMessage('Siswa disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
+  // KODE BARU (SUDAH ADA PEMBERSIH NOMOR HP)
+async function submitSiswa(event) { 
+  event.preventDefault(); 
+  try { 
+    // 1. Bersihkan nomor HP dulu
+    let cleanedHp = String(siswaForm.no_hp || '').replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '');
+    if (cleanedHp.startsWith('0')) {
+      cleanedHp = '+62' + cleanedHp.slice(1);
+    } else if (cleanedHp.startsWith('62') && !cleanedHp.startsWith('+62')) {
+      cleanedHp = '+' + cleanedHp;
+    }
+
+    // 2. Terapkan nomor HP yang bersih dan urus Barcode
+    const enriched = {
+      ...siswaForm,
+      no_hp: cleanedHp, // Ini yang bikin nomor selalu +62
+      kode_qr: siswaForm.kode_qr ? siswaForm.kode_qr : generateStudentBarcode({ nama: siswaForm.nama, kelas: siswaForm.kelas, branchCode: branches.find((item) => item.id === siswaForm.branch_id)?.kode })
+    }; 
+    
+    // 3. Simpan ke Supabase
+    const res = await upsertSiswa(validateSiswaForm(enriched), siswaForm.id); 
+    if (res.error) throw res.error; 
+    
+    setSiswaForm(INITIAL_SISWA_FORM); 
+    setMessage('Siswa disimpan.'); 
+    await loadAllData() 
+  } catch (error) { 
+    setErrorMsg(error.message) 
+  } 
+}
   
   const deleteBranch = (id, label) => setDeleteConfirm({ show: true, table: 'branches', id, label })
   const deleteProgram = (id, label) => setDeleteConfirm({ show: true, table: 'programs', id, label })
