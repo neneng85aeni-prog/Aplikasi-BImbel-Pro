@@ -65,10 +65,7 @@ export function Dashboard({ state, actions }) {
             <h1 className="sidebar-title">Final Stable</h1>
             <p className="text-muted hide-on-mobile">{user.nama}<br />{user.email}</p>
           </div>
-          <div className="mobile-actions">
-            <button className="btn btn-secondary btn-small" onClick={actions.loadAllData}>↻</button>
-            <button className="btn btn-danger btn-small" onClick={actions.logout}>Logout</button>
-          </div>
+
         </div>
 
         <div className="nav-stack">
