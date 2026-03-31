@@ -92,7 +92,23 @@ export function InventoryTab({
           />
         </div>
 
-        <div className="table-wrap">
+        {/* 1. Tambahkan maxHeight dan overflowY di table-wrap */}
+        <div className="table-wrap" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          <table>
+            
+            {/* 2. Tambahkan style sticky dan warna background di thead */}
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#0f172a' }}>
+              <tr>
+                <th>NAMA BARANG</th>
+                <th>CABANG</th>
+                <th>HARGA</th>
+                <th>STOK</th>
+                <th>AKSI</th>
+              </tr>
+            </thead>
+            
+            <tbody>
+               {/* ... (kode baris data item tidak perlu diubah) ... */}
           <table>
             <thead>
               <tr>
