@@ -4,10 +4,12 @@ import { INITIAL_SISWA_FORM } from '../../lib/constants'
 import { printBarcodeCard, BarcodePreview } from '../ui/BarcodePreview'
 
 // === FUNGSI HELPER: PEMBERSIH NOMOR HP ===
+// === FUNGSI HELPER: PEMBERSIH NOMOR HP ===
 const formatNomorWA = (nomor) => {
   if (!nomor) return '';
-  // Hapus spasi, strip, atau titik
-  let cleaned = nomor.replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '');
+  // Pastikan jadi teks (String) dulu biar tidak error saat di-replace
+  let cleaned = String(nomor).replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '');
+  
   // Ubah 0 jadi +62
   if (cleaned.startsWith('0')) {
     return '+62' + cleaned.slice(1);
