@@ -61,6 +61,25 @@ export function PerkembanganTab({
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
+  // === FITUR BARU: DOWNLOAD CSV SESUAI FILTER ===
+  const handleDownload = () => {
+    let csv = "Tanggal,Siswa,Guru Penginput,Catatan\n";
+    filteredHistory.forEach(item => {
+      const tgl = formatTanggal(item.tanggal);
+      const siswa = item.siswa?.nama || '-';
+      const guru = item.users?.nama || '-';
+      // Bersihkan catatan dari koma dan baris baru agar CSV tidak berantakan
+      const catatan = (item.catatan || '').replace(/,/g, ' ').replace(/\n/g, ' '); 
+      csv += `"${tgl}","${siswa}","${guru}","${catatan}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Laporan_Perkembangan_${startDate || 'Semua'}_sd_${endDate || 'Semua'}.csv`;
+    link.click();
+  };
+
   return (
     <div className="grid gap-lg">
       <div className="grid grid-2">
@@ -131,7 +150,7 @@ export function PerkembanganTab({
             Riwayat Input {canAccessSiswaMenu ? '(Semua Siswa)' : '(Siswa Anda)'}
           </h2>
           
-          {/* === KONTROL PENCARIAN & PERIODE === */}
+          {/* === KONTROL PENCARIAN, PERIODE, & DOWNLOAD === */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '15px', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
               <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px' }} />
@@ -147,14 +166,24 @@ export function PerkembanganTab({
               style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'inherit', fontSize: '13px', flex: 1, minWidth: '150px' }}
             />
 
-            {/* TOMBOL LIHAT SEMUA PERIODE */}
-            <button 
-              className="btn btn-secondary btn-small" 
-              onClick={() => { setStartDate(''); setEndDate(''); setCurrentPage(1); }}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              Semua Periode
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="btn btn-secondary btn-small" 
+                onClick={() => { setStartDate(''); setEndDate(''); setCurrentPage(1); }}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                Semua Periode
+              </button>
+              
+              {/* TOMBOL DOWNLOAD BARU */}
+              <button 
+                className="btn btn-primary btn-small" 
+                onClick={handleDownload}
+                style={{ background: '#10b981', borderColor: '#10b981', color: 'black', fontWeight: 'bold' }}
+              >
+                ⬇️ CSV
+              </button>
+            </div>
           </div>
 
           <div className="table-wrap">
@@ -184,7 +213,7 @@ export function PerkembanganTab({
             </table>
           </div>
 
-          {/* === KONTROL PAGINASI (HALAMAN) === */}
+          {/* === KONTROL PAGINASI (10 DATA PER HALAMAN) === */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', gap: '15px' }}>
               <span style={{ fontSize: '13px', color: '#94a3b8' }}>
