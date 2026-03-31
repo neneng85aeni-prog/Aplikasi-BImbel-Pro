@@ -105,7 +105,18 @@ export function Dashboard({ state, actions }) {
         {message ? <Banner>{message}</Banner> : null}
         {errorMsg ? <Banner warning>{errorMsg}</Banner> : null}
 
-        {activeTab === 'overview' && <OverviewTab overview={overview} financeSummary={financeSummary} selectedBranch={state.selectedBranch} employeeBarcodeIn={state.employeeBarcodeIn} employeeBarcodeOut={state.employeeBarcodeOut} />}
+        {/* BAGIAN YANG DIUPDATE */}
+{activeTab === 'overview' && (
+  <OverviewTab 
+    overview={overview} 
+    financeSummary={financeSummary} 
+    selectedBranch={state.selectedBranch} 
+    employeeBarcodeIn={state.employeeBarcodeIn} 
+    employeeBarcodeOut={state.employeeBarcodeOut} 
+    pembayaran={state.pembayaranTampil} 
+    pengeluaran={state.pengeluaranTampil} 
+  />
+)}
         {activeTab === 'cabang' && <CabangTab branchForm={state.branchForm} setBranchForm={actions.setBranchForm} branches={state.branches} onSubmit={actions.submitBranch} onReset={actions.setBranchForm} onEdit={actions.startEditBranch} onDelete={actions.deleteBranch} />}
         {activeTab === 'program' && <ProgramTab programForm={state.programForm} setProgramForm={actions.setProgramForm} programs={state.programs} onSubmit={actions.submitProgram} onReset={actions.setProgramForm} onEdit={actions.startEditProgram} onDelete={actions.deleteProgram} />}
         {activeTab === 'users' && <UsersTab userForm={state.userForm} setUserForm={actions.setUserForm} users={state.usersTampil} branches={state.branches} onSubmit={actions.submitUser} onReset={actions.setUserForm} onEdit={actions.startEditUser} onDelete={actions.deleteUser} />}
