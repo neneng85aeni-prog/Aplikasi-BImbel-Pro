@@ -3,6 +3,22 @@ import QRCode from 'qrcode'
 import { INITIAL_SISWA_FORM } from '../../lib/constants'
 import { printBarcodeCard, BarcodePreview } from '../ui/BarcodePreview'
 
+// === FUNGSI HELPER: PEMBERSIH NOMOR HP ===
+const formatNomorWA = (nomor) => {
+  if (!nomor) return '';
+  // Hapus spasi, strip, atau titik
+  let cleaned = nomor.replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '');
+  // Ubah 0 jadi +62
+  if (cleaned.startsWith('0')) {
+    return '+62' + cleaned.slice(1);
+  }
+  // Tambah + jika diawali 62 tapi belum ada +
+  if (cleaned.startsWith('62') && !cleaned.startsWith('+62')) {
+    return '+' + cleaned;
+  }
+  return cleaned;
+};
+
 async function openAndroidQrSharePage(item) {
   const value = item?.kode_qr || item?.id
   if (!value) {
@@ -83,6 +99,16 @@ export function SiswaTab({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
+  // === HANDLER BARU: BERSIHKAN DATA SEBELUM SUBMIT ===
+  const handleSubmitSiswa = (e) => {
+    e.preventDefault();
+    const cleanedData = {
+      ...siswaForm,
+      no_hp: formatNomorWA(siswaForm.no_hp) // SULAP NOMOR DI SINI ✨
+    };
+    onSubmit(cleanedData);
+  };
+
   // JIKA MENCARI SISWA, OTOMATIS KEMBALI KE HALAMAN 1
   const handleSearch = (e) => {
     if (setSearchSiswa) setSearchSiswa(e.target.value);
@@ -106,7 +132,8 @@ export function SiswaTab({
       {/* FORM PENDAFTARAN SISWA KIRI */}
       <div className="glass-card">
         <h2 className="section-title">Pendaftaran siswa</h2>
-        <form onSubmit={onSubmit}>
+        {/* GANTI onSubmit JADI handleSubmitSiswa */}
+        <form onSubmit={handleSubmitSiswa}>
           <div className="grid grid-2">
             <div className="form-row"><label>Nama siswa</label><input value={siswaForm.nama} onChange={(e) => setSiswaForm({ ...siswaForm, nama: e.target.value })} required /></div>
             <div className="form-row"><label>Cabang</label><select value={siswaForm.branch_id} onChange={(e) => setSiswaForm({ ...siswaForm, branch_id: e.target.value })}><option value="">Pilih cabang</option>{branches.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
@@ -120,7 +147,7 @@ export function SiswaTab({
             <div className="form-row"><label>Nama orang tua</label><input value={siswaForm.nama_ortu} onChange={(e) => setSiswaForm({ ...siswaForm, nama_ortu: e.target.value })} /></div>
           </div>
           <div className="grid grid-2">
-            <div className="form-row"><label>No HP</label><input value={siswaForm.no_hp} onChange={(e) => setSiswaForm({ ...siswaForm, no_hp: e.target.value })} /></div>
+            <div className="form-row"><label>No HP</label><input value={siswaForm.no_hp} onChange={(e) => setSiswaForm({ ...siswaForm, no_hp: e.target.value })} placeholder="Cth: 0812..." /></div>
             <div className="form-row"><label>Alamat</label><input value={siswaForm.alamat} onChange={(e) => setSiswaForm({ ...siswaForm, alamat: e.target.value })} /></div>
           </div>
           <div className="form-row"><label>Barcode siswa otomatis</label><div className="btn-row"><input value={siswaForm.kode_qr} onChange={(e) => setSiswaForm({ ...siswaForm, kode_qr: e.target.value })} placeholder="Klik generate jika ingin otomatis" /><button className="btn btn-secondary" type="button" onClick={onGenerateBarcode}>Generate</button></div></div>
@@ -129,7 +156,7 @@ export function SiswaTab({
         </form>
       </div>
 
-      {/* TABEL DAFTAR SISWA KANAN */}
+      {/* TABEL DAFTAR SISWA KANAN (TETAP SAMA) */}
       <div className="glass-card">
         <h2 className="section-title">Daftar siswa</h2>
         
@@ -157,7 +184,6 @@ export function SiswaTab({
                   <td>{item.alamat || '-'}</td>
                   <td><code>{item.kode_qr || '-'}</code></td>
                   <td>
-                    {/* PERBAIKAN TOMBOL HORIZONTAL DI SINI */}
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', minWidth: '180px' }}>
                       <button className="btn btn-secondary btn-small" type="button" onClick={() => onEdit(item)}>Edit</button>
                       <button className="btn btn-secondary btn-small" type="button" onClick={() => onPrintBarcode(item)}>Print Desktop</button>
