@@ -1,7 +1,8 @@
+import { useMemo } from 'react'
 import { formatRupiah } from '../../lib/format'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
-export function OverviewTab({ overview, financeSummary, selectedBranch, employeeBarcodeIn, employeeBarcodeOut }) {
+export function OverviewTab({ overview, financeSummary, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, pembayaran = [], pengeluaran = [] }) {
   
   // Fungsi Canggih untuk Print QR Code Seukuran A4
   function printQRCode(title, qrData, branchName) {
@@ -41,15 +42,62 @@ export function OverviewTab({ overview, financeSummary, selectedBranch, employee
     }
   }
 
+  // === MENGHITUNG DATA HARIAN (BULAN BERJALAN) PER CABANG ===
+  const dailyData = useMemo(() => {
+    const today = new Date();
+    const currentMonthPrefix = today.toISOString().slice(0, 7); // Format: YYYY-MM
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
+    // Buat kerangka tanggal 1 sampai 30/31
+    const daysArray = [];
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dayString = i < 10 ? `0${i}` : `${i}`;
+      daysArray.push({
+        tanggalFilter: `${currentMonthPrefix}-${dayString}`,
+        labelTanggal: `${i}`, // Tampil di sumbu X
+        Pemasukan: 0,
+        Pengeluaran: 0
+      });
+    }
+
+    const branchId = selectedBranch?.id; // Filter cabang aktif
+
+    // Hitung Pemasukan Harian
+    pembayaran.forEach(p => {
+      // Jika Mas memilih cabang tertentu, lewati transaksi cabang lain
+      if (branchId && p.branch_id !== branchId && p.siswa?.branch_id !== branchId) return;
+
+      const tglFull = p.tanggal ? p.tanggal.slice(0, 10) : '';
+      if (tglFull.startsWith(currentMonthPrefix)) {
+        const index = daysArray.findIndex(d => d.tanggalFilter === tglFull);
+        if (index !== -1) daysArray[index].Pemasukan += Number(p.nominal || p.jumlah_bayar || 0);
+      }
+    });
+
+    // Hitung Pengeluaran Harian
+    pengeluaran.forEach(p => {
+      if (branchId && p.branch_id !== branchId) return;
+
+      const tglFull = p.tanggal ? p.tanggal.slice(0, 10) : '';
+      if (tglFull.startsWith(currentMonthPrefix)) {
+        const index = daysArray.findIndex(d => d.tanggalFilter === tglFull);
+        if (index !== -1) daysArray[index].Pengeluaran += Number(p.nominal || p.jumlah || 0);
+      }
+    });
+
+    return daysArray;
+  }, [pembayaran, pengeluaran, selectedBranch]);
+
+
   return (
     <div className="grid gap-lg">
       <div className="grid grid-2">
          
-         {/* KARTU 1: QR CODE ABSENSI (Sekarang Bisa Di-Print) */}
+         {/* KARTU 1: QR CODE ABSENSI */}
          <div className="glass-card" style={{ textAlign: 'center' }}>
             <h2 className="section-title">QR Code Absensi Karyawan</h2>
             <p className="text-muted" style={{ marginBottom: '20px', fontSize: '14px' }}>
-              Cabang: <b>{selectedBranch?.nama || 'Pusat'}</b><br/>
+              Cabang: <b>{selectedBranch?.nama || 'Semua Cabang'}</b><br/>
               Cetak dan tempel barcode ini di cabang Anda.
             </p>
             <div className="grid grid-2" style={{ gap: '20px' }}>
@@ -68,35 +116,41 @@ export function OverviewTab({ overview, financeSummary, selectedBranch, employee
             </div>
          </div>
 
-         {/* KARTU 2: GRAFIK PERFORMA CABANG */}
+         {/* KARTU 2: GRAFIK HARIAN (COMPOSED CHART) */}
          <div className="glass-card">
-           <h2 className="section-title">Grafik Performa Antar Cabang</h2>
-           <p className="text-muted" style={{ marginBottom: '20px', fontSize: '13px' }}>Perbandingan Pemasukan & Pengeluaran Total</p>
+           <h2 className="section-title">Tren Keuangan Harian (Bulan Ini)</h2>
+           <p className="text-muted" style={{ marginBottom: '20px', fontSize: '13px' }}>
+             Pergerakan transaksi <b>{selectedBranch?.nama || 'Semua Cabang'}</b> dari tanggal 1 hingga akhir bulan.
+           </p>
            
-           {financeSummary.byBranch.length > 0 ? (
-             <div style={{ width: '100%', height: '280px' }}>
-               <ResponsiveContainer width="100%" height="100%">
-                 <BarChart data={financeSummary.byBranch} margin={{ top: 5, right: 10, left: 15, bottom: 5 }}>
-                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" vertical={false} />
-                   <XAxis dataKey="nama" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                   <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(val) => `Rp${val/1000}k`} tickLine={false} axisLine={false} />
-                   <Tooltip 
-                     formatter={(value) => formatRupiah(value)} 
-                     cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} 
-                     contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)' }} 
-                     itemStyle={{ color: '#fff' }}
-                   />
-                   <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} iconType="circle" />
-                   <Bar dataKey="pemasukan" name="Pemasukan" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={50} />
-                   <Bar dataKey="pengeluaran" name="Pengeluaran" fill="#ef4444" radius={[6, 6, 0, 0]} maxBarSize={50} />
-                 </BarChart>
-               </ResponsiveContainer>
-             </div>
-           ) : (
-             <div style={{ height: '250px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-               Belum ada data cabang untuk ditampilkan.
-             </div>
-           )}
+           <div style={{ width: '100%', height: '320px' }}>
+             <ResponsiveContainer width="100%" height="100%">
+               <ComposedChart data={dailyData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" vertical={false} />
+                 
+                 {/* Sumbu X menampilkan Tanggal (1, 2, 3...) */}
+                 <XAxis dataKey="labelTanggal" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                 <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(val) => `Rp${val/1000}k`} tickLine={false} axisLine={false} />
+                 
+                 <Tooltip 
+                   labelFormatter={(label) => `Tanggal ${label}`}
+                   formatter={(value) => formatRupiah(value)} 
+                   cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} 
+                   contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)' }} 
+                   itemStyle={{ color: '#fff' }}
+                 />
+                 <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} iconType="circle" />
+                 
+                 {/* 1. BATANG HARIAN */}
+                 <Bar dataKey="Pemasukan" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                 <Bar dataKey="Pengeluaran" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={30} />
+
+                 {/* 2. GARIS PENGHUBUNG ANTAR HARI (TREN) */}
+                 <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
+                 <Line type="monotone" dataKey="Pengeluaran" stroke="#f59e0b" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
+               </ComposedChart>
+             </ResponsiveContainer>
+           </div>
          </div>
 
       </div>
