@@ -137,7 +137,7 @@ export function Dashboard({ state, actions }) {
             searchTransaksi={state.searchTransaksi} setSearchTransaksi={actions.setSearchTransaksi} 
             onDeleteTransaksi={actions.deleteTransaksi} editTransaksiForm={state.editTransaksiForm} 
             setEditTransaksiForm={actions.setEditTransaksiForm} onSubmitEditTransaksi={actions.submitEditTransaksi} 
-            onStartEditTransaksi={actions.startEditTransaksi} 
+            onStartEditTransaksi={actions.startEditTransaksi} pengeluaran={state.pengeluaranTampil}
           />
         )}
 
