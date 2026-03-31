@@ -107,7 +107,7 @@ export function SiswaTab({
     const cleanedData = {
       ...siswaForm,
       no_hp: formatNomorWA(siswaForm.no_hp) // SULAP NOMOR DI SINI ✨
-      salary_type: siswaForm.salary_type || null
+      
     };
     onSubmit(cleanedData);
   };
