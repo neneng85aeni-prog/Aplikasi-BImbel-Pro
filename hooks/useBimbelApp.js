@@ -145,7 +145,9 @@ export function useBimbelApp() {
     return perkembanganTampil.filter((item) => item.siswa_id === perkembanganForm.siswa_id).sort((a, b) => String(b.tanggal).localeCompare(String(a.tanggal))).slice(0, 5)
   }, [perkembanganTampil, perkembanganForm.siswa_id])
 
-  const guruOptions = useMemo(() => usersTampil.filter((item) => item.akses === 'guru'), [usersTampil])
+  const guruOptions = useMemo(() => 
+  usersTampil.filter((item) => item.akses && item.akses.toLowerCase().trim() === 'guru'), 
+[usersTampil])
   const targetPayrollDate = useMemo(() => new Date(payrollYear, payrollMonth - 1, 1), [payrollMonth, payrollYear])
   const payrollRows = useMemo(() => computePayroll({ users: usersTampil, absensiSiswa: absensiSiswaTampil, absensiKaryawan: absensiKaryawanTampil, bonusManual: bonusManualTampil, targetDate: targetPayrollDate }), [usersTampil, absensiSiswaTampil, absensiKaryawanTampil, bonusManualTampil, targetPayrollDate])
   const overview = useMemo(() => computeOverview({ pembayaran: pembayaranTampil, pengeluaran: pengeluaranTampil, siswa: siswaTampil, users: usersTampil, branches: selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches, payrollRows }), [pembayaranTampil, pengeluaranTampil, siswaTampil, usersTampil, branches, selectedBranchId, payrollRows])
