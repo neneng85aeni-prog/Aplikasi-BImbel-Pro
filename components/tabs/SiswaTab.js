@@ -4,7 +4,6 @@ import { INITIAL_SISWA_FORM } from '../../lib/constants'
 import { printBarcodeCard, BarcodePreview } from '../ui/BarcodePreview'
 
 // === FUNGSI HELPER: PEMBERSIH NOMOR HP ===
-// === FUNGSI HELPER: PEMBERSIH NOMOR HP ===
 const formatNomorWA = (nomor) => {
   if (!nomor) return '';
   // Pastikan jadi teks (String) dulu biar tidak error saat di-replace
@@ -106,8 +105,7 @@ export function SiswaTab({
     e.preventDefault();
     const cleanedData = {
       ...siswaForm,
-      no_hp: formatNomorWA(siswaForm.no_hp) // SULAP NOMOR DI SINI ✨
-      
+      no_hp: formatNomorWA(siswaForm.no_hp)
     };
     onSubmit(cleanedData);
   };
@@ -135,7 +133,6 @@ export function SiswaTab({
       {/* FORM PENDAFTARAN SISWA KIRI */}
       <div className="glass-card">
         <h2 className="section-title">Pendaftaran siswa</h2>
-        {/* GANTI onSubmit JADI handleSubmitSiswa */}
         <form onSubmit={handleSubmitSiswa}>
           <div className="grid grid-2">
             <div className="form-row"><label>Nama siswa</label><input value={siswaForm.nama} onChange={(e) => setSiswaForm({ ...siswaForm, nama: e.target.value })} required /></div>
@@ -159,7 +156,7 @@ export function SiswaTab({
         </form>
       </div>
 
-      {/* TABEL DAFTAR SISWA KANAN (TETAP SAMA) */}
+      {/* TABEL DAFTAR SISWA KANAN */}
       <div className="glass-card">
         <h2 className="section-title">Daftar siswa</h2>
         
