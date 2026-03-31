@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatTanggal } from '../../lib/format'
 
 export function PerkembanganTab({ 
@@ -7,10 +8,58 @@ export function PerkembanganTab({
   onSubmit, onSendPerkembanganWA, perkembanganTampil 
 }) {
   
+  // === SETUP DEFAULT: BULAN BERJALAN ===
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+
+  // === STATE LOKAL UNTUK PENCARIAN & PAGINASI ===
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState(firstDay);
+  const [endDate, setEndDate] = useState(lastDay);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // PERMINTAAN: MAKSIMAL 10 DATA
+  const ITEMS_PER_PAGE = 10;
+
   // === GEMBOK UTAMA (SUPER KETAT) ===
-  // Mengabaikan jabatan. Hanya ngecek: "Apakah di database ada kata 'siswa' di dalam menu_permissions-nya?"
-  // Jika menu_permissions kosong/error, maka otomatis FALSE (tombol hilang).
   const canAccessSiswaMenu = Array.isArray(user?.menu_permissions) && user.menu_permissions.includes('siswa');
+
+  // === FILTER CERDAS UNTUK TABEL RIWAYAT ===
+  const filteredHistory = (perkembanganTampil || []).filter(item => {
+    // 1. Filter Akses: Hanya tampilkan data miliknya jika bukan admin/kasir
+    if (!canAccessSiswaMenu && item.guru_handle_id !== user?.id) return false;
+
+    // 2. Filter Periode Tanggal
+    const itemDate = item.tanggal;
+    if (startDate && itemDate < startDate) return false;
+    if (endDate && itemDate > endDate) return false;
+
+    // 3. Filter Pencarian Teks
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const isMatch = (
+        item.siswa?.nama?.toLowerCase().includes(q) ||
+        item.users?.nama?.toLowerCase().includes(q) ||
+        item.catatan?.toLowerCase().includes(q) ||
+        formatTanggal(item.tanggal).toLowerCase().includes(q)
+      );
+      if (!isMatch) return false;
+    }
+
+    return true;
+  });
+
+  // === PEMOTONGAN DATA UNTUK HALAMAN (PAGINASI) ===
+  const totalPages = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE);
+  const paginatedData = filteredHistory.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
 
   return (
     <div className="grid gap-lg">
@@ -76,44 +125,86 @@ export function PerkembanganTab({
           </form>
         </div>
 
-        {/* BAGIAN KANAN: TABEL RIWAYAT UNTUK KASIR KIRIM WA */}
+        {/* BAGIAN KANAN: TABEL RIWAYAT DENGAN FILTER & PAGINASI */}
         <div className="glass-card">
-          <h2 className="section-title">Riwayat Input Terakhir (Semua Siswa)</h2>
-          <p className="text-muted" style={{ fontSize: '13px', marginBottom: '15px' }}>Tabel ini memudahkan Kasir/Admin untuk langsung mengirimkan laporan ke WA Orang Tua.</p>
+          <h2 className="section-title">
+            Riwayat Input {canAccessSiswaMenu ? '(Semua Siswa)' : '(Siswa Anda)'}
+          </h2>
           
-          <div className="table-wrap" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+          {/* === KONTROL PENCARIAN & PERIODE === */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '15px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px' }} />
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>s/d</span>
+              <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px' }} />
+            </div>
+
+            <input 
+              type="text" 
+              placeholder="🔍 Cari nama/catatan..." 
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'inherit', fontSize: '13px', flex: 1, minWidth: '150px' }}
+            />
+
+            {/* TOMBOL LIHAT SEMUA PERIODE */}
+            <button 
+              className="btn btn-secondary btn-small" 
+              onClick={() => { setStartDate(''); setEndDate(''); setCurrentPage(1); }}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              Semua Periode
+            </button>
+          </div>
+
+          <div className="table-wrap">
             <table style={{ minWidth: '100%' }}>
               <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: '#1e293b' }}>
                 <tr><th>Tanggal</th><th>Siswa</th><th>Catatan Guru</th><th>Aksi</th></tr>
               </thead>
               <tbody>
-                {perkembanganTampil && perkembanganTampil.slice(0, 30).map((item) => (
+                {paginatedData.map((item) => (
                   <tr key={item.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatTanggal(item.tanggal)}</td>
                     <td><b>{item.siswa?.nama || '-'}</b><br/><span className="text-muted" style={{fontSize: '11px'}}>Guru: {item.users?.nama || '-'}</span></td>
                     <td><div style={{ maxHeight: '60px', overflowY: 'auto', fontSize: '13px' }}>{item.catatan}</div></td>
                     <td>
-                      
-                      {/* === INI BAGIAN YANG DILINDUNGI === */}
-                      {/* Hanya muncul jika user PUNYA centang di Menu Siswa */}
                       {canAccessSiswaMenu ? (
                         <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981', borderColor: '#10b981', whiteSpace: 'nowrap' }}>Kirim WA 💬</button>
                       ) : (
                         <span className="text-muted" style={{ fontSize: '12px', fontStyle: 'italic', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>Terkunci</span>
                       )}
-                      {/* ================================== */}
-
                     </td>
                   </tr>
                 ))}
-                {(!perkembanganTampil || perkembanganTampil.length === 0) && (
-                  <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>Belum ada riwayat perkembangan.</td></tr>
+                {paginatedData.length === 0 && (
+                  <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>Data perkembangan tidak ditemukan.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-        </div>
 
+          {/* === KONTROL PAGINASI (HALAMAN) === */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', gap: '15px' }}>
+              <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredHistory.length)} dari {filteredHistory.length} data
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn btn-secondary btn-small" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>
+                  ◀ Prev
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '14px', fontWeight: 'bold' }}>
+                  {currentPage} / {totalPages}
+                </div>
+                <button className="btn btn-secondary btn-small" disabled={currentPage === totalPages} onClick={() => goToPage(currentPage + 1)}>
+                  Next ▶
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   )
