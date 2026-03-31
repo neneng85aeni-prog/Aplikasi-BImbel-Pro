@@ -118,7 +118,7 @@ export function SiswaTab({
       {/* FORM PENDAFTARAN SISWA KIRI */}
       <div className="glass-card">
         <h2 className="section-title">Pendaftaran siswa</h2>
-        <form onSubmit={handleSubmitSiswa}>
+        <form onSubmit={onSubmit}>
           <div className="grid grid-2">
             <div className="form-row"><label>Nama siswa</label><input value={siswaForm.nama} onChange={(e) => setSiswaForm({ ...siswaForm, nama: e.target.value })} required /></div>
             <div className="form-row"><label>Cabang</label><select value={siswaForm.branch_id} onChange={(e) => setSiswaForm({ ...siswaForm, branch_id: e.target.value })}><option value="">Pilih cabang</option>{branches.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
