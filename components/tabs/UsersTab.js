@@ -3,6 +3,32 @@ import { SALARY_TYPE_OPTIONS, ALL_MENU_KEYS, TAB_LABELS } from '../../lib/consta
 
 export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onReset, onEdit, onDelete }) {
   
+  // === FUNGSI HELPER: PEMBERSIH NOMOR TELEPON ===
+  const formatNomorWA = (nomor) => {
+    if (!nomor) return '';
+    // Hapus spasi, strip, atau titik
+    let cleaned = nomor.replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '');
+    // Ubah 0 jadi +62
+    if (cleaned.startsWith('0')) {
+      return '+62' + cleaned.slice(1);
+    }
+    // Tambah + jika diawali 62 tapi belum ada +
+    if (cleaned.startsWith('62') && !cleaned.startsWith('+62')) {
+      return '+' + cleaned;
+    }
+    return cleaned;
+  };
+
+  // === HANDLER SUBMIT: BERSIHKAN NOMOR SEBELUM DISIMPAN ===
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const cleanedData = {
+      ...userForm,
+      no_telepon: formatNomorWA(userForm.no_telepon) // SULAP NOMOR DI SINI ✨
+    };
+    onSubmit(cleanedData);
+  };
+
   // Fungsi untuk Centang / Hapus Centang Hak Akses
   const handleTogglePermission = (key) => {
     const currentPerms = userForm.menu_permissions || []
@@ -28,7 +54,8 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
       <div className="glass-card">
         <h2 className="section-title">Manajemen Karyawan</h2>
         
-        <form onSubmit={onSubmit} autoComplete="off">
+        {/* Update onSubmit menggunakan handleSubmit lokal */}
+        <form onSubmit={handleSubmit} autoComplete="off">
           <div className="grid grid-2">
             <div className="form-row">
               <label>Nama Lengkap</label>
@@ -95,6 +122,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
               ))}
             </div>
           </div>
+
           <h3 style={{ marginTop: '20px', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Setup Jam Kerja Standar</h3>
           <div className="grid grid-2">
             <div className="form-row">
@@ -106,6 +134,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
               <input type="time" value={userForm.batas_jam_pulang || ''} onChange={(e) => setUserForm({ ...userForm, batas_jam_pulang: e.target.value })} required />
             </div>
           </div>
+
           <h3 style={{ marginTop: '20px', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Setup Gaji & Tunjangan</h3>
           <div className="form-row">
             <label>Sistem Gaji</label>
@@ -139,28 +168,28 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
           <div className="btn-row" style={{ marginTop: '15px' }}>
             <button className="btn btn-primary" type="submit">{userForm.id ? '💾 Update Karyawan' : '💾 Simpan Karyawan'}</button>
             <button 
-  className="btn btn-secondary" 
-  type="button" 
-  onClick={() => onReset({
-    id: '',
-    nama: '',
-    email: '',
-    password: '',
-    akses: '',
-    branch_id: '',
-    no_telepon: '',
-    salary_type: 'fixed', // Kembalikan ke default 'fixed'
-    salary_fixed: '',
-    student_fee_daily: '',
-    monthly_bonus_target: '',
-    bonus_amount: '',
-    batas_jam_masuk: '',
-    batas_jam_pulang: '',
-    menu_permissions: []
-  })}
->
-  Batal
-</button>
+              className="btn btn-secondary" 
+              type="button" 
+              onClick={() => onReset({
+                id: '',
+                nama: '',
+                email: '',
+                password: '',
+                akses: '',
+                branch_id: '',
+                no_telepon: '',
+                salary_type: 'fixed',
+                salary_fixed: '',
+                student_fee_daily: '',
+                monthly_bonus_target: '',
+                bonus_amount: '',
+                batas_jam_masuk: '',
+                batas_jam_pulang: '',
+                menu_permissions: []
+              })}
+            >
+              Batal
+            </button>
           </div>
         </form>
       </div>
@@ -180,9 +209,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
                   <td>
                     <div className="btn-row" style={{ flexWrap: 'nowrap' }}>
                       <button className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>Edit</button>
-                      {/* === INI BAGIAN YANG DIPERBAIKI === */}
                       <button className="btn btn-danger btn-small" onClick={() => onDelete(item.id, item.nama)}>Hapus</button>
-                      {/* ================================== */}
                     </div>
                   </td>
                 </tr>
