@@ -25,15 +25,15 @@ export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
 
   // === FITUR AUTO-REDIRECT TAB ===
-  // Jika tab yang sedang aktif saat ini TIDAK ADA di daftar izin tab user, 
-  // langsung lempar user ke tab urutan pertama yang mereka miliki aksesnya.
   useEffect(() => {
     if (visibleTabs && visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
-      actions.setActiveTab(visibleTabs[0]);
+      // Jika tab yang diakses laporan_guru tapi belum ada di visibleTabs, kita izinkan lewat shortcut sidebar bawah
+      if (activeTab !== 'laporan_guru') {
+        actions.setActiveTab(visibleTabs[0]);
+      }
     }
   }, [activeTab, visibleTabs, actions]);
 
-  // Cek apakah user punya izin melihat Overview untuk memunculkan Kartu Statistik
   const canSeeStats = visibleTabs.includes('overview');
 
   return (
@@ -53,34 +53,8 @@ export function Dashboard({ state, actions }) {
           .content-area { flex: 1; overflow-y: auto; padding: 12px !important; }
           .topbar h1 { font-size: 18px !important; }
           .topbar p { display: none !important; }
-          
-          /* KODE BARU: CARD STATISTIK JADI KE SAMPING DAN KECIL DI HP */
-          .compact-stats {
-            display: flex !important;
-            flex-direction: row !important;
-            overflow-x: auto !important;
-            gap: 10px;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          .compact-stats::-webkit-scrollbar {
-            display: none;
-          }
-          .compact-stats > div {
-            flex: 0 0 140px !important; 
-            padding: 12px !important;
-          }
-          .compact-stats h3, .compact-stats span, .compact-stats div.text-muted {
-            font-size: 12px !important; 
-          }
-          .compact-stats p, .compact-stats div.text-2xl, .compact-stats b {
-            font-size: 16px !important; 
-          }
-        }
-        @media (min-width: 769px) {
-          .mobile-actions { display: none !important; }
+          .compact-stats { display: flex !important; flex-direction: row !important; overflow-x: auto !important; gap: 10px; padding-bottom: 10px; margin-bottom: 10px; }
+          .compact-stats > div { flex: 0 0 140px !important; padding: 12px !important; }
         }
       `}</style>
 
@@ -98,7 +72,20 @@ export function Dashboard({ state, actions }) {
         </div>
 
         <div className="nav-stack">
-          {visibleTabs.map((tab) => <button key={tab} className={`tab ${activeTab === tab ? 'active' : ''}`} onClick={() => actions.setActiveTab(tab)}>{TAB_LABELS[tab] || tab}</button>)}
+          {visibleTabs.map((tab) => (
+            <button key={tab} className={`tab ${activeTab === tab ? 'active' : ''}`} onClick={() => actions.setActiveTab(tab)}>
+              {TAB_LABELS[tab] || tab}
+            </button>
+          ))}
+          
+          {/* SHORTCUT MENU BARU (Supaya langsung muncul tanpa setting permissions) */}
+          <button 
+            className={`tab ${activeTab === 'laporan_guru' ? 'active' : ''}`} 
+            onClick={() => actions.setActiveTab('laporan_guru')}
+            style={{ border: '1px solid rgba(59, 130, 246, 0.5)' }}
+          >
+            📊 Laporan Guru
+          </button>
         </div>
 
         <div className="btn-row column sidebar-actions">
@@ -116,7 +103,6 @@ export function Dashboard({ state, actions }) {
           </div>
         </div>
         
-        {/* SEMBUNYIKAN STATS JIKA BUKAN MASTER/ADMIN/YANG PUNYA AKSES OVERVIEW */}
         {canSeeStats && (
           <div className="grid grid-3 compact-stats">
             <StatCard label="Siswa" value={stats.siswa} />
@@ -141,60 +127,49 @@ export function Dashboard({ state, actions }) {
         {activeTab === 'karyawan' && <KaryawanTab currentUser={state.user} employeeMode={state.employeeMode} setEmployeeMode={actions.setEmployeeMode} scanEmployeeActive={state.scanEmployeeActive} setScanEmployeeActive={actions.setScanEmployeeActive} employeeScanInfo={state.employeeScanInfo} employeeScanText={state.employeeScanText} absensiKaryawan={state.absensiKaryawanTampil} employeeBarcodeIn={state.employeeBarcodeIn} employeeBarcodeOut={state.employeeBarcodeOut} employeeManualForm={state.employeeManualForm} setEmployeeManualForm={actions.setEmployeeManualForm} users={state.usersTampil} onSubmitManual={actions.submitEmployeeManualAttendance} />}
         {activeTab === 'review' && <ReviewsTab reviewForm={state.reviewForm} setReviewForm={actions.setReviewForm} users={state.usersTampil} reviews={state.reviewsTampil} onAddItem={actions.addReviewItem} onChangeItem={actions.changeReviewItem} onRemoveItem={actions.removeReviewItem} onSubmitReview={actions.submitReview} onPrintReview={actions.printEmployeeReview} />}
         {activeTab === 'pengeluaran' && <PengeluaranTab pengeluaranForm={state.pengeluaranForm} setPengeluaranForm={actions.setPengeluaranForm} pengeluaran={state.pengeluaranTampil} branches={state.branches} onSubmit={actions.submitPengeluaran} onEdit={actions.startEditPengeluaran} onDelete={actions.deletePengeluaran} onReset={actions.setPengeluaranForm} />}
-        
-        {/* INVENTORY TAB FIX */}
         {activeTab === 'inventory' && <InventoryTab inventoryForm={state.inventoryForm} setInventoryForm={actions.setInventoryForm} inventory={state.inventoryTampil} branches={state.branches} onSubmit={actions.submitInventory} onEdit={actions.startEditInventory} onDelete={actions.deleteInventory} />}
         
         {activeTab === 'payroll' && (
           <PayrollTab 
-            payrollRows={state.payrollRows} 
-            bonusForm={state.bonusForm} 
-            setBonusForm={actions.setBonusForm} 
-            users={state.usersTampil} 
-            bonusManual={state.bonusManualTampil} 
-            onSubmitBonus={actions.submitBonus} 
-            onCatatGaji={actions.catatPengeluaranGaji} 
-            branches={state.branches} 
-            payrollMonth={state.payrollMonth} 
-            setPayrollMonth={actions.setPayrollMonth} 
-            payrollYear={state.payrollYear} 
-            setPayrollYear={actions.setPayrollYear} 
-            openSmartWA={actions.openSmartWA} 
-            actions={actions}
+            payrollRows={state.payrollRows} bonusForm={state.bonusForm} setBonusForm={actions.setBonusForm} 
+            users={state.usersTampil} bonusManual={state.bonusManualTampil} onSubmitBonus={actions.submitBonus} 
+            onCatatGaji={actions.catatPengeluaranGaji} branches={state.branches} payrollMonth={state.payrollMonth} 
+            setPayrollMonth={actions.setPayrollMonth} payrollYear={state.payrollYear} setPayrollYear={actions.setPayrollYear} 
+            openSmartWA={actions.openSmartWA} actions={actions}
           />
         )}
         
         {activeTab === 'laporan' && (
           <LaporanTab 
-            financeSummary={financeSummary} 
-            pembayaran={state.pembayaranTampil} 
-            branches={state.branches} 
-            selectedBranchId={state.selectedBranchId} 
-            setSelectedBranchId={actions.setSelectedBranchId} 
-            searchTransaksi={state.searchTransaksi} 
-            setSearchTransaksi={actions.setSearchTransaksi} 
-            onDeleteTransaksi={actions.deleteTransaksi} 
-            editTransaksiForm={state.editTransaksiForm} 
-            setEditTransaksiForm={actions.setEditTransaksiForm} 
-            onSubmitEditTransaksi={actions.submitEditTransaksi} 
+            financeSummary={financeSummary} pembayaran={state.pembayaranTampil} branches={state.branches} 
+            selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} 
+            searchTransaksi={state.searchTransaksi} setSearchTransaksi={actions.setSearchTransaksi} 
+            onDeleteTransaksi={actions.deleteTransaksi} editTransaksiForm={state.editTransaksiForm} 
+            setEditTransaksiForm={actions.setEditTransaksiForm} onSubmitEditTransaksi={actions.submitEditTransaksi} 
             onStartEditTransaksi={actions.startEditTransaksi} 
           />
         )}
-        {activeTab === 'laporan_guru' && (<LaporanGuruTab users={state.usersTampil} perkembanganTampil={state.perkembanganTampil} siswaTampil={state.siswaTampil}absensiSiswa={state.absensiSiswaTampil} />
-)}
+
+        {/* TAB LAPORAN GURU BARU */}
+        {activeTab === 'laporan_guru' && (
+          <LaporanGuruTab 
+            users={state.usersTampil} 
+            perkembanganTampil={state.perkembanganTampil} 
+            siswaTampil={state.siswaTampil}
+            absensiSiswa={state.absensiSiswaTampil} 
+          />
+        )}
+
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
-        
-        {/* === TAB MAINTENANCE BARU === */}
         {activeTab === 'maintenance' && <MaintenanceTab pembayaran={state.pembayaranTampil} perkembangan={state.perkembanganTampil} onTriggerArchive={actions.triggerManualArchive} />}
        
-        {/* MODAL KONFIRMASI HAPUS GLOBAL */}
         {state.deleteConfirm.show && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
             <div className="glass-card" style={{ width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.2s ease-out' }}>
               <div style={{ fontSize: '60px', marginBottom: '20px' }}>🗑️</div>
               <h2 style={{ margin: '0 0 10px 0', fontSize: '20px' }}>Konfirmasi Hapus</h2>
               <p className="text-muted" style={{ marginBottom: '25px', fontSize: '14px' }}>
-                Apakah Anda yakin ingin menghapus <b style={{ color: '#ef4444' }}>{state.deleteConfirm.label}</b>? Data yang dihapus tidak dapat dikembalikan.
+                Apakah Anda yakin ingin menghapus <b style={{ color: '#ef4444' }}>{state.deleteConfirm.label}</b>?
               </p>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button className="btn btn-danger" onClick={actions.confirmDelete} style={{ flex: 1, padding: '12px' }}>Ya, Hapus</button>
@@ -204,49 +179,19 @@ export function Dashboard({ state, actions }) {
           </div>
         )}
 
-        {/* === MODAL INPUT PASSWORD UNTUK ARSIP & HAPUS MASAL === */}
         {state.archiveState.show && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999 }}>
             <div className="glass-card" style={{ width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: `1px solid ${state.archiveState.forced ? '#ef4444' : '#eab308'}`, animation: 'fadeIn 0.2s ease-out' }}>
-              <div style={{ fontSize: '50px', marginBottom: '15px' }}>{state.archiveState.forced ? '🚨' : '🔒'}</div>
-              <h2 style={{ margin: '0 0 10px 0', color: state.archiveState.forced ? '#ef4444' : '#eab308' }}>
-                {state.archiveState.forced ? 'Wajib Bersihkan Database!' : 'Otorisasi Required'}
-              </h2>
-              
-              <p style={{ color: '#f8fafc', marginBottom: '20px', fontSize: '14px', lineHeight: '1.5' }}>
-                {state.archiveState.forced 
-                  ? 'Kapasitas database menumpuk! Anda diwajibkan melakukan Backup & Bersihkan (Batas 6 Bulan) sebelum bisa menggunakan aplikasi.' 
-                  : `Sistem akan mem-backup riwayat Transaksi & Perkembangan lama (${state.archiveState.months} Bulan) ke Excel, lalu MENGHAPUSNYA permanen dari server.`}
-                <br/><br/>Masukkan <b>Password Akun Anda</b> untuk mengeksekusi:
-              </p>
-
+              <h2 style={{ color: state.archiveState.forced ? '#ef4444' : '#eab308' }}>Otorisasi Required</h2>
               <input 
-                type="password" 
-                placeholder="Masukkan Password..." 
+                type="password" placeholder="Password..." 
                 value={state.archiveState.password}
                 onChange={(e) => actions.setArchiveState(prev => ({ ...prev, password: e.target.value }))}
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center', letterSpacing: '2px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', margin: '20px 0', background: 'rgba(255,255,255,0.1)', color: 'white' }}
               />
-
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={actions.executeArchive} 
-                  disabled={state.archiveState.loading}
-                  style={{ flex: 1, padding: '12px', background: '#eab308', borderColor: '#eab308', color: '#000', fontWeight: 'bold' }}
-                >
-                  {state.archiveState.loading ? 'Memproses...' : '📦 Eksekusi'}
-                </button>
-                
-                {!state.archiveState.forced && (
-                  <button 
-                    className="btn btn-secondary" 
-                    onClick={() => actions.setArchiveState({ show: false, forced: false, password: '', loading: false, months: 6 })} 
-                    style={{ flex: 1, padding: '12px' }}
-                  >
-                    Batal
-                  </button>
-                )}
+                <button className="btn btn-primary" onClick={actions.executeArchive} disabled={state.archiveState.loading} style={{ flex: 1 }}>📦 Eksekusi</button>
+                {!state.archiveState.forced && <button className="btn btn-secondary" onClick={() => actions.setArchiveState({ show: false, forced: false, password: '', loading: false, months: 6 })} style={{ flex: 1 }}>Batal</button>}
               </div>
             </div>
           </div>
