@@ -60,7 +60,7 @@ export function OverviewTab({ overview, financeSummary, selectedBranch, employee
                  <button className="btn btn-primary btn-small" onClick={() => printQRCode('Masuk', employeeBarcodeIn, selectedBranch?.nama)} style={{ width: '100%' }}>🖨️ Print A4</button>
                </div>
                <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                 <h4 style={{ marginBottom: '10px', color: '#ef4444', fontWeight: 'bold' }}>QR Pulang</h4>
+                 <h4 style={{ marginBottom: '10px', color: '#10b981', fontWeight: 'bold' }}>QR Pulang</h4>
                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${employeeBarcodeOut}`} alt="QR Pulang" style={{ borderRadius: '8px', mixBlendMode: 'multiply' }} />
                  <div style={{ marginTop: '10px', fontSize: '12px', color: '#64748b', wordBreak: 'break-all', marginBottom: '15px' }}>{employeeBarcodeOut}</div>
                  <button className="btn btn-secondary btn-small" onClick={() => printQRCode('Pulang', employeeBarcodeOut, selectedBranch?.nama)} style={{ width: '100%' }}>🖨️ Print A4</button>
