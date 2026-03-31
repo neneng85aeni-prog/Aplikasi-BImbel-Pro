@@ -247,7 +247,7 @@ async function submitSiswa(event) {
     // 2. Terapkan nomor HP yang bersih dan urus Barcode
     const enriched = {
       ...siswaForm,
-      no_hp: cleanedHp, // Ini yang bikin nomor selalu +62
+      no_hp: cleanedHp,
       kode_qr: siswaForm.kode_qr ? siswaForm.kode_qr : generateStudentBarcode({ nama: siswaForm.nama, kelas: siswaForm.kelas, branchCode: branches.find((item) => item.id === siswaForm.branch_id)?.kode })
     }; 
     
@@ -257,9 +257,16 @@ async function submitSiswa(event) {
     
     setSiswaForm(INITIAL_SISWA_FORM); 
     setMessage('Siswa disimpan.'); 
-    await loadAllData() 
+    await loadAllData();
+    
+    // 👇 Popup jika berhasil
+    alert("✅ BERHASIL! Data siswa sudah terupdate."); 
+    
   } catch (error) { 
-    setErrorMsg(error.message) 
+    setErrorMsg(error.message);
+    
+    // 👇 Popup jika gagal (INI YANG PALING PENTING)
+    alert("❌ GAGAL: " + error.message); 
   } 
 }
   
