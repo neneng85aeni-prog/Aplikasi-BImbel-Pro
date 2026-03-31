@@ -17,6 +17,7 @@ import { LaporanTab } from './tabs/LaporanTab'
 import { PayrollTab } from './tabs/PayrollTab'
 import { DownloadTab } from './tabs/DownloadTab'
 import { PengeluaranTab } from './tabs/PengeluaranTab'
+import { LaporanGuruTab } from './tabs/LaporanGuruTab'
 import { InventoryTab } from './tabs/InventoryTab'
 import { MaintenanceTab } from './tabs/MaintenanceTab'
 
@@ -179,7 +180,8 @@ export function Dashboard({ state, actions }) {
             onStartEditTransaksi={actions.startEditTransaksi} 
           />
         )}
-        
+        {activeTab === 'laporan_guru' && (<LaporanGuruTab users={state.usersTampil} perkembanganTampil={state.perkembanganTampil} siswaTampil={state.siswaTampil}absensiSiswa={state.absensiSiswaTampil} />
+)}
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
         
         {/* === TAB MAINTENANCE BARU === */}
