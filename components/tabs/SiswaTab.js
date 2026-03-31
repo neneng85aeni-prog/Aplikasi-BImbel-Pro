@@ -81,7 +81,7 @@ export function SiswaTab({
   
   // STATE LOKAL UNTUK PAGINASI (HALAMAN)
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 5;
 
   // JIKA MENCARI SISWA, OTOMATIS KEMBALI KE HALAMAN 1
   const handleSearch = (e) => {
