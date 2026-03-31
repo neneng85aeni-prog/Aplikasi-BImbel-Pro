@@ -3,8 +3,6 @@ import QRCode from 'qrcode'
 import { INITIAL_SISWA_FORM } from '../../lib/constants'
 import { printBarcodeCard, BarcodePreview } from '../ui/BarcodePreview'
 
-
-
 async function openAndroidQrSharePage(item) {
   const value = item?.kode_qr || item?.id
   if (!value) {
@@ -85,16 +83,6 @@ export function SiswaTab({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  // === HANDLER BARU: BERSIHKAN DATA SEBELUM SUBMIT ===
-  const handleSubmitSiswa = (e) => {
-    e.preventDefault();
-    const cleanedData = {
-      ...siswaForm,
-      no_hp: formatNomorWA(siswaForm.no_hp)
-    };
-    onSubmit(cleanedData);
-  };
-
   // JIKA MENCARI SISWA, OTOMATIS KEMBALI KE HALAMAN 1
   const handleSearch = (e) => {
     if (setSearchSiswa) setSearchSiswa(e.target.value);
@@ -118,6 +106,7 @@ export function SiswaTab({
       {/* FORM PENDAFTARAN SISWA KIRI */}
       <div className="glass-card">
         <h2 className="section-title">Pendaftaran siswa</h2>
+        {/* KABEL YANG BENAR: onSubmit={onSubmit} agar tidak crash */}
         <form onSubmit={onSubmit}>
           <div className="grid grid-2">
             <div className="form-row"><label>Nama siswa</label><input value={siswaForm.nama} onChange={(e) => setSiswaForm({ ...siswaForm, nama: e.target.value })} required /></div>
@@ -141,7 +130,7 @@ export function SiswaTab({
         </form>
       </div>
 
-      {/* TABEL DAFTAR SISWA KANAN */}
+      {/* TABEL DAFTAR SISWA KANAN (SUDAH DIPERBAIKI LEBARNYA) */}
       <div className="glass-card">
         <h2 className="section-title">Daftar siswa</h2>
         
@@ -156,23 +145,56 @@ export function SiswaTab({
         </div>
 
         <div className="table-wrap">
-          <table>
+          <table style={{ minWidth: '800px' }}>
             <thead>
-              <tr><th>Nama</th><th>Cabang</th><th>Program</th><th>Alamat</th><th>Barcode</th><th>Aksi</th></tr>
+              <tr>
+                <th style={{ width: '25%' }}>Nama</th>
+                <th style={{ width: '15%' }}>Cabang</th>
+                <th style={{ width: '15%' }}>Program</th>
+                <th style={{ width: '20%' }}>Alamat</th>
+                <th style={{ width: '25%' }}>Aksi</th>
+              </tr>
             </thead>
             <tbody>
               {paginatedData.map((item) => (
                 <tr key={item.id}>
-                  <td><b>{item.nama}</b><div className="text-muted">{item.kelas || '-'} • Guru default: {item.users?.nama || '-'}</div></td>
-                  <td>{item.branches?.nama || '-'}</td>
-                  <td>{item.programs?.nama || '-'}</td>
-                  <td>{item.alamat || '-'}</td>
-                  <td><code>{item.kode_qr || '-'}</code></td>
+                  {/* KOLOM NAMA (GURU DISINGKAT) */}
                   <td>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', minWidth: '180px' }}>
+                    <b style={{ whiteSpace: 'nowrap' }}>{item.nama}</b>
+                    <div 
+                      className="text-muted" 
+                      style={{ 
+                        fontSize: '11px', 
+                        whiteSpace: 'nowrap', 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis', 
+                        maxWidth: '160px' 
+                      }}
+                    >
+                      {item.kelas || '-'} • Guru: {item.users?.nama?.split(' ')[0] || '-'}
+                    </div>
+                  </td>
+                  
+                  <td><span style={{ whiteSpace: 'nowrap' }}>{item.branches?.nama || '-'}</span></td>
+                  <td><span style={{ whiteSpace: 'nowrap' }}>{item.programs?.nama?.split(' ')[0] || '-'}</span></td>
+                  
+                  {/* KOLOM ALAMAT (DIPOTONG TITIK-TITIK JIKA PANJANG) */}
+                  <td>
+                    <div style={{ 
+                      whiteSpace: 'nowrap', 
+                      overflow: 'hidden', 
+                      textOverflow: 'ellipsis', 
+                      maxWidth: '120px' 
+                    }}>
+                      {item.alamat || '-'}
+                    </div>
+                  </td>
+                  
+                  {/* KOLOM AKSI (TOMBOL RAPI & DISATUKAN) */}
+                  <td>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: '4px' }}>
                       <button className="btn btn-secondary btn-small" type="button" onClick={() => onEdit(item)}>Edit</button>
-                      <button className="btn btn-secondary btn-small" type="button" onClick={() => onPrintBarcode(item)}>Print Desktop</button>
-                      <button className="btn btn-primary btn-small" type="button" onClick={() => openAndroidQrSharePage(item)}>Print Android</button>
+                      <button className="btn btn-secondary btn-small" type="button" onClick={() => onPrintBarcode(item)}>Print</button>
                       <button className="btn btn-danger btn-small" type="button" onClick={() => onDelete(item.id, item.nama)}>Hapus</button>
                     </div>
                   </td>
@@ -180,7 +202,7 @@ export function SiswaTab({
               ))}
               {paginatedData.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
                     {searchSiswa ? 'Siswa tidak ditemukan.' : 'Belum ada data siswa.'}
                   </td>
                 </tr>
