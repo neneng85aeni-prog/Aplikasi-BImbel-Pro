@@ -75,14 +75,8 @@ export function Dashboard({ state, actions }) {
             </button>
           ))}
           
-          {/* SHORTCUT MENU BARU (Supaya langsung muncul tanpa setting permissions) */}
-          <button 
-            className={`tab ${activeTab === 'laporan_guru' ? 'active' : ''}`} 
-            onClick={() => actions.setActiveTab('laporan_guru')}
-            style={{ border: '1px solid rgba(59, 130, 246, 0.5)' }}
-          >
-            📊 Laporan Guru
-          </button>
+         
+         
         </div>
 
         <div className="btn-row column sidebar-actions">
