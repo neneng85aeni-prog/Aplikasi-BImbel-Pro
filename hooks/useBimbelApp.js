@@ -340,18 +340,18 @@ export function useBimbelApp() {
       if (!matched) throw new Error('Siswa tidak ditemukan.'); 
       await ensureStudentSession(matched, progressInputMode === 'scan' ? 'scan' : 'manual'); 
 
-      // 👇 INI OBATNYA: Kita pisahkan 'guru_handle_id' agar tidak ikut terkirim ke database
+      // Pisahkan 'guru_handle_id' agar tidak ikut terkirim ke database
       const { guru_handle_id, ...cleanPayload } = payload;
       
       const res = await savePerkembangan({ 
-        ...cleanPayload, // Pakai data yang sudah dibersihkan
+        ...cleanPayload, 
         guru_id: user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || null) 
       }); 
       
       if (res.error) throw res.error; 
       
       setPerkembanganForm((prev) => ({ 
-        ...INITIAL_PERKEMBANGAN_FORM, 
+        ...INITIAL_PERKEMBANGAN_FORM, // <--- Tadi error karena kata PERKEMBANGAN di baris ini hilang
         siswa_id: matched.id, 
         guru_handle_id: user?.akses === 'guru' ? user.id : (prev.guru_handle_id || matched.guru_id || ''), 
         tanggal: TODAY() 
