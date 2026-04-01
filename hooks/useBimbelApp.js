@@ -229,8 +229,34 @@ export function useBimbelApp() {
 
   async function submitBranch(event) { event.preventDefault(); try { const res = await upsertBranch(validateBranchForm(branchForm), branchForm.id); if (res.error) throw res.error; setBranchForm(INITIAL_BRANCH_FORM); setMessage('Cabang disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function submitProgram(event) { event.preventDefault(); try { const res = await upsertProgram(validateProgramForm(programForm), programForm.id); if (res.error) throw res.error; setProgramForm(INITIAL_PROGRAM_FORM); setMessage('Program disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  async function submitUser(event) { event.preventDefault(); try { const payload = validateUserForm({ ...userForm, menu_permissions: userForm.menu_permissions?.length ? userForm.menu_permissions : defaultPermissionsByRole(userForm.akses) }); const res = await upsertUserViaRpc(payload, userForm.id); if (res.error) throw res.error; setUserForm(INITIAL_USER_FORM); setMessage('Karyawan disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  
+  async function submitUser(event) { 
+    event.preventDefault(); 
+    try { 
+      // 1. Cek apakah form berhasil divalidasi
+      const payload = validateUserForm({ 
+        ...userForm, 
+        menu_permissions: userForm.menu_permissions?.length ? userForm.menu_permissions : defaultPermissionsByRole(userForm.akses) 
+      }); 
+      
+      // 2. Kirim ke database
+      const res = await upsertUserViaRpc(payload, userForm.id); 
+      
+      // 3. Tangkap jika database menolak
+      if (res.error) throw res.error; 
+      
+      setUserForm(INITIAL_USER_FORM); 
+      setMessage('Karyawan disimpan.'); 
+      await loadAllData();
+
+      // Popup jika sukses
+      alert("✅ BERHASIL! Data karyawan tersimpan.");
+
+    } catch (error) { 
+      // Popup paksa jika gagal
+      setErrorMsg(error.message);
+      alert("❌ GAGAL MENYIMPAN: " + error.message); 
+    } 
+  } 
   function generateStudentBarcodeAction() { const branchCode = branches.find((item) => item.id === siswaForm.branch_id)?.kode || selectedBranch?.kode || 'PUSAT'; setSiswaForm((prev) => ({ ...prev, kode_qr: generateStudentBarcode({ nama: prev.nama, kelas: prev.kelas, branchCode }) })) }
   // KODE BARU (SUDAH ADA PEMBERSIH NOMOR HP)
 // KODE BARU (SUDAH ADA PEMBERSIH NOMOR HP, TANPA ALERT GANGGUAN)
