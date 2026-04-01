@@ -135,7 +135,19 @@ export function LaporanTab({
 
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Tanggal</th><th>Siswa</th><th>Keterangan</th><th>Nominal</th><th>Aksi</th></tr></thead>
+            <div className="table-wrap" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+          <table style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th style={{ position: 'sticky', top: 0, background: '#1e293b', zIndex: 10, borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Tanggal</th>
+                <th style={{ position: 'sticky', top: 0, background: '#1e293b', zIndex: 10, borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Siswa</th>
+                <th style={{ position: 'sticky', top: 0, background: '#1e293b', zIndex: 10, borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Keterangan</th>
+                <th style={{ position: 'sticky', top: 0, background: '#1e293b', zIndex: 10, borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Nominal</th>
+                <th style={{ position: 'sticky', top: 0, background: '#1e293b', zIndex: 10, borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* ... isi tabel tetap sama ... */}
             <tbody>
               {/* PEMBARUAN: Menggunakan data yang sudah dipotong per 10 (paginatedData) */}
               {paginatedData.map((item) => (
