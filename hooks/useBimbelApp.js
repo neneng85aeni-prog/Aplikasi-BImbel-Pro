@@ -351,7 +351,7 @@ export function useBimbelApp() {
       if (res.error) throw res.error; 
       
       setPerkembanganForm((prev) => ({ 
-        ...INITIAL_PERKEMBANGAN_FORM, // <--- Tadi error karena kata PERKEMBANGAN di baris ini hilang
+        ...INITIAL_PERKEMBANGAN_FORM, 
         siswa_id: matched.id, 
         guru_handle_id: user?.akses === 'guru' ? user.id : (prev.guru_handle_id || matched.guru_id || ''), 
         tanggal: TODAY() 
