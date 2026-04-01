@@ -29,9 +29,10 @@ export function LaporanGuruTab({ users, perkembanganTampil, siswaTampil, absensi
       const totalSiswaUnik = [...new Set(uniqueSiswaIds)].length;
 
       // C. TOTAL SESI (Sesuai kolom 'guru_handle_id' di tabel absensi_siswa)
-      const totalSesi = (absensiSiswa || []).filter(abs => {
-        const matchGuru = abs.guru_handle_id === guru.id; 
-        const matchDate = abs.tanggal >= start && abs.tanggal <= end;
+      // C. TOTAL SESI (Sekarang dihitung langsung dari jumlah baris perkembangan)
+      const totalSesi = (perkembanganTampil || []).filter(p => {
+        const matchGuru = p.guru_id === guru.id; 
+        const matchDate = p.tanggal >= start && p.tanggal <= end;
         return matchGuru && matchDate;
       }).length;
 
