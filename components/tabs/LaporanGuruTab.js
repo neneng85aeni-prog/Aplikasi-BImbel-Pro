@@ -5,35 +5,32 @@ export function LaporanGuruTab({ users, perkembanganTampil, siswaTampil, absensi
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  // 1. Ambil Bulan Sekarang untuk default filter
   const today = new Date();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
   const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
 
-  // Set default filter jika belum ada
   const start = startDate || firstDay;
   const end = endDate || lastDay;
 
   const laporanGuru = users
-    .filter(u => u.akses === 'guru' || u.akses === 'GURU')
+    .filter(u => u.akses?.toLowerCase() === 'guru')
     .map(guru => {
-      // A. TOTAL TERDAFTAR (Fixed dari Profil Siswa)
-      const terdaftar = siswaTampil.filter(s => s.guru_default_id === guru.id).length;
+      // A. TOTAL TERDAFTAR (Sesuai kolom 'guru_id' di tabel siswa)
+      const terdaftar = (siswaTampil || []).filter(s => s.guru_id === guru.id).length;
 
-      // B. TOTAL SISWA UNIK (Berapa anak yang pernah diajar di periode ini)
-      const uniqueSiswaIds = perkembanganTampil
+      // B. TOTAL SISWA UNIK (Sesuai kolom 'guru_id' di tabel perkembangan)
+      const uniqueSiswaIds = (perkembanganTampil || [])
         .filter(p => {
-          const matchGuru = p.guru_handle_id === guru.id;
+          const matchGuru = p.guru_id === guru.id; 
           const matchDate = p.tanggal >= start && p.tanggal <= end;
           return matchGuru && matchDate;
         })
         .map(p => p.siswa_id);
       const totalSiswaUnik = [...new Set(uniqueSiswaIds)].length;
 
-      // C. TOTAL KEDATANGAN / SESI (Menghitung setiap kali Scan Siswa)
-      // Kita hitung dari tabel absensi_siswa yang ditangani guru tersebut
+      // C. TOTAL SESI (Sesuai kolom 'guru_handle_id' di tabel absensi_siswa)
       const totalSesi = (absensiSiswa || []).filter(abs => {
-        const matchGuru = abs.guru_id === guru.id; // Pastikan kolom guru_id ada di tabel absensi
+        const matchGuru = abs.guru_handle_id === guru.id; 
         const matchDate = abs.tanggal >= start && abs.tanggal <= end;
         return matchGuru && matchDate;
       }).length;
@@ -79,7 +76,7 @@ export function LaporanGuruTab({ users, perkembanganTampil, siswaTampil, absensi
               <th>Nama Guru</th>
               <th style={{ textAlign: 'center' }}>Siswa Terdaftar (Profil)</th>
               <th style={{ textAlign: 'center' }}>Siswa Aktif (Unik)</th>
-              <th style={{ textAlign: 'center', background: 'rgba(59, 130, 246, 0.1)' }}>Total Sesi (Scan QR)</th>
+              <th style={{ textAlign: 'center', background: 'rgba(59, 130, 246, 0.1)' }}>Total Sesi (Aktif)</th>
               <th style={{ textAlign: 'center' }}>Status Keaktifan</th>
             </tr>
           </thead>
@@ -93,14 +90,17 @@ export function LaporanGuruTab({ users, perkembanganTampil, siswaTampil, absensi
                   {g.totalSesi} <span style={{fontSize: '12px'}}>Sesi</span>
                 </td>
                 <td style={{ textAlign: 'center' }}>
-                  {g.siswaUnik >= g.terdaftar ? (
-                    <span className="badge-success">Full Output</span>
+                  {g.siswaUnik >= g.terdaftar && g.terdaftar > 0 ? (
+                    <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>Full Output</span>
                   ) : (
-                    <span className="badge-danger">{g.selisih} Belum Terjamah</span>
+                    <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>{g.selisih} Belum Terjamah</span>
                   )}
                 </td>
               </tr>
             ))}
+            {laporanGuru.length === 0 && (
+              <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>Tidak ada data guru untuk periode ini.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
