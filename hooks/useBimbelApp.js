@@ -45,7 +45,7 @@ export function useBimbelApp() {
   const [siswa, setSiswa] = useState([])
   const [pembayaran, setPembayaran] = useState([])
   const [absensiSiswa, setAbsensiSiswa] = useState([])
-  const [perkembangan, setPerkembangan] = useState([])
+  const [, set] = useState([])
   const [absensiKaryawan, setAbsensiKaryawan] = useState([])
   const [bonusManual, setBonusManual] = useState([])
   const [reviews, setReviews] = useState([])
@@ -56,7 +56,7 @@ export function useBimbelApp() {
   const [programForm, setProgramForm] = useState(INITIAL_PROGRAM_FORM)
   const [userForm, setUserForm] = useState(INITIAL_USER_FORM)
   const [siswaForm, setSiswaForm] = useState(INITIAL_SISWA_FORM)
-  const [perkembanganForm, setPerkembanganForm] = useState(INITIAL_PERKEMBANGAN_FORM)
+  const [Form, setForm] = useState(INITIAL__FORM)
   const [kasirForm, setKasirForm] = useState(INITIAL_KASIR_FORM)
   const [bonusForm, setBonusForm] = useState(INITIAL_BONUS_FORM)
   const [employeeManualForm, setEmployeeManualForm] = useState(INITIAL_EMPLOYEE_MANUAL_FORM)
@@ -332,7 +332,37 @@ export function useBimbelApp() {
   function printStudentBarcode(item) { const isAndroid = /Android/i.test(navigator.userAgent); if (isAndroid) { QRCode.toDataURL(item.kode_qr || item.id, { margin: 1, width: 300 }).then((url) => { const link = document.createElement('a'); link.href = url; link.download = `${item.nama}-barcode.png`; link.click(); alert('QR disimpan.') }); return } printBarcodeCard({ title: `Barcode ${item.nama}`, subtitle: `${item.branches?.nama || '-'} • ${item.kelas || ''}`, value: item.kode_qr || item.id }) }
   function buildStudentInfo(matched) { return { ...matched, nominal: matched.programs?.nominal || 0, guruNama: matched.users?.nama || '-', programNama: matched.programs?.nama || '-' } }
   async function ensureStudentSession(matched, source = 'manual') { const guruHandleId = user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || ''); const attendancePayload = validateStudentAttendanceForm({ ...studentAttendanceForm, siswa_id: matched.id, guru_handle_id: guruHandleId, tanggal: perkembanganForm.tanggal || TODAY(), mode: 'masuk', status: 'hadir', catatan: source === 'scan' ? 'Scan sesi perkembangan' : 'Input sesi perkembangan' }); const attendanceRes = await saveStudentAttendance({ p_siswa_id: attendancePayload.siswa_id, p_guru_handle_id: attendancePayload.guru_handle_id, p_tanggal: attendancePayload.tanggal, p_mode: attendancePayload.mode, p_status: attendancePayload.status, p_catatan: attendancePayload.catatan, p_sumber: source }); if (attendanceRes.error) throw attendanceRes.error; setPerkembanganForm((prev) => ({ ...prev, siswa_id: matched.id, guru_handle_id: attendancePayload.guru_handle_id || '', tanggal: attendancePayload.tanggal })); setStudentAttendanceForm((prev) => ({ ...prev, siswa_id: matched.id, guru_handle_id: attendancePayload.guru_handle_id || '', tanggal: attendancePayload.tanggal, mode: 'masuk', status: 'hadir' })); setSelectedProgressStudent(matched); return attendancePayload }
-  async function submitPerkembangan(event) { event.preventDefault(); try { const payload = validatePerkembanganForm(perkembanganForm); const matched = siswaTampil.find((item) => item.id === payload.siswa_id); if (!matched) throw new Error('Siswa tidak ditemukan.'); await ensureStudentSession(matched, progressInputMode === 'scan' ? 'scan' : 'manual'); const res = await savePerkembangan({ ...payload, guru_id: user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || null) }); if (res.error) throw res.error; setPerkembanganForm((prev) => ({ ...INITIAL_PERKEMBANGAN_FORM, siswa_id: matched.id, guru_handle_id: user?.akses === 'guru' ? user.id : (prev.guru_handle_id || matched.guru_id || ''), tanggal: TODAY() })); setMessage('Perkembangan & kehadiran disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
+  async function submitPerkembangan(event) { 
+    event.preventDefault(); 
+    try { 
+      const payload = validatePerkembanganForm(perkembanganForm); 
+      const matched = siswaTampil.find((item) => item.id === payload.siswa_id); 
+      if (!matched) throw new Error('Siswa tidak ditemukan.'); 
+      await ensureStudentSession(matched, progressInputMode === 'scan' ? 'scan' : 'manual'); 
+
+      // 👇 INI OBATNYA: Kita pisahkan 'guru_handle_id' agar tidak ikut terkirim ke database
+      const { guru_handle_id, ...cleanPayload } = payload;
+      
+      const res = await savePerkembangan({ 
+        ...cleanPayload, // Pakai data yang sudah dibersihkan
+        guru_id: user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || null) 
+      }); 
+      
+      if (res.error) throw res.error; 
+      
+      setPerkembanganForm((prev) => ({ 
+        ...INITIAL_PERKEMBANGAN_FORM, 
+        siswa_id: matched.id, 
+        guru_handle_id: user?.akses === 'guru' ? user.id : (prev.guru_handle_id || matched.guru_id || ''), 
+        tanggal: TODAY() 
+      })); 
+      
+      setMessage('Perkembangan & kehadiran disimpan.'); 
+      await loadAllData();
+    } catch (error) { 
+      setErrorMsg(error.message);
+    } 
+  }
   async function prosesScanPerkembangan(decodedText) { try { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedProgressStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } await ensureStudentSession(matched, 'scan'); setStudentScanInfo(`Siswa ${matched.nama} discan.`); setMessage(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function prosesScanSiswa(decodedText) { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, cart: [] }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
   async function selectProgressStudentById(id, source = 'manual') { try { if (!id) { setSelectedProgressStudent(null); setPerkembanganForm((prev) => ({ ...prev, siswa_id: '' })); return } const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; await ensureStudentSession(matched, source); setStudentScanInfo(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
