@@ -56,7 +56,7 @@ export function useBimbelApp() {
   const [programForm, setProgramForm] = useState(INITIAL_PROGRAM_FORM)
   const [userForm, setUserForm] = useState(INITIAL_USER_FORM)
   const [siswaForm, setSiswaForm] = useState(INITIAL_SISWA_FORM)
-  const [Form, setForm] = useState(INITIAL__FORM)
+  const [perkembanganForm, setPerkembanganForm] = useState(INITIAL_PERKEMBANGAN_FORM)
   const [kasirForm, setKasirForm] = useState(INITIAL_KASIR_FORM)
   const [bonusForm, setBonusForm] = useState(INITIAL_BONUS_FORM)
   const [employeeManualForm, setEmployeeManualForm] = useState(INITIAL_EMPLOYEE_MANUAL_FORM)
