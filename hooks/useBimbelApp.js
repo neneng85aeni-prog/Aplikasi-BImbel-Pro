@@ -231,29 +231,37 @@ export function useBimbelApp() {
   async function submitProgram(event) { event.preventDefault(); try { const res = await upsertProgram(validateProgramForm(programForm), programForm.id); if (res.error) throw res.error; setProgramForm(INITIAL_PROGRAM_FORM); setMessage('Program disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function submitUser(event) { 
     event.preventDefault(); 
+    
+    // PELACAK 1
+    alert("1. Tombol berhasil ditekan dan merespon!"); 
+    
     try { 
-      // 1. Cek apakah form berhasil divalidasi
       const payload = validateUserForm({ 
         ...userForm, 
         menu_permissions: userForm.menu_permissions?.length ? userForm.menu_permissions : defaultPermissionsByRole(userForm.akses) 
       }); 
       
-      // 2. Kirim ke database
+      // PELACAK 2
+      alert("2. Form lolos validasi! Sedang mengirim ke database...");
+      
       const res = await upsertUserViaRpc(payload, userForm.id); 
       
-      // 3. Tangkap jika database menolak
-      if (res.error) throw res.error; 
+      if (res.error) {
+        // PELACAK JIKA SUPABASE MENOLAK
+        alert("🚨 ERROR DARI DATABASE: " + JSON.stringify(res.error));
+        throw res.error; 
+      }
       
       setUserForm(INITIAL_USER_FORM); 
       setMessage('Karyawan disimpan.'); 
       await loadAllData();
 
-      // Popup jika sukses
+      // PELACAK 3
       alert("✅ BERHASIL! Data karyawan tersimpan.");
 
     } catch (error) { 
-      // Popup paksa jika gagal
       setErrorMsg(error.message);
+      // PELACAK JIKA GAGAL DI TENGAH JALAN
       alert("❌ GAGAL MENYIMPAN: " + error.message); 
     } 
   } 
