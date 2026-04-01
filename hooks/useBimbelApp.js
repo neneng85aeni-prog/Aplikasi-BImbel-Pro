@@ -389,7 +389,31 @@ export function useBimbelApp() {
   }
   async function prosesScanPerkembangan(decodedText) { try { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedProgressStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } await ensureStudentSession(matched, 'scan'); setStudentScanInfo(`Siswa ${matched.nama} discan.`); setMessage(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function prosesScanSiswa(decodedText) { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, cart: [] }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
-  async function selectProgressStudentById(id, source = 'manual') { try { if (!id) { setSelectedProgressStudent(null); setPerkembanganForm((prev) => ({ ...prev, siswa_id: '' })); return } const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; await ensureStudentSession(matched, source); setStudentScanInfo(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
+  async function selectProgressStudentById(id) { 
+    try { 
+      if (!id) { 
+        setSelectedProgressStudent(null); 
+        setPerkembanganForm((prev) => ({ ...prev, siswa_id: '' })); 
+        return; 
+      } 
+      const matched = siswaTampil.find((item) => item.id === id); 
+      if (!matched) return; 
+
+      const guruHandleId = user?.akses === 'guru' ? user.id : (matched.guru_id || null); 
+
+      setPerkembanganForm((prev) => ({ 
+        ...prev, 
+        siswa_id: matched.id, 
+        guru_handle_id: guruHandleId || '', 
+        tanggal: prev.tanggal || TODAY() 
+      })); 
+      
+      setSelectedProgressStudent(matched);
+      setStudentScanInfo(`Sesi ${matched.nama} siap diinput.`); 
+    } catch (error) { 
+      setErrorMsg(error.message); 
+    } 
+  }
   function selectStudentById(id) { if (!id) return setSelectedStudent(null); const matched = siswaTampil.find((item) => item.id === id); if (!matched) return; const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, cart: [] }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
   
   // === SUBMIT KASIR KERANJANG (CART) ===
