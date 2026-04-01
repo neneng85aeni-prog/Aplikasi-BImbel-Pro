@@ -346,7 +346,22 @@ export function useBimbelApp() {
   function startEditInventory(item) { setInventoryForm({ id: item.id, nama: item.nama, harga: item.harga, stok: item.stok, branch_id: item.branch_id || '' }); setActiveTab('inventory') }
   function printStudentBarcode(item) { const isAndroid = /Android/i.test(navigator.userAgent); if (isAndroid) { QRCode.toDataURL(item.kode_qr || item.id, { margin: 1, width: 300 }).then((url) => { const link = document.createElement('a'); link.href = url; link.download = `${item.nama}-barcode.png`; link.click(); alert('QR disimpan.') }); return } printBarcodeCard({ title: `Barcode ${item.nama}`, subtitle: `${item.branches?.nama || '-'} • ${item.kelas || ''}`, value: item.kode_qr || item.id }) }
   function buildStudentInfo(matched) { return { ...matched, nominal: matched.programs?.nominal || 0, guruNama: matched.users?.nama || '-', programNama: matched.programs?.nama || '-' } }
-  async function ensureStudentSession(matched, source = 'manual') { const guruHandleId = user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || ''); const attendancePayload = validateStudentAttendanceForm({ ...studentAttendanceForm, siswa_id: matched.id, guru_handle_id: guruHandleId, tanggal: perkembanganForm.tanggal || TODAY(), mode: 'masuk', status: 'hadir', catatan: source === 'scan' ? 'Scan sesi perkembangan' : 'Input sesi perkembangan' }); const attendanceRes = await saveStudentAttendance({ p_siswa_id: attendancePayload.siswa_id, p_guru_handle_id: attendancePayload.guru_handle_id, p_tanggal: attendancePayload.tanggal, p_mode: attendancePayload.mode, p_status: attendancePayload.status, p_catatan: attendancePayload.catatan, p_sumber: source }); if (attendanceRes.error) throw attendanceRes.error; setPerkembanganForm((prev) => ({ ...prev, siswa_id: matched.id, guru_handle_id: attendancePayload.guru_handle_id || '', tanggal: attendancePayload.tanggal })); setStudentAttendanceForm((prev) => ({ ...prev, siswa_id: matched.id, guru_handle_id: attendancePayload.guru_handle_id || '', tanggal: attendancePayload.tanggal, mode: 'masuk', status: 'hadir' })); setSelectedProgressStudent(matched); return attendancePayload }
+  async function ensureStudentSession(matched, source = 'manual') { 
+    const guruHandleId = user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || null); 
+    
+    const attendanceRes = await saveStudentAttendance({ 
+      p_siswa_id: matched.id, 
+      p_guru_handle_id: guruHandleId, 
+      p_tanggal: perkembanganForm.tanggal || TODAY(), 
+      p_mode: 'masuk', 
+      p_status: 'hadir', 
+      p_catatan: source === 'scan' ? 'Scan sesi perkembangan' : 'Input sesi perkembangan', 
+      p_sumber: 'scan' // ✨ PAKSA JADI 'scan' AGAR TERBACA DI LAPORAN PERFORMA
+    }); 
+    
+    if (attendanceRes.error) throw attendanceRes.error; 
+    // ... sisa kode tetap sama
+  }
   async function submitPerkembangan(event) { 
     event.preventDefault(); 
     try { 
