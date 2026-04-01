@@ -1,4 +1,82 @@
-return (
+import { useState, useMemo } from 'react'
+import { formatRupiah, formatTanggal } from '../../lib/format'
+
+export function LaporanTab({ 
+  financeSummary, pembayaran, branches, selectedBranchId, setSelectedBranchId, 
+  searchTransaksi, setSearchTransaksi, onDeleteTransaksi,
+  editTransaksiForm, setEditTransaksiForm, onSubmitEditTransaksi, onStartEditTransaksi,
+  pengeluaran = [] 
+}) {
+  // === STATE UNTUK PERIODE & PAGINATION ===
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // === MENGHITUNG STATISTIK HARIAN, MINGGUAN, BULANAN ===
+  const stats = useMemo(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    const getMonday = (d) => {
+      const day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(new Date(d).setDate(diff)).toISOString().slice(0, 10);
+    };
+    const mondayStr = getMonday(today);
+    const monthStr = todayStr.slice(0, 7); 
+
+    let rekap = { harianMasuk: 0, harianKeluar: 0, mingguanMasuk: 0, mingguanKeluar: 0, bulananMasuk: 0, bulananKeluar: 0 };
+
+    pembayaran.forEach(p => {
+      const tgl = p.tanggal ? p.tanggal.slice(0, 10) : '';
+      const nominal = Number(p.nominal || p.jumlah_bayar || 0);
+      if (tgl === todayStr) rekap.harianMasuk += nominal;
+      if (tgl >= mondayStr) rekap.mingguanMasuk += nominal;
+      if (tgl.startsWith(monthStr)) rekap.bulananMasuk += nominal;
+    });
+
+    pengeluaran.forEach(p => {
+      const tgl = p.tanggal ? p.tanggal.slice(0, 10) : '';
+      const nominal = Number(p.nominal || p.jumlah || 0);
+      if (tgl === todayStr) rekap.harianKeluar += nominal;
+      if (tgl >= mondayStr) rekap.mingguanKeluar += nominal;
+      if (tgl.startsWith(monthStr)) rekap.bulananKeluar += nominal;
+    });
+
+    return rekap;
+  }, [pembayaran, pengeluaran]);
+
+  // === FILTER TRANSAKSI BERDASARKAN PERIODE ===
+  const filteredData = useMemo(() => {
+    return pembayaran.filter(item => {
+      const tgl = item.tanggal ? item.tanggal.slice(0, 10) : '';
+      if (startDate && tgl < startDate) return false;
+      if (endDate && tgl > endDate) return false;
+      return true;
+    });
+  }, [pembayaran, startDate, endDate]);
+
+  // === PAGINATION ===
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // === FITUR DOWNLOAD ===
+  const handleDownload = () => {
+    let csv = "Tanggal,Siswa,Keterangan,Nominal\n";
+    filteredData.forEach(t => {
+      const tgl = formatTanggal(t.tanggal);
+      const siswa = t.siswa?.nama || '-';
+      const ket = (t.keterangan || t.programs?.nama || '').replace(/,/g, ' '); 
+      const nom = t.nominal || 0;
+      csv += `"${tgl}","${siswa}","${ket}","${nom}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Laporan_Transaksi.csv`;
+    link.click();
+  };
+
+  return (
     <div className="grid gap-lg">
       
       {/* 1. STATISTIK HARIAN, MINGGUAN, BULANAN */}
@@ -20,11 +98,9 @@ return (
         </div>
       </div>
 
-      {/* 2. AREA RIWAYAT TRANSAKSI */}
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Riwayat Transaksi</h2>
-          
           <div className="btn-row">
             <input type="text" placeholder="Cari..." value={searchTransaksi} onChange={(e) => {setSearchTransaksi(e.target.value); setCurrentPage(1);}} style={{ padding: '8px', borderRadius: '6px' }} />
             <select value={selectedBranchId} onChange={(e) => {setSelectedBranchId(e.target.value); setCurrentPage(1);}} style={{ padding: '8px', borderRadius: '6px' }}>
@@ -34,7 +110,6 @@ return (
           </div>
         </div>
 
-        {/* FILTER PERIODE & DOWNLOAD */}
         <div className="btn-row" style={{ flexWrap: 'wrap', marginBottom: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '12px', color: '#94a3b8' }}>Periode:</span>
@@ -50,7 +125,6 @@ return (
           </button>
         </div>
 
-        {/* TABEL DENGAN STICKY HEADER */}
         <div className="table-wrap" style={{ maxHeight: '500px', overflowY: 'auto', position: 'relative' }}>
           <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
             <thead>
@@ -84,7 +158,6 @@ return (
           </table>
         </div>
 
-        {/* PAGINATION */}
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
             <button className="btn btn-secondary btn-small" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>◀ Prev</button>
@@ -94,7 +167,6 @@ return (
         )}
       </div>
 
-      {/* MODAL EDIT */}
       {editTransaksiForm && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <form onSubmit={onSubmitEditTransaksi} className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '25px', border: '1px solid rgba(255,255,255,0.2)' }}>
@@ -116,3 +188,4 @@ return (
       )}
     </div>
   )
+}
