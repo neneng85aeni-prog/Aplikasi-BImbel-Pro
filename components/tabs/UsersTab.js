@@ -6,30 +6,16 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
   // === FUNGSI HELPER: PEMBERSIH NOMOR TELEPON ===
   const formatNomorWA = (nomor) => {
     if (!nomor) return '';
-    // Hapus spasi, strip, atau titik
     let cleaned = nomor.replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '');
-    // Ubah 0 jadi +62
     if (cleaned.startsWith('0')) {
       return '+62' + cleaned.slice(1);
     }
-    // Tambah + jika diawali 62 tapi belum ada +
     if (cleaned.startsWith('62') && !cleaned.startsWith('+62')) {
       return '+' + cleaned;
     }
     return cleaned;
   };
 
-  // === HANDLER SUBMIT: BERSIHKAN NOMOR SEBELUM DISIMPAN ===
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const cleanedData = {
-      ...userForm,
-      no_telepon: formatNomorWA(userForm.no_telepon) // SULAP NOMOR DI SINI ✨
-    };
-    onSubmit(cleanedData);
-  };
-
-  // Fungsi untuk Centang / Hapus Centang Hak Akses
   const handleTogglePermission = (key) => {
     const currentPerms = userForm.menu_permissions || []
     if (currentPerms.includes(key)) {
@@ -39,14 +25,12 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
     }
   }
 
-  // Fungsi Pilih Semua Menu
   const handleSelectAll = () => {
     setUserForm({ ...userForm, menu_permissions: ALL_MENU_KEYS })
   }
 
-  // Fungsi Kosongkan Semua Menu
   const handleClearAll = () => {
-    setUserForm({ ...userForm, menu_permissions: ['overview'] }) // Minimal sisakan overview agar tidak error
+    setUserForm({ ...userForm, menu_permissions: ['overview'] }) 
   }
 
   return (
@@ -54,8 +38,8 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
       <div className="glass-card">
         <h2 className="section-title">Manajemen Karyawan</h2>
         
-        {/* Update onSubmit menggunakan handleSubmit lokal */}
-        <form onSubmit={handleSubmit} autoComplete="off">
+        {/* KEMBALIKAN KE onSubmit BAWAAN AGAR TIDAK SILENT CRASH */}
+        <form onSubmit={onSubmit} autoComplete="off">
           <div className="grid grid-2">
             <div className="form-row">
               <label>Nama Lengkap</label>
@@ -74,7 +58,15 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
             </div>
             <div className="form-row">
               <label>No. Telepon / WA</label>
-              <input type="text" value={userForm.no_telepon} onChange={(e) => setUserForm({ ...userForm, no_telepon: e.target.value })} placeholder="Cth: 08123456789" required autoComplete="off" />
+              {/* SULAP NOMOR PINDAH KE SINI ✨ (Akan otomatis diformat saat diketik) */}
+              <input 
+                type="text" 
+                value={userForm.no_telepon || ''} 
+                onChange={(e) => setUserForm({ ...userForm, no_telepon: formatNomorWA(e.target.value) })} 
+                placeholder="Cth: +628123456789" 
+                required 
+                autoComplete="off" 
+              />
             </div>
           </div>
           
@@ -92,7 +84,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
             </div>
             <div className="form-row">
               <label>Penempatan Cabang</label>
-              <select value={userForm.branch_id} onChange={(e) => setUserForm({ ...userForm, branch_id: e.target.value })} style={{ background: 'rgba(255,255,255,0.05)', color: 'inherit' }}>
+              <select value={userForm.branch_id || ''} onChange={(e) => setUserForm({ ...userForm, branch_id: e.target.value })} style={{ background: 'rgba(255,255,255,0.05)', color: 'inherit' }}>
                 <option value="" style={{ color: 'black' }}>Pusat / Semua Cabang</option>
                 {branches.map((b) => <option key={b.id} value={b.id} style={{ color: 'black' }}>{b.nama}</option>)}
               </select>
@@ -138,7 +130,7 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
           <h3 style={{ marginTop: '20px', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Setup Gaji & Tunjangan</h3>
           <div className="form-row">
             <label>Sistem Gaji</label>
-            <select value={userForm.salary_type} onChange={(e) => setUserForm({ ...userForm, salary_type: e.target.value })} style={{ background: 'rgba(255,255,255,0.05)', color: 'inherit' }}>
+            <select value={userForm.salary_type || 'fixed'} onChange={(e) => setUserForm({ ...userForm, salary_type: e.target.value })} style={{ background: 'rgba(255,255,255,0.05)', color: 'inherit' }}>
               {SALARY_TYPE_OPTIONS.map((opt) => <option key={opt} value={opt} style={{ color: 'black' }}>{opt.replace('_', ' ').toUpperCase()}</option>)}
             </select>
           </div>
@@ -146,22 +138,22 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
           <div className="grid grid-2">
             <div className="form-row">
               <label>Gaji Pokok (Bulan)</label>
-              <input type="number" value={userForm.salary_fixed} onChange={(e) => setUserForm({ ...userForm, salary_fixed: e.target.value })} placeholder="0" />
+              <input type="number" value={userForm.salary_fixed || ''} onChange={(e) => setUserForm({ ...userForm, salary_fixed: e.target.value })} placeholder="0" />
             </div>
             <div className="form-row">
               <label>Honor Mengajar (Fee per Siswa)</label>
-              <input type="number" value={userForm.student_fee_daily} onChange={(e) => setUserForm({ ...userForm, student_fee_daily: e.target.value })} placeholder="0" />
+              <input type="number" value={userForm.student_fee_daily || ''} onChange={(e) => setUserForm({ ...userForm, student_fee_daily: e.target.value })} placeholder="0" />
             </div>
           </div>
 
           <div className="grid grid-2">
             <div className="form-row">
               <label>Target Siswa (Bulan)</label>
-              <input type="number" value={userForm.monthly_bonus_target} onChange={(e) => setUserForm({ ...userForm, monthly_bonus_target: e.target.value })} placeholder="0" />
+              <input type="number" value={userForm.monthly_bonus_target || ''} onChange={(e) => setUserForm({ ...userForm, monthly_bonus_target: e.target.value })} placeholder="0" />
             </div>
             <div className="form-row">
               <label>Bonus Jika Capai Target</label>
-              <input type="number" value={userForm.bonus_amount} onChange={(e) => setUserForm({ ...userForm, bonus_amount: e.target.value })} placeholder="0" />
+              <input type="number" value={userForm.bonus_amount || ''} onChange={(e) => setUserForm({ ...userForm, bonus_amount: e.target.value })} placeholder="0" />
             </div>
           </div>
 
