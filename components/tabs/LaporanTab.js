@@ -82,11 +82,7 @@ export function LaporanTab({
     <div className="grid gap-lg">
       
       {/* 1. STATISTIK UTAMA (KODE ASLI) */}
-      <div className="grid grid-3 compact-stats">
-        <div className="glass-card" style={{ padding: '16px' }}><p className="text-muted" style={{ fontSize: '13px', margin: 0 }}>Pemasukan Total</p><h3 style={{ fontSize: '22px', margin: '4px 0 0', color: '#10b981' }}>{formatRupiah(financeSummary.pemasukan)}</h3></div>
-        <div className="glass-card" style={{ padding: '16px' }}><p className="text-muted" style={{ fontSize: '13px', margin: 0 }}>Pengeluaran Total</p><h3 style={{ fontSize: '22px', margin: '4px 0 0', color: '#ef4444' }}>{formatRupiah(financeSummary.pengeluaran)}</h3></div>
-        <div className="glass-card" style={{ padding: '16px' }}><p className="text-muted" style={{ fontSize: '13px', margin: 0 }}>Net Laba</p><h3 style={{ fontSize: '22px', margin: '4px 0 0', color: financeSummary.laba >= 0 ? '#3b82f6' : '#ef4444' }}>{formatRupiah(financeSummary.laba)}</h3></div>
-      </div>
+      
 
       {/* 2. TAMBAHAN: STATISTIK HARIAN, MINGGUAN, BULANAN */}
       <div className="grid grid-3 compact-stats" style={{ marginTop: '-10px' }}>
