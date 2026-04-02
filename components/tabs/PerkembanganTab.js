@@ -28,7 +28,7 @@ export function PerkembanganTab({
   // === FILTER CERDAS UNTUK TABEL RIWAYAT ===
   const filteredHistory = (perkembanganTampil || []).filter(item => {
     // 1. Filter Akses: Hanya tampilkan data miliknya jika bukan admin/kasir
-    if (!canAccessSiswaMenu && item.guru_handle_id !== user?.id) return false;
+    if (!canAccessSiswaMenu && item.guru_id !== user?.id) return false;
 
     // 2. Filter Periode Tanggal
     const itemDate = item.tanggal;
