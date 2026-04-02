@@ -362,7 +362,7 @@ export function useBimbelApp() {
       const payload = validatePerkembanganForm(perkembanganForm); 
       const matched = siswaTampil.find((item) => item.id === payload.siswa_id); 
       if (!matched) throw new Error('Siswa tidak ditemukan.'); 
-      await ensureStudentSession(matched, progressInputMode === 'scan' ? 'scan' : 'manual'); 
+     
 
       // Pisahkan 'guru_handle_id' agar tidak ikut terkirim ke database
       const { guru_handle_id, ...cleanPayload } = payload;
@@ -387,7 +387,30 @@ export function useBimbelApp() {
       setErrorMsg(error.message);
     } 
   }
-  async function prosesScanPerkembangan(decodedText) { try { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedProgressStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } await ensureStudentSession(matched, 'scan'); setStudentScanInfo(`Siswa ${matched.nama} discan.`); setMessage(`Sesi ${matched.nama} siap diinput.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
+  async function prosesScanPerkembangan(decodedText) { 
+    try { 
+      const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); 
+      if (!matched) { 
+        setSelectedProgressStudent(null); 
+        setStudentScanInfo(`QR tidak dikenali`); 
+        return; 
+      } 
+      
+      // Update form tanpa panggil ensureStudentSession
+      setPerkembanganForm((prev) => ({ 
+        ...prev, 
+        siswa_id: matched.id, 
+        guru_handle_id: user?.akses === 'guru' ? user.id : (matched.guru_id || ''), 
+        tanggal: prev.tanggal || TODAY() 
+      })); 
+
+      setSelectedProgressStudent(matched);
+      setStudentScanInfo(`Siswa ${matched.nama} discan.`); 
+      setMessage(`Sesi ${matched.nama} siap diinput.`); 
+    } catch (error) { 
+      setErrorMsg(error.message);
+    } 
+  }
   async function prosesScanSiswa(decodedText) { const matched = siswaTampil.find((item) => item.kode_qr === decodedText || item.id === decodedText); if (!matched) { setSelectedStudent(null); setStudentScanInfo(`QR tidak dikenali`); return } const info = buildStudentInfo(matched); setSelectedStudent(info); setKasirForm({ ...INITIAL_KASIR_FORM, cart: [] }); setStudentScanInfo(`Siswa: ${matched.nama}`) }
   async function selectProgressStudentById(id) { 
     try { 
@@ -399,12 +422,12 @@ export function useBimbelApp() {
       const matched = siswaTampil.find((item) => item.id === id); 
       if (!matched) return; 
 
-      const guruHandleId = user?.akses === 'guru' ? user.id : (matched.guru_id || null); 
+      const guruHandleId = user?.akses === 'guru' ? user.id : (matched.guru_id || ''); 
 
       setPerkembanganForm((prev) => ({ 
         ...prev, 
         siswa_id: matched.id, 
-        guru_handle_id: guruHandleId || '', 
+        guru_handle_id: guruHandleId, 
         tanggal: prev.tanggal || TODAY() 
       })); 
       
