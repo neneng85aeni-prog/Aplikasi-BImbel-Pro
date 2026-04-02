@@ -26,29 +26,7 @@ export function PerkembanganTab({
   const canAccessSiswaMenu = Array.isArray(user?.menu_permissions) && user.menu_permissions.includes('siswa');
 
   // === FILTER CERDAS UNTUK TABEL RIWAYAT ===
-  const filteredHistory = (perkembanganTampil || []).filter(item => {
-    // 1. Filter Akses: Hanya tampilkan data miliknya jika bukan admin/kasir
-    if (!canAccessSiswaMenu && item.guru_handle_id !== user?.id) return false;
-
-    // 2. Filter Periode Tanggal
-    const itemDate = item.tanggal;
-    if (startDate && itemDate < startDate) return false;
-    if (endDate && itemDate > endDate) return false;
-
-    // 3. Filter Pencarian Teks
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const isMatch = (
-        item.siswa?.nama?.toLowerCase().includes(q) ||
-        item.users?.nama?.toLowerCase().includes(q) ||
-        item.catatan?.toLowerCase().includes(q) ||
-        formatTanggal(item.tanggal).toLowerCase().includes(q)
-      );
-      if (!isMatch) return false;
-    }
-
-    return true;
-  });
+  
 
   // === PEMOTONGAN DATA UNTUK HALAMAN (PAGINASI) ===
   const totalPages = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE);
