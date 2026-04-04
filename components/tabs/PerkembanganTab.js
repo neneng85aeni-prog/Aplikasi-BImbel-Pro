@@ -18,8 +18,10 @@ export function PerkembanganTab({
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(lastDay);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
-
+  const ITEMS_PER_PAGE = 5;
+// === CEK AKSES MENU SISWA (Untuk Tombol WA) ===
+  const canAccessSiswaMenu = Array.isArray(user?.menu_permissions) && user.menu_permissions.includes('siswa');
+  
   // === FITUR AUTO-FILTER (BARU) ✨ ===
   // Jika ada siswa yang discan/dipilih, otomatis isi kolom pencarian tabel dengan namanya
   useEffect(() => {
@@ -156,14 +158,22 @@ export function PerkembanganTab({
               <textarea value={perkembanganForm.catatan} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, catatan: e.target.value })} placeholder="Tulis progres belajar siswa..." rows="4" required />
             </div>
             
-            <div className="btn-row">
-              <button className="btn btn-primary" type="submit" disabled={!perkembanganForm.siswa_id} style={{ flex: 2 }}>
-                {perkembanganForm.id ? '💾 Update Laporan' : '💾 Simpan Laporan'}
-              </button>
-              <button className="btn btn-secondary" type="button" onClick={resetForm} style={{ flex: 1 }}>Batal</button>
-            </div>
-          </form>
-        </div>
+            <div className="btn-row" style={{ gap: '5px', justifyContent: 'center' }}>
+                        <button className="btn btn-secondary btn-small" onClick={() => startEdit(item)}>Edit</button>
+                        
+                        <button className="btn btn-danger btn-small" onClick={() => {
+                          if (typeof onDeletePerkembangan === 'function') {
+                            onDeletePerkembangan(item.id, item.siswa?.nama);
+                          } else {
+                            alert("Kabel Hapus di dashboard.js belum terpasang, Mas!");
+                          }
+                        }}>Hapus</button>
+
+                        {/* Tombol WA Hanya Muncul Jika Punya Akses Menu Siswa ✨ */}
+                        {canAccessSiswaMenu && (
+                          <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981' }}>WA</button>
+                        )}
+                      </div>
 
         {/* BAGIAN KANAN: RIWAYAT */}
         <div className="glass-card">
