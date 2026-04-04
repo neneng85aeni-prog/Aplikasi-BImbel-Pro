@@ -11,15 +11,8 @@ export function KasirTab({
   const [manualType, setManualType] = useState('barang')
   const [manualItem, setManualItem] = useState({ inventory_id: '', nama: '', harga: '', qty: 1 })
   
-  // === STATE BARU: MODE PENCARIAN SISWA & KEYBOARD HP ===
+  // === STATE BARU: MODE PENCARIAN SISWA ===
   const [searchMode, setSearchMode] = useState('scan'); 
-  const [siswaSearchTerm, setSiswaSearchTerm] = useState(''); // Pancingan Keyboard HP
-
-  // --- LOGIKA FILTER SISWA MANUAL ---
-  const filteredSiswaOptions = (siswaOptions || []).filter(s => 
-    s.nama?.toLowerCase().includes(siswaSearchTerm.toLowerCase()) || 
-    (s.branches?.nama || '').toLowerCase().includes(siswaSearchTerm.toLowerCase())
-  );
 
   // --- LOGIKA PERHITUNGAN OTOMATIS POS ---
   const cart = kasirForm.cart || []
@@ -42,7 +35,6 @@ export function KasirTab({
   
   const handleCancel = () => {
     onSelectStudent('') // Lepas siswa terpilih
-    setSiswaSearchTerm('') // Bersihkan kolom ketik HP
     setKasirForm({ status: 'lunas', nominal: '', diskon: '', diskon_tipe: 'nominal', nominal_bayar: '', keterangan: '', metode_bayar: 'cash', program_id: '', jenis_transaksi: 'program', inventory_id: '', cart: [] })
   }
 
@@ -96,29 +88,15 @@ export function KasirTab({
               {studentScanInfo && <div style={{ textAlign: 'center', fontSize: '13px', color: '#3b82f6', marginBottom: '10px' }}>{studentScanInfo}</div>}
             </div>
           ) : (
-            <div className="form-row" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              
-              {/* === KOTAK PANCINGAN KEYBOARD HP === */}
-              <input 
-                type="text" 
-                placeholder="🔍 Ketik nama siswa di sini..." 
-                value={siswaSearchTerm} 
-                onChange={(e) => setSiswaSearchTerm(e.target.value)}
-                style={{ 
-                  padding: '12px', fontSize: '14px', borderRadius: '8px', 
-                  border: '1px solid rgba(255,255,255,0.3)', 
-                  background: 'rgba(255,255,255,0.05)', color: '#fff', width: '100%' 
-                }}
-              />
-              
-              <select value={selectedStudent?.id || ''} onChange={(e) => onSelectStudent(e.target.value)} style={{ padding: '12px', fontSize: '15px', width: '100%' }}>
-                <option value="">-- Pilih dari Hasil ({filteredSiswaOptions.length} Siswa) --</option>
-                {filteredSiswaOptions.map(s => <option key={s.id} value={s.id}>{s.nama} ({s.branches?.nama || 'Pusat'})</option>)}
+            <div className="form-row">
+              <select value={selectedStudent?.id || ''} onChange={(e) => onSelectStudent(e.target.value)} style={{ padding: '12px', fontSize: '15px' }}>
+                <option value="">-- Ketik/Pilih Nama Siswa --</option>
+                {siswaOptions.map(s => <option key={s.id} value={s.id}>{s.nama} ({s.branches?.nama || 'Pusat'})</option>)}
               </select>
             </div>
           )}
 
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '15px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
             <span style={{ fontSize: '12px', color: '#94a3b8' }}>Status Siswa Terpilih:</span>
             <div style={{ fontSize: '16px', fontWeight: 'bold', color: selectedStudent ? '#3b82f6' : '#94a3b8', marginTop: '5px' }}>
               {selectedStudent ? `Siswa: ${selectedStudent.nama}` : 'Belum ada siswa terpilih.'}
