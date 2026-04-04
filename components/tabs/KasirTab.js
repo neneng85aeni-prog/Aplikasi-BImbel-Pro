@@ -172,7 +172,7 @@ export function KasirTab({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
             <span>Diskon / Potongan</span>
             <div style={{ display: 'flex', gap: '5px', width: '150px' }}>
-              <input type="number" value={kasirForm.diskon} onChange={(e) => setKasirForm({ ...kasirForm, diskon: e.target.value })} style={{ width: '60%', padding: '6px' }} placeholder="0" />
+             <input type="text" value={kasirForm.nominal_bayar ? 'Rp ' + kasirForm.nominal_bayar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ''} onChange={(e) => {const rawValue = e.target.value.replace(/[^0-9]/g, '');setKasirForm({ ...kasirForm, nominal_bayar: rawValue }); }} placeholder="Rp 0" style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', width: '100%' }} />
               <select value={kasirForm.diskon_tipe} onChange={(e) => setKasirForm({ ...kasirForm, diskon_tipe: e.target.value })} style={{ width: '40%', padding: '0 5px' }}>
                 <option value="nominal" style={{ color: '#000' }}>Rp</option>
                 <option value="persen" style={{ color: '#000' }}>%</option>
