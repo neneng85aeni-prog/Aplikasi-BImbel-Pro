@@ -181,7 +181,7 @@ export function PerkembanganTab({
                 <span style={{ fontSize: '11px' }}>s/d</span>
                 <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} style={{ fontSize: '12px', background: 'transparent', border: 'none', color: 'inherit', outline: 'none' }} />
               </div>
-              <button className="btn btn-primary btn-small" onClick={handleDownload} style={{ background: '#10b981' }}>⬇️ CSV</button>
+              <button className="btn btn-primary btn-small" onClick={handleDownload} style={{ background: '#10b981' }}>⬇️ Download Excel (CSV)</button>
             </div>
             
             <input 
