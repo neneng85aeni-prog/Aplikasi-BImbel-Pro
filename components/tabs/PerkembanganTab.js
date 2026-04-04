@@ -18,26 +18,26 @@ export function PerkembanganTab({
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(lastDay);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 5;
-// === CEK AKSES MENU SISWA (Untuk Tombol WA) ===
+  const ITEMS_PER_PAGE = 10; // Mas bisa ganti jadi 5 kalau mau tabelnya lebih pendek
+
+  // === CEK AKSES MENU SISWA (Untuk Syarat Muncul Tombol WA) ===
   const canAccessSiswaMenu = Array.isArray(user?.menu_permissions) && user.menu_permissions.includes('siswa');
-  
-  // === FITUR AUTO-FILTER (BARU) ✨ ===
-  // Jika ada siswa yang discan/dipilih, otomatis isi kolom pencarian tabel dengan namanya
+
+  // === FITUR AUTO-FILTER ✨ ===
   useEffect(() => {
     if (selectedProgressStudent?.nama) {
       setSearchQuery(selectedProgressStudent.nama);
-      setCurrentPage(1); // Reset ke halaman pertama
+      setCurrentPage(1);
     }
   }, [selectedProgressStudent]);
 
-  // Fungsi Pembantu format Jam
+  // Fungsi format Jam
   const formatJam = (timestamp) => {
     if (!timestamp) return '--:--';
     return new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // === FILTER TERBUKA ===
+  // === FILTER TERBUKA (Agar Guru Bisa Lihat Riwayat Sebelumnya) ===
   const filteredHistory = (perkembanganTampil || []).filter(item => {
     const itemDate = item.tanggal;
     if (startDate && itemDate < startDate) return false;
@@ -52,7 +52,6 @@ export function PerkembanganTab({
       );
       if (!isMatch) return false;
     }
-
     return true;
   });
 
@@ -72,7 +71,6 @@ export function PerkembanganTab({
       catatan: item.catatan
     });
     
-    // Auto-filter tabel juga saat klik Edit
     if (item.siswa?.nama) {
       setSearchQuery(item.siswa.nama);
     }
@@ -82,7 +80,7 @@ export function PerkembanganTab({
   const resetForm = () => {
     setPerkembanganForm({ id: null, siswa_id: '', guru_handle_id: '', tanggal: today.toISOString().slice(0, 10), catatan: '' });
     if (onSelectProgressStudent) onSelectProgressStudent(null);
-    setSearchQuery(''); // Bersihkan tabel kembali tampilkan semua siswa saat form dibatalkan
+    setSearchQuery('');
   };
 
   const handleDownload = () => {
@@ -158,22 +156,15 @@ export function PerkembanganTab({
               <textarea value={perkembanganForm.catatan} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, catatan: e.target.value })} placeholder="Tulis progres belajar siswa..." rows="4" required />
             </div>
             
-            <div className="btn-row" style={{ gap: '5px', justifyContent: 'center' }}>
-                        <button className="btn btn-secondary btn-small" onClick={() => startEdit(item)}>Edit</button>
-                        
-                        <button className="btn btn-danger btn-small" onClick={() => {
-                          if (typeof onDeletePerkembangan === 'function') {
-                            onDeletePerkembangan(item.id, item.siswa?.nama);
-                          } else {
-                            alert("Kabel Hapus di dashboard.js belum terpasang, Mas!");
-                          }
-                        }}>Hapus</button>
-
-                        {/* Tombol WA Hanya Muncul Jika Punya Akses Menu Siswa ✨ */}
-                        {canAccessSiswaMenu && (
-                          <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981' }}>WA</button>
-                        )}
-                      </div>
+            {/* INI TOMBOL FORM (SIMPAN & BATAL) */}
+            <div className="btn-row">
+              <button className="btn btn-primary" type="submit" disabled={!perkembanganForm.siswa_id} style={{ flex: 2 }}>
+                {perkembanganForm.id ? '💾 Update Laporan' : '💾 Simpan Laporan'}
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={resetForm} style={{ flex: 1 }}>Batal</button>
+            </div>
+          </form>
+        </div>
 
         {/* BAGIAN KANAN: RIWAYAT */}
         <div className="glass-card">
@@ -212,10 +203,22 @@ export function PerkembanganTab({
                     </td>
                     <td style={{ fontSize: '12px' }}>{item.catatan}</td>
                     <td>
+                      {/* INI TOMBOL AKSI TABEL (EDIT, HAPUS, WA) */}
                       <div className="btn-row" style={{ gap: '5px', justifyContent: 'center' }}>
                         <button className="btn btn-secondary btn-small" onClick={() => startEdit(item)}>Edit</button>
-                        <button className="btn btn-danger btn-small" onClick={() => onDeletePerkembangan(item.id, item.siswa?.nama)}>Hapus</button>
-                        <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981' }}>WA</button>
+                        
+                        <button className="btn btn-danger btn-small" onClick={() => {
+                          if (typeof onDeletePerkembangan === 'function') {
+                            onDeletePerkembangan(item.id, item.siswa?.nama);
+                          } else {
+                            alert("Kabel Hapus di dashboard.js belum terpasang!");
+                          }
+                        }}>Hapus</button>
+
+                        {/* Tombol WA Hanya Muncul Jika Punya Akses Menu Siswa ✨ */}
+                        {canAccessSiswaMenu && (
+                          <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981' }}>WA</button>
+                        )}
                       </div>
                     </td>
                   </tr>
