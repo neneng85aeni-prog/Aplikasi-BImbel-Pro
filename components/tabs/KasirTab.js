@@ -10,6 +10,9 @@ export function KasirTab({
 }) {
   const [manualType, setManualType] = useState('barang')
   const [manualItem, setManualItem] = useState({ inventory_id: '', nama: '', harga: '', qty: 1 })
+  
+  // === STATE BARU: MODE PENCARIAN SISWA ===
+  const [searchMode, setSearchMode] = useState('scan'); 
 
   // --- LOGIKA PERHITUNGAN OTOMATIS POS ---
   const cart = kasirForm.cart || []
@@ -56,23 +59,42 @@ export function KasirTab({
         <div className="glass-card">
           <div className="btn-row" style={{ justifyContent: 'space-between', marginBottom: '15px' }}>
             <h2 className="section-title" style={{ margin: 0 }}>1. Pilih Siswa</h2>
-            <select value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ padding: '6px 12px', borderRadius: '6px' }}>
-              <option value="">Semua Cabang</option>
+            
+            {/* OPSI SCAN ATAU MANUAL */}
+            <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '5px', borderRadius: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '12px' }}>
+                <input type="radio" checked={searchMode === 'scan'} onChange={() => setSearchMode('scan')} /> Scan
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '12px' }}>
+                <input type="radio" checked={searchMode === 'manual'} onChange={() => setSearchMode('manual')} /> Manual
+              </label>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <select value={selectedBranchId} onChange={(e) => setSelectedBranchId(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px' }}>
+              <option value="">Semua Cabang (Filter Pencarian)</option>
               {branches.map(b => <option key={b.id} value={b.id}>{b.nama}</option>)}
             </select>
           </div>
 
-          <button className="btn btn-secondary" style={{ width: '100%', marginBottom: '15px', padding: '12px' }} onClick={() => setScanStudentActive(!scanStudentActive)}>
-            📷 {scanStudentActive ? 'Tutup Scanner' : 'Mulai Scan Barcode Siswa'}
-          </button>
-          {scanStudentActive && <div id="reader-siswa" style={{ width: '100%', maxWidth: '400px', margin: '0 auto 15px', borderRadius: '12px', overflow: 'hidden' }}></div>}
-
-          <div className="form-row">
-            <select value={selectedStudent?.id || ''} onChange={(e) => onSelectStudent(e.target.value)} style={{ padding: '12px', fontSize: '15px' }}>
-              <option value="">Cari Manual (Ketik nama siswa...)</option>
-              {siswaOptions.map(s => <option key={s.id} value={s.id}>{s.nama} ({s.branches?.nama || 'Pusat'})</option>)}
-            </select>
-          </div>
+          {/* TAMPILAN BERDASARKAN MODE PILIHAN */}
+          {searchMode === 'scan' ? (
+            <div>
+              <button className="btn btn-secondary" style={{ width: '100%', marginBottom: '15px', padding: '12px' }} onClick={() => setScanStudentActive(!scanStudentActive)}>
+                📷 {scanStudentActive ? 'Tutup Scanner' : 'Buka Scanner Barcode Siswa'}
+              </button>
+              {scanStudentActive && <div id="reader-siswa" style={{ width: '100%', maxWidth: '400px', margin: '0 auto 15px', borderRadius: '12px', overflow: 'hidden' }}></div>}
+              {studentScanInfo && <div style={{ textAlign: 'center', fontSize: '13px', color: '#3b82f6', marginBottom: '10px' }}>{studentScanInfo}</div>}
+            </div>
+          ) : (
+            <div className="form-row">
+              <select value={selectedStudent?.id || ''} onChange={(e) => onSelectStudent(e.target.value)} style={{ padding: '12px', fontSize: '15px' }}>
+                <option value="">-- Ketik/Pilih Nama Siswa --</option>
+                {siswaOptions.map(s => <option key={s.id} value={s.id}>{s.nama} ({s.branches?.nama || 'Pusat'})</option>)}
+              </select>
+            </div>
+          )}
 
           <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
             <span style={{ fontSize: '12px', color: '#94a3b8' }}>Status Siswa Terpilih:</span>
@@ -89,7 +111,7 @@ export function KasirTab({
             <button 
               className="btn btn-primary" 
               style={{ width: '100%', marginBottom: '20px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px dashed #3b82f6' }}
-              onClick={() => addToCart({ type: 'spp', nama: `SPP Bulanan (${selectedStudent.programNama})`, harga: selectedStudent.nominal, qty: 1 })}
+              onClick={() => addToCart({ type: 'spp', nama: `SPP Bulanan (${selectedStudent.programNama || 'Bimbel'})`, harga: selectedStudent.nominal, qty: 1 })}
             >
               + Masukkan Tagihan SPP ({formatRupiah(selectedStudent.nominal)})
             </button>
@@ -132,7 +154,7 @@ export function KasirTab({
               <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '14px' }}>
                 <div style={{ flex: 1 }}>
                   <b>{item.nama}</b>
-                  <div style={{ color: '##fff', fontSize: '12px' }}>{item.qty} x {formatRupiah(item.harga)}</div>
+                  <div style={{ color: '#94a3b8', fontSize: '12px' }}>{item.qty} x {formatRupiah(item.harga)}</div>
                 </div>
                 <b style={{ marginRight: '15px' }}>{formatRupiah(item.harga * item.qty)}</b>
                 <button style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', width: '24px', height: '24px', cursor: 'pointer' }} onClick={() => removeFromCart(idx)}>×</button>
@@ -179,20 +201,20 @@ export function KasirTab({
         </div>
 
         <div className="grid grid-2" style={{ gap: '10px', marginBottom: '20px' }}>
-<select 
-  value={kasirForm.metode_bayar} 
-  onChange={(e) => setKasirForm({ ...kasirForm, metode_bayar: e.target.value })} 
-  style={{ 
-    background: 'rgba(255,255,255,0.05)', 
-    color: '#ffffff', // Membuat teks menjadi putih terang
-    fontWeight: 'bold', // Membuat font lebih tebal agar jelas
-    fontSize: '15px',
-    padding: '12px'
-  }}
->
-  <option value="cash" style={{ color: '#000000' }}>Uang Tunai (Cash)</option>
-  <option value="qris" style={{ color: '#000000' }}>Transfer / QRIS</option>
-</select>
+          <select 
+            value={kasirForm.metode_bayar} 
+            onChange={(e) => setKasirForm({ ...kasirForm, metode_bayar: e.target.value })} 
+            style={{ 
+              background: 'rgba(255,255,255,0.05)', 
+              color: '#ffffff',
+              fontWeight: 'bold',
+              fontSize: '15px',
+              padding: '12px'
+            }}
+          >
+            <option value="cash" style={{ color: '#000000' }}>Uang Tunai (Cash)</option>
+            <option value="qris" style={{ color: '#000000' }}>Transfer / QRIS</option>
+          </select>
           <input type="text" placeholder="Catatan Opsional" value={kasirForm.keterangan} onChange={(e) => setKasirForm({ ...kasirForm, keterangan: e.target.value })} />
         </div>
 
