@@ -97,9 +97,10 @@ export function PerkembanganTab({
 
   return (
     <div className="grid gap-lg">
-      <div className="grid grid-2">
+      {/* 1. MENGGANTI grid-2 MENJADI flex-column AGAR ATAS-BAWAH */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
-        {/* BAGIAN KIRI: INPUT */}
+        {/* BAGIAN ATAS: INPUT */}
         <div className="glass-card">
           <div className="btn-row" style={{ justifyContent: 'space-between', marginBottom: '20px' }}>
             <h2 className="section-title" style={{ margin: 0 }}>
@@ -166,28 +167,39 @@ export function PerkembanganTab({
           </form>
         </div>
 
-        {/* BAGIAN KANAN: RIWAYAT */}
+        {/* BAGIAN BAWAH: RIWAYAT */}
         <div className="glass-card">
           <h2 className="section-title">Riwayat Perkembangan Siswa</h2>
           
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '15px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px' }}>
-              <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} style={{ fontSize: '12px' }} />
-              <span style={{ fontSize: '11px' }}>s/d</span>
-              <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} style={{ fontSize: '12px' }} />
+          {/* 2. MENGUBAH LAYOUT PENCARIAN & TANGGAL MENJADI ATAS-BAWAH */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} style={{ fontSize: '12px', background: 'transparent', border: 'none', color: 'inherit', outline: 'none' }} />
+                <span style={{ fontSize: '11px' }}>s/d</span>
+                <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} style={{ fontSize: '12px', background: 'transparent', border: 'none', color: 'inherit', outline: 'none' }} />
+              </div>
+              <button className="btn btn-primary btn-small" onClick={handleDownload} style={{ background: '#10b981' }}>⬇️ CSV</button>
             </div>
-            <input type="text" placeholder="🔍 Cari nama/catatan..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} style={{ flex: 1, padding: '8px', fontSize: '13px' }} />
-            <button className="btn btn-primary btn-small" onClick={handleDownload} style={{ background: '#10b981' }}>⬇️ CSV</button>
+            
+            <input 
+              type="text" 
+              placeholder="🔍 Cari nama/catatan..." 
+              value={searchQuery} 
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
+              style={{ width: '100%', padding: '10px', fontSize: '13px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'inherit' }} 
+            />
           </div>
 
           <div className="table-wrap" style={{ maxHeight: '500px', overflowY: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr>
-                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Waktu</th>
-                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Siswa</th>
-                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Materi</th>
-                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>Aksi</th>
+                  {/* 3. MENAMBAHKAN PROPORSI WIDTH PADA KOLOM TABEL */}
+                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', width: '15%' }}>Waktu</th>
+                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', width: '20%' }}>Siswa</th>
+                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', width: '45%' }}>Materi</th>
+                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', textAlign: 'center', width: '20%' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
