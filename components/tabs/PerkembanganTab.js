@@ -18,7 +18,7 @@ export function PerkembanganTab({
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(lastDay);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 5; // Mas bisa ganti jadi 5 kalau mau tabelnya lebih pendek
+  const ITEMS_PER_PAGE = 5; 
 
   // === CEK AKSES MENU SISWA (Untuk Syarat Muncul Tombol WA) ===
   const canAccessSiswaMenu = Array.isArray(user?.menu_permissions) && user.menu_permissions.includes('siswa');
@@ -48,7 +48,8 @@ export function PerkembanganTab({
       const isMatch = (
         item.siswa?.nama?.toLowerCase().includes(q) ||
         item.users?.nama?.toLowerCase().includes(q) ||
-        item.catatan?.toLowerCase().includes(q)
+        item.catatan?.toLowerCase().includes(q) ||
+        item.siswa?.programs?.nama?.toLowerCase().includes(q) // Bisa cari berdasarkan nama program juga!
       );
       if (!isMatch) return false;
     }
@@ -84,9 +85,10 @@ export function PerkembanganTab({
   };
 
   const handleDownload = () => {
-    let csv = "Tanggal,Jam,Siswa,Guru,Catatan\n";
+    let csv = "Tanggal,Jam,Siswa,Program,Guru,Catatan\n";
     filteredHistory.forEach(item => {
-      csv += `"${formatTanggal(item.tanggal)}","${formatJam(item.created_at)}","${item.siswa?.nama || '-'}","${item.users?.nama || '-'}","${(item.catatan || '').replace(/"/g, '""')}"\n`;
+      const program = item.siswa?.programs?.nama || item.siswa?.program?.nama || '-';
+      csv += `"${formatTanggal(item.tanggal)}","${formatJam(item.created_at)}","${item.siswa?.nama || '-'}","${program}","${item.users?.nama || '-'}","${(item.catatan || '').replace(/"/g, '""')}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -97,7 +99,7 @@ export function PerkembanganTab({
 
   return (
     <div className="grid gap-lg">
-      {/* 1. MENGGANTI grid-2 MENJADI flex-column AGAR ATAS-BAWAH */}
+      {/* MENGGUNAKAN flex-column AGAR ATAS-BAWAH */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
         {/* BAGIAN ATAS: INPUT */}
@@ -171,7 +173,7 @@ export function PerkembanganTab({
         <div className="glass-card">
           <h2 className="section-title">Riwayat Perkembangan Siswa</h2>
           
-          {/* 2. MENGUBAH LAYOUT PENCARIAN & TANGGAL MENJADI ATAS-BAWAH */}
+          {/* LAYOUT PENCARIAN & TANGGAL */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -184,7 +186,7 @@ export function PerkembanganTab({
             
             <input 
               type="text" 
-              placeholder="🔍 Cari nama/catatan..." 
+              placeholder="🔍 Cari nama siswa, program, atau catatan..." 
               value={searchQuery} 
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
               style={{ width: '100%', padding: '10px', fontSize: '13px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'inherit' }} 
@@ -195,7 +197,6 @@ export function PerkembanganTab({
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr>
-                  {/* 3. MENAMBAHKAN PROPORSI WIDTH PADA KOLOM TABEL */}
                   <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', width: '15%' }}>Waktu</th>
                   <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', width: '20%' }}>Siswa</th>
                   <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', width: '45%' }}>Materi</th>
@@ -211,7 +212,21 @@ export function PerkembanganTab({
                     </td>
                     <td>
                       <b style={{ color: '#60a5fa' }}>{item.siswa?.nama || '-'}</b><br />
-                      <span style={{ fontSize: '10px', opacity: 0.7 }}>Oleh: {item.users?.nama || '-'}</span>
+                      <span style={{ fontSize: '10px', opacity: 0.7 }}>Oleh: {item.users?.nama || '-'}</span><br/>
+                      
+                      {/* === INI TAMBAHAN PROGRAM YANG DIIKUTI === */}
+                      <span style={{ 
+                        fontSize: '9px', 
+                        background: 'rgba(59, 130, 246, 0.15)', 
+                        color: '#93c5fd', 
+                        padding: '2px 6px', 
+                        borderRadius: '4px', 
+                        display: 'inline-block', 
+                        marginTop: '4px',
+                        border: '1px solid rgba(59, 130, 246, 0.3)'
+                      }}>
+                        {item.siswa?.programs?.nama || item.siswa?.program?.nama || '-'}
+                      </span>
                     </td>
                     <td style={{ fontSize: '12px' }}>{item.catatan}</td>
                     <td>
