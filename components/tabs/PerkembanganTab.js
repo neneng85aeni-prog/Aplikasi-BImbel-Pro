@@ -18,7 +18,7 @@ export function PerkembanganTab({
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(lastDay);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10; // Mas bisa ganti jadi 5 kalau mau tabelnya lebih pendek
+  const ITEMS_PER_PAGE = 5; // Mas bisa ganti jadi 5 kalau mau tabelnya lebih pendek
 
   // === CEK AKSES MENU SISWA (Untuk Syarat Muncul Tombol WA) ===
   const canAccessSiswaMenu = Array.isArray(user?.menu_permissions) && user.menu_permissions.includes('siswa');
