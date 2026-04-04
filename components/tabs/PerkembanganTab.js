@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { formatTanggal } from '../../lib/format'
 
 export function PerkembanganTab({ 
   user, perkembanganForm, setPerkembanganForm, siswaTampil, guruOptions, 
   perkembanganHistory, selectedProgressStudent, progressInputMode, setProgressInputMode, 
   scanStudentActive, setScanStudentActive, studentScanInfo, onSelectProgressStudent, 
-  onSubmit, onSendPerkembanganWA, perkembanganTampil, onDeletePerkembangan // <-- Pastikan prop ini ada dari parent
+  onSubmit, onSendPerkembanganWA, perkembanganTampil, onDeletePerkembangan 
 }) {
   
   // === SETUP DEFAULT: BULAN BERJALAN ===
@@ -20,23 +20,27 @@ export function PerkembanganTab({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
+  // === FITUR AUTO-FILTER (BARU) ✨ ===
+  // Jika ada siswa yang discan/dipilih, otomatis isi kolom pencarian tabel dengan namanya
+  useEffect(() => {
+    if (selectedProgressStudent?.nama) {
+      setSearchQuery(selectedProgressStudent.nama);
+      setCurrentPage(1); // Reset ke halaman pertama
+    }
+  }, [selectedProgressStudent]);
+
   // Fungsi Pembantu format Jam
   const formatJam = (timestamp) => {
     if (!timestamp) return '--:--';
     return new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // === FILTER TERBUKA (Hapus pembatasan guru_id agar bisa pantau materi sebelumnya) ===
+  // === FILTER TERBUKA ===
   const filteredHistory = (perkembanganTampil || []).filter(item => {
-    // 1. Filter Akses: Dilepas agar semua guru bisa melihat riwayat (Kontinuitas Belajar)
-    // Filter per Cabang sudah dilakukan otomatis di level data (useBimbelApp).
-
-    // 2. Filter Periode Tanggal
     const itemDate = item.tanggal;
     if (startDate && itemDate < startDate) return false;
     if (endDate && itemDate > endDate) return false;
 
-    // 3. Filter Pencarian Teks
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const isMatch = (
@@ -65,13 +69,18 @@ export function PerkembanganTab({
       tanggal: item.tanggal,
       catatan: item.catatan
     });
-    // Scroll ke atas agar guru tahu sedang mode edit
+    
+    // Auto-filter tabel juga saat klik Edit
+    if (item.siswa?.nama) {
+      setSearchQuery(item.siswa.nama);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const resetForm = () => {
     setPerkembanganForm({ id: null, siswa_id: '', guru_handle_id: '', tanggal: today.toISOString().slice(0, 10), catatan: '' });
     if (onSelectProgressStudent) onSelectProgressStudent(null);
+    setSearchQuery(''); // Bersihkan tabel kembali tampilkan semua siswa saat form dibatalkan
   };
 
   const handleDownload = () => {
@@ -166,18 +175,18 @@ export function PerkembanganTab({
               <span style={{ fontSize: '11px' }}>s/d</span>
               <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} style={{ fontSize: '12px' }} />
             </div>
-            <input type="text" placeholder="🔍 Cari..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} style={{ flex: 1, padding: '8px', fontSize: '13px' }} />
+            <input type="text" placeholder="🔍 Cari nama/catatan..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} style={{ flex: 1, padding: '8px', fontSize: '13px' }} />
             <button className="btn btn-primary btn-small" onClick={handleDownload} style={{ background: '#10b981' }}>⬇️ CSV</button>
           </div>
 
-          <div className="table-wrap">
-            <table>
-              <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: '#1e293b' }}>
+          <div className="table-wrap" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr>
-                  <th>Waktu</th>
-                  <th>Siswa</th>
-                  <th>Materi</th>
-                  <th style={{ textAlign: 'center' }}>Aksi</th>
+                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Waktu</th>
+                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Siswa</th>
+                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Materi</th>
+                  <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
