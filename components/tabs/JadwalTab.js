@@ -11,8 +11,8 @@ export function JadwalTab({ siswa, users, branches }) {
     '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
   ]
 
-  // 3. Ambil data Guru saja
-  const guruList = users.filter(u => u.akses === 'GURU')
+  // 3. Ambil data Guru saja (Ganti 'GURU' jadi 'guru' & tambah || [])
+  const guruList = (users || []).filter(u => u.akses?.toLowerCase() === 'guru')
 
   return (
     <div className="grid gap-lg">
@@ -64,11 +64,11 @@ export function JadwalTab({ siswa, users, branches }) {
                   {timeSlots.map(slot => {
                     // Cari siswa yang diajar guru ini di hari ini pada jam ini
                     // Logika: jam_mulai siswa mengandung angka slot (misal "14:00" cocok dengan slot "14:00")
-                    const matchSiswa = siswa.filter(s => 
-                      s.guru_id === guru.id && 
-                      s.hari === selectedDay && 
-                      s.jam_mulai && s.jam_mulai.startsWith(slot.substring(0, 2))
-                    )
+                    const matchSiswa = (siswa || []).filter(s => 
+      s.guru_id === guru.id && 
+      s.hari === selectedDay && 
+      s.jam_mulai && s.jam_mulai.startsWith(slot.substring(0, 2))
+    )
 
                     return (
                       <td key={slot} style={{ verticalAlign: 'top', padding: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
