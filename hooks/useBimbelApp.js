@@ -622,6 +622,29 @@ export function useBimbelApp() {
       user, email, password, loginError, loadingLogin, activeTab, message, errorMsg, loadingData, branches, programs, users, siswa, pembayaran, absensiSiswa, perkembangan, absensiKaryawan, bonusManual, reviews, pengeluaranTampil, inventoryTampil, branchForm, programForm, userForm, siswaForm, perkembanganForm, kasirForm, bonusForm, employeeManualForm, studentAttendanceForm, reviewForm, pengeluaranForm, inventoryForm, permissionUserId, permissionDraft, scanStudentActive, scanEmployeeActive, employeeMode, studentScanText, employeeScanText, studentScanInfo, employeeScanInfo, selectedStudent, selectedProgressStudent, exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode, guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats, searchSiswa, searchTransaksi, payrollMonth, payrollYear, showReceiptPopup, editTransaksiForm, deleteConfirm, archiveState
     },
    actions: {
+     // Tambahkan di dalam useBimbelApp -> actions
+const sendHistoryTransactionWA = (item) => {
+  if (!item.siswa?.no_hp) {
+    alert('Nomor HP siswa tidak ditemukan.');
+    return;
+  }
+
+  const tgl = item.tanggal ? new Date(item.tanggal).toLocaleString('id-ID') : '-';
+  const nominal = formatRupiah(item.nominal);
+  const ket = item.keterangan || item.programs?.nama || '-';
+  
+  const text = `*BIMBEL PRO - BUKTI TRANSAKSI*\n\n` +
+               `Tanggal: ${tgl}\n` +
+               `Siswa: ${item.siswa?.nama || '-'}\n` +
+               `Keterangan: ${ket}\n` +
+               `Total Bayar: *${nominal}*\n` +
+               `Metode: ${(item.metode_bayar || 'cash').toUpperCase()}\n` +
+               `Status: LUNAS\n\n` +
+               `Terima kasih sudah melakukan pembayaran.`;
+
+  // Gunakan fungsi openSmartWA yang sudah Mas punya
+  actions.openSmartWA(item.siswa.no_hp, text);
+};
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId, setBranchForm, setProgramForm, setUserForm, setSiswaForm, setPerkembanganForm, setKasirForm, setBonusForm, setEmployeeManualForm, setStudentAttendanceForm, setReviewForm, setPengeluaranForm, setInventoryForm, setPermissionUserId, setPermissionDraft, setScanStudentActive, setScanEmployeeActive, setEmployeeMode, setExportType, setExportDateFrom, setExportDateTo, setProgressInputMode, setPayrollMonth, setPayrollYear, setShowReceiptPopup, setEditTransaksiForm, submitEditTransaksi, login, logout, loadAllData, setDeleteConfirm, confirmDelete, submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa, submitPengeluaran, deletePengeluaran, submitInventory, deleteInventory,
       deleteBonus: (id, label) => setDeleteConfirm({ show: true, table: 'employee_bonus', id, label }),
       deletePerkembangan: (id, label) => setDeleteConfirm({ show: true, table: 'perkembangan', id, label: `materi ${label}` }),
