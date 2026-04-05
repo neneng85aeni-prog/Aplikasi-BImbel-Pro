@@ -293,6 +293,9 @@ export function useBimbelApp() {
       const enriched = {
         ...siswaForm,
         no_hp: cleanedHp,
+        // Pastikan hari dan jam ikut terbawa
+        hari: siswaForm.hari,
+        jam_mulai: siswaForm.jam_mulai,
         kode_qr: siswaForm.kode_qr ? siswaForm.kode_qr : generateStudentBarcode({ nama: siswaForm.nama, kelas: siswaForm.kelas, branchCode: branches.find((item) => item.id === siswaForm.branch_id)?.kode })
       }; 
       
@@ -580,15 +583,35 @@ export function useBimbelApp() {
   function startEditUser(item) { 
     setUserForm({ 
       ...item, 
-      password: '', // Kosongkan password saat edit agar tidak menimpa yang lama
-      // Tambahkan dua baris ini:
-      availability: item.availability || INITIAL_AVAILABILITY, 
+      password: '', 
+      // Kita perbaiki logikanya: Jika availability kosong/null, gunakan INITIAL_AVAILABILITY
+      availability: (item.availability && item.availability.length > 0) 
+        ? item.availability 
+        : INITIAL_AVAILABILITY, 
       programs_can_handle: item.programs_can_handle || []
     }); 
     setActiveTab('users');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  function startEditSiswa(item) { setSiswaForm({ id: item.id, nama: item.nama || '', branch_id: item.branch_id || '', program_id: item.program_id || '', kelas: item.kelas || '', nama_ortu: item.nama_ortu || '', no_hp: item.no_hp || '', alamat: item.alamat || '', kode_qr: item.kode_qr || '', guru_id: item.guru_id || '' }); setActiveTab('siswa') }
+  function startEditSiswa(item) { 
+    setSiswaForm({ 
+      id: item.id, 
+      nama: item.nama || '', 
+      branch_id: item.branch_id || '', 
+      program_id: item.program_id || '', 
+      kelas: item.kelas || '', 
+      nama_ortu: item.nama_ortu || '', 
+      no_hp: item.no_hp || '', 
+      alamat: item.alamat || '', 
+      kode_qr: item.kode_qr || '', 
+      guru_id: item.guru_id || '',
+      // TAMBAHKAN 2 BARIS INI:
+      hari: item.hari || '',
+      jam_mulai: item.jam_mulai || '14:00'
+    }); 
+    setActiveTab('siswa');
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Opsional: Scroll ke atas agar form terlihat
+  }
   function setQuickExportRange(mode) { const today = TODAY(); if (mode === 'today') { setExportDateFrom(today); setExportDateTo(today); return } if (mode === 'week') { const now = new Date(); const day = now.getDay() || 7; now.setDate(now.getDate() - (day - 1)); setExportDateFrom(now.toISOString().slice(0, 10)); setExportDateTo(today); return } if (mode === 'month') { const now = new Date(); now.setDate(1); setExportDateFrom(now.toISOString().slice(0, 10)); setExportDateTo(today); return } setExportDateFrom(''); setExportDateTo('') }
   function handleDownload() { const rows = exportRows({ exportType, branches, siswa: siswaTampil, users: usersTampil, programs, pembayaran: pembayaranTampil, absensiSiswa: absensiSiswaTampil, absensiKaryawan: absensiKaryawanTampil, perkembangan: perkembanganTampil, payrollRows, dateFrom: exportDateFrom, dateTo: exportDateTo }); if (!rows.length) return setErrorMsg('Tidak ada data.'); downloadCsv(exportType, rows); setMessage(`Data ${exportType} didownload.`) }
 
