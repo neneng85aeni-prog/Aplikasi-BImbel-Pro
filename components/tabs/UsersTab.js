@@ -1,7 +1,7 @@
 import { formatRupiah } from '../../lib/format'
 import { SALARY_TYPE_OPTIONS, ALL_MENU_KEYS, TAB_LABELS } from '../../lib/constants'
 
-export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onReset, onEdit, onDelete }) {
+export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onReset, onEdit, onDelete, programs }) {
   
   // === FUNGSI HELPER: PEMBERSIH NOMOR TELEPON ===
   const formatNomorWA = (nomor) => {
@@ -90,6 +90,78 @@ export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onR
               </select>
             </div>
           </div>
+  {/* === KODE BARU: KHUSUS GURU (TEMPEL DI SINI) === */}
+          {userForm.akses === 'GURU' && (
+            <div style={{ marginTop: '20px', padding: '20px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              <h3 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#60a5fa' }}>🎓 Kompetensi & Jadwal Kerja Guru</h3>
+              
+              {/* Checkbox Program */}
+              <div className="form-row" style={{ marginBottom: '20px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>📚 Program yang Dikuasai</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+                  {programs?.map(prog => (
+                    <label key={prog.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={userForm.programs_can_handle?.includes(prog.id)}
+                        onChange={(e) => {
+                          const current = userForm.programs_can_handle || [];
+                          const next = e.target.checked ? [...current, prog.id] : current.filter(id => id !== prog.id);
+                          setUserForm({ ...userForm, programs_can_handle: next });
+                        }}
+                      />
+                      {prog.nama}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* List Jadwal Kerja Harian */}
+              <div className="form-row">
+                <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>📅 Jadwal Ketersediaan</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(userForm.availability || []).map((avail, index) => (
+                    <div key={avail.hari} style={{ 
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                      padding: '8px 12px', background: avail.aktif ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                      borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '90px', cursor: 'pointer', fontSize: '13px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={avail.aktif} 
+                          onChange={(e) => {
+                            const nextAvail = [...userForm.availability];
+                            nextAvail[index].aktif = e.target.checked;
+                            setUserForm({ ...userForm, availability: nextAvail });
+                          }}
+                        />
+                        {avail.hari}
+                      </label>
+                      {avail.aktif ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <input type="time" value={avail.jam_masuk} onChange={(e) => {
+                            const nextAvail = [...userForm.availability];
+                            nextAvail[index].jam_masuk = e.target.value;
+                            setUserForm({ ...userForm, availability: nextAvail });
+                          }} style={{ padding: '4px', fontSize: '12px', background: '#1e293b', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px' }} />
+                          <span style={{ fontSize: '12px' }}>-</span>
+                          <input type="time" value={avail.jam_pulang} onChange={(e) => {
+                            const nextAvail = [...userForm.availability];
+                            nextAvail[index].jam_pulang = e.target.value;
+                            setUserForm({ ...userForm, availability: nextAvail });
+                          }} style={{ padding: '4px', fontSize: '12px', background: '#1e293b', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px' }} />
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>Libur</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {/* === SELESAI KODE BARU === */}
 
           {/* CHECKLIST HAK AKSES MENU */}
           <div style={{ marginTop: '20px', marginBottom: '20px', padding: '20px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
