@@ -6,7 +6,7 @@ import {
   EMPLOYEE_GLOBAL_IN, EMPLOYEE_GLOBAL_OUT, INITIAL_BONUS_FORM, INITIAL_BRANCH_FORM,
   INITIAL_EMPLOYEE_MANUAL_FORM, INITIAL_KASIR_FORM, INITIAL_PERKEMBANGAN_FORM,
   INITIAL_PROGRAM_FORM, INITIAL_REVIEW_FORM, INITIAL_SISWA_FORM, INITIAL_STUDENT_ATTENDANCE_FORM,
-  INITIAL_USER_FORM, INITIAL_PENGELUARAN_FORM, INITIAL_INVENTORY_FORM, TODAY, allowedTabs, defaultPermissionsByRole, normalizePermissions,
+  INITIAL_USER_FORM, INITIAL_AVAILABILITY, INITIAL_PENGELUARAN_FORM, INITIAL_INVENTORY_FORM, TODAY, allowedTabs, defaultPermissionsByRole, normalizePermissions,
 } from '../lib/constants'
 import { formatMonthYear, formatRupiah, generateStudentBarcode, formatTanggal } from '../lib/format'
 import { loginWithRpc } from '../lib/auth'
