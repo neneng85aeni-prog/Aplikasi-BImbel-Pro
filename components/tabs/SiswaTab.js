@@ -101,7 +101,7 @@ export function SiswaTab({
   };
 
   return (
-    <div className="grid grid-2">
+    <div className="flex flex-col gap-lg">
       
       {/* FORM PENDAFTARAN SISWA KIRI */}
       <div className="glass-card">
