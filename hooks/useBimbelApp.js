@@ -236,6 +236,11 @@ export function useBimbelApp() {
       const payload = validateUserForm({ 
         ...userForm, 
         menu_permissions: userForm.menu_permissions?.length ? userForm.menu_permissions : defaultPermissionsByRole(userForm.akses) 
+        // === TAMBAHKAN DUA BARIS INI ===
+        availability: userForm.availability,
+        programs_can_handle: userForm.programs_can_handle
+        // ==============================
+      
       }); 
       const res = await upsertUserViaRpc(payload, userForm.id); 
       if (res.error) throw res.error; 
@@ -549,7 +554,29 @@ export function useBimbelApp() {
   async function savePermissions() { try { if (!permissionUserId) throw new Error('Pilih user.'); const res = await saveUserPermissions(permissionUserId, permissionDraft); if (res.error) throw res.error; if (user?.id === permissionUserId) { const updated = { ...user, menu_permissions: permissionDraft }; setUser(updated); saveSession(updated) } setMessage('Hak akses disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   function startEditBranch(item) { setBranchForm({ id: item.id, nama: item.nama, kode: item.kode, alamat: item.alamat || '', employee_barcode_in: item.employee_barcode_in || EMPLOYEE_GLOBAL_IN, employee_barcode_out: item.employee_barcode_out || EMPLOYEE_GLOBAL_OUT }); setActiveTab('cabang') }
   function startEditProgram(item) { setProgramForm({ id: item.id, nama: item.nama, deskripsi: item.deskripsi || '', nominal: item.nominal || '' }); setActiveTab('program') }
-  function startEditUser(item) { setUserForm({ id: item.id, nama: item.nama, email: item.email, password: '', akses: item.akses, branch_id: item.branch_id || '', no_telepon: item.no_telepon || '', salary_type: item.salary_type || 'fixed', salary_fixed: item.salary_fixed || '', student_fee_daily: item.student_fee_daily || '', monthly_bonus_target: item.monthly_bonus_target || '', bonus_amount: item.bonus_amount || '', menu_permissions: normalizePermissions(item.menu_permissions, item.akses), trial_ends_at: item.trial_ends_at || '', batas_jam_masuk: item.batas_jam_masuk || '', batas_jam_pulang: item.batas_jam_pulang || '' }); setActiveTab('users') }
+  function startEditUser(item) { 
+    setUserForm({ 
+      ...item, 
+      password: '', 
+      akses: item.akses, 
+      branch_id: item.branch_id || '', 
+      no_telepon: item.no_telepon || '', 
+      salary_type: item.salary_type || 'fixed', 
+      salary_fixed: item.salary_fixed || '', 
+      student_fee_daily: item.student_fee_daily || '', 
+      monthly_bonus_target: item.monthly_bonus_target || '', 
+      bonus_amount: item.bonus_amount || '', 
+      menu_permissions: normalizePermissions(item.menu_permissions, item.akses), 
+      trial_ends_at: item.trial_ends_at || '', 
+      batas_jam_masuk: item.batas_jam_masuk || '', 
+      batas_jam_pulang: item.batas_jam_pulang || '',
+      // === TAMBAHKAN DUA BARIS INI ===
+      availability: item.availability || INITIAL_AVAILABILITY, 
+      programs_can_handle: item.programs_can_handle || []
+      // ==============================
+    }); 
+    setActiveTab('users') 
+  }
   function startEditSiswa(item) { setSiswaForm({ id: item.id, nama: item.nama || '', branch_id: item.branch_id || '', program_id: item.program_id || '', kelas: item.kelas || '', nama_ortu: item.nama_ortu || '', no_hp: item.no_hp || '', alamat: item.alamat || '', kode_qr: item.kode_qr || '', guru_id: item.guru_id || '' }); setActiveTab('siswa') }
   function setQuickExportRange(mode) { const today = TODAY(); if (mode === 'today') { setExportDateFrom(today); setExportDateTo(today); return } if (mode === 'week') { const now = new Date(); const day = now.getDay() || 7; now.setDate(now.getDate() - (day - 1)); setExportDateFrom(now.toISOString().slice(0, 10)); setExportDateTo(today); return } if (mode === 'month') { const now = new Date(); now.setDate(1); setExportDateFrom(now.toISOString().slice(0, 10)); setExportDateTo(today); return } setExportDateFrom(''); setExportDateTo('') }
   function handleDownload() { const rows = exportRows({ exportType, branches, siswa: siswaTampil, users: usersTampil, programs, pembayaran: pembayaranTampil, absensiSiswa: absensiSiswaTampil, absensiKaryawan: absensiKaryawanTampil, perkembangan: perkembanganTampil, payrollRows, dateFrom: exportDateFrom, dateTo: exportDateTo }); if (!rows.length) return setErrorMsg('Tidak ada data.'); downloadCsv(exportType, rows); setMessage(`Data ${exportType} didownload.`) }
