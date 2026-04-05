@@ -166,8 +166,8 @@ export function SiswaTab({
                 disabled={!siswaForm.hari || !siswaForm.program_id}
               >
                 <option value="">{!siswaForm.hari ? '-- Pilih Hari & Program Dulu --' : '-- Pilih Guru Tersedia --'}</option>
-                {guruOptions.filter(guru => {
-                  const bisaProgram = guru.programs_can_handle?.includes(siswaForm.program_id);
+                {(guruOptions || []).filter(guru => {
+  const bisaProgram = guru.programs_can_handle?.includes(siswaForm.program_id);
                   const jadwalHari = guru.availability?.find(a => a.hari === siswaForm.hari && a.aktif);
                   const jamCocok = jadwalHari && siswaForm.jam_mulai >= jadwalHari.jam_masuk && siswaForm.jam_mulai <= jadwalHari.jam_pulang;
                   return bisaProgram && jamCocok;
