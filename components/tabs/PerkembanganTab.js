@@ -173,11 +173,27 @@ export function PerkembanganTab({
             )}
           </div>
 
-          <form onSubmit={onSubmit}>
+         <form onSubmit={onSubmit}>
             <div className="form-row">
               <label>Tanggal Sesi</label>
               <input type="date" value={perkembanganForm.tanggal} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, tanggal: e.target.value })} required />
             </div>
+
+            {/* === KODE YANG DITAMBAHKAN DI PERKEMBANGANTAB.JS === */}
+            <div className="form-row">
+              <label>Guru Pengajar</label>
+              <select 
+                value={perkembanganForm.guru_handle_id || ''} 
+                onChange={(e) => setPerkembanganForm({ ...perkembanganForm, guru_handle_id: e.target.value })}
+              >
+                <option value="">-- Ikuti Guru Utama Siswa --</option>
+                {guruOptions?.map(guru => (
+                  <option key={guru.id} value={guru.id}>{guru.nama}</option>
+                ))}
+              </select>
+            </div>
+            {/* ==================================================== */}
+
             <div className="form-row">
               <label>Catatan Materi</label>
               <textarea value={perkembanganForm.catatan} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, catatan: e.target.value })} placeholder="Tulis progres belajar siswa..." rows="4" required />
