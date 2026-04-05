@@ -20,6 +20,14 @@ export function PerkembanganTab({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5; 
 
+  // === STATE BARU: PANCINGAN KEYBOARD HP ===
+  const [siswaSearchTerm, setSiswaSearchTerm] = useState('');
+
+  // --- LOGIKA FILTER SISWA MANUAL ---
+  const filteredSiswaOptions = (siswaTampil || []).filter(s => 
+    s.nama?.toLowerCase().includes(siswaSearchTerm.toLowerCase())
+  );
+
   // === CEK AKSES MENU SISWA (Untuk Syarat Muncul Tombol WA) ===
   const canAccessSiswaMenu = Array.isArray(user?.menu_permissions) && user.menu_permissions.includes('siswa');
 
@@ -82,6 +90,7 @@ export function PerkembanganTab({
     setPerkembanganForm({ id: null, siswa_id: '', guru_handle_id: '', tanggal: today.toISOString().slice(0, 10), catatan: '' });
     if (onSelectProgressStudent) onSelectProgressStudent(null);
     setSearchQuery('');
+    setSiswaSearchTerm(''); // <--- TAMBAHKAN BARIS INI
   };
 
   const handleDownload = () => {
@@ -138,12 +147,27 @@ export function PerkembanganTab({
                 )}
                 <div style={{ marginTop: '10px', textAlign: 'center', fontSize: '13px', color: '#3b82f6' }}>{studentScanInfo}</div>
               </div>
-            ) : (
-              <div className="form-row">
+           ) : (
+              <div className="form-row" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <label>Pilih Siswa</label>
-                <select value={perkembanganForm.siswa_id} onChange={(e) => onSelectProgressStudent(e.target.value, 'manual')}>
-                  <option value="">-- Cari Nama Siswa --</option>
-                  {siswaTampil.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}
+                
+                {/* === KOTAK PANCINGAN KEYBOARD HP === */}
+                <input 
+                  type="text" 
+                  placeholder="🔍 Ketik nama siswa di sini..." 
+                  value={siswaSearchTerm} 
+                  onChange={(e) => setSiswaSearchTerm(e.target.value)}
+                  style={{ 
+                    padding: '12px', fontSize: '14px', borderRadius: '8px', 
+                    border: '1px solid rgba(255,255,255,0.3)', 
+                    background: 'rgba(255,255,255,0.05)', color: '#fff', width: '100%' 
+                  }}
+                />
+                
+                {/* Dropdown yang otomatis memendek */}
+                <select value={perkembanganForm.siswa_id} onChange={(e) => onSelectProgressStudent(e.target.value, 'manual')} style={{ padding: '12px', fontSize: '15px', width: '100%' }}>
+                  <option value="">-- Pilih dari Hasil ({filteredSiswaOptions.length} Siswa) --</option>
+                  {filteredSiswaOptions.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}
                 </select>
               </div>
             )}
