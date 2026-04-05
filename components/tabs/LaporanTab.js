@@ -60,14 +60,16 @@ export function LaporanTab({
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // === FITUR DOWNLOAD ===
+  // === FITUR DOWNLOAD ===
   const handleDownload = () => {
-    let csv = "Tanggal,Siswa,Keterangan,Nominal\n";
+    let csv = "Tanggal,Siswa,Kasir,Keterangan,Nominal\n"; // <-- Tambah Header Kasir
     filteredData.forEach(t => {
       const tgl = formatTanggal(t.tanggal);
       const siswa = t.siswa?.nama || '-';
+      const kasir = t.users?.nama || '-'; // <-- Ambil Nama Kasir
       const ket = (t.keterangan || t.programs?.nama || '').replace(/,/g, ' '); 
       const nom = t.nominal || 0;
-      csv += `"${tgl}","${siswa}","${ket}","${nom}"\n`;
+      csv += `"${tgl}","${siswa}","${kasir}","${ket}","${nom}"\n`; // <-- Masukkan ke baris
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -131,6 +133,9 @@ export function LaporanTab({
               <tr style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Tanggal</th>
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Siswa</th>
+                {/* === TAMBAHAN HEADER KASIR === */}
+                <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Kasir</th>
+                {/* ============================= */}
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Keterangan</th>
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Nominal</th>
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Aksi</th>
@@ -141,6 +146,9 @@ export function LaporanTab({
                 <tr key={item.id}>
                   <td>{formatTanggal(item.tanggal)}</td>
                   <td><b>{item.siswa?.nama}</b></td>
+                  {/* === TAMBAHAN NAMA KASIR DI TABEL === */}
+                  <td><span style={{ fontSize: '11px', color: '#94a3b8' }}>{item.users?.nama || '-'}</span></td>
+                  {/* ==================================== */}
                   <td>{item.keterangan || item.programs?.nama}</td>
                   <td><b style={{ color: '#10b981' }}>{formatRupiah(item.nominal)}</b></td>
                   <td>
