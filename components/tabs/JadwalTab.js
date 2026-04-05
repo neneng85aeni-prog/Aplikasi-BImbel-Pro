@@ -58,7 +58,7 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
                 {timeSlots.map(time => (
                   <th key={time} style={{ 
                     textAlign: 'center', 
-                    minWidth: '90px', // Lebar jam diperkecil dari 120 ke 90
+                    minWidth: '65px', // Lebar jam diperkecil dari 120 ke 90
                     background: 'rgba(255,255,255,0.02)',
                     fontSize: '11px',
                     borderBottom: '2px solid rgba(255,255,255,0.1)'
