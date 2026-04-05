@@ -91,7 +91,7 @@ export function PengeluaranTab({
         <div className="table-wrap" style={{ overflowX: 'auto', transform: 'scaleY(-1)', paddingBottom: '10px' }}>
           <table style={{ transform: 'scaleY(-1)' }}>
             <thead>
-              <tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th>Cabang</th><th>Nominal</th><th>Aksi</th></tr>
+              <tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th>Kasir/Admin</th><th>Cabang</th><th>Nominal</th><th>Aksi</th></tr>
             </thead>
             <tbody>
               {filteredPengeluaran.map(item => (
@@ -103,6 +103,8 @@ export function PengeluaranTab({
                     </span>
                   </td>
                   <td>{item.keterangan}</td>
+                  {/* TAMBAHKAN INI */}
+                  <td><span style={{ fontSize: '11px', color: '#94a3b8' }}>{item.users?.nama || '-'}</span></td>
                   <td>{item.branches?.nama || 'Pusat'}</td>
                   <td><b style={{ color: '#ef4444' }}>{formatRupiah(item.nominal)}</b></td>
                   <td>
