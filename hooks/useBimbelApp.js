@@ -516,7 +516,7 @@ export function useBimbelApp() {
         p_siswa_id: selectedStudent.id, 
         p_program_id: safeProgId, 
         p_kasir_id: user?.id, 
-        p_tanggal: TODAY(), 
+        p_tanggal: NOW_ISO(), 
         p_nominal: totalBayar, 
         p_status: kasirForm.status, 
         p_metode_bayar: kasirForm.metode_bayar, 
