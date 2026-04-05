@@ -1,5 +1,5 @@
 import { formatRupiah } from '../../lib/format'
-import { SALARY_TYPE_OPTIONS, ALL_MENU_KEYS, TAB_LABELS } from '../../lib/constants'
+import { SALARY_TYPE_OPTIONS, ALL_MENU_KEYS, TAB_LABELS, INITIAL_USER_FORM, INITIAL_AVAILABILITY } from '../../lib/constants'
 
 export function UsersTab({ userForm, setUserForm, users, branches, onSubmit, onReset, onEdit, onDelete, programs }) {
   
