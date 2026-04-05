@@ -271,7 +271,7 @@ export function useBimbelApp() {
     setUserForm(INITIAL_USER_FORM);
     // NOTIFIKASI DISINI:
     setMessage(userForm.id ? '✅ Data Karyawan berhasil diperbarui!' : '✅ Karyawan baru berhasil ditambahkan!');
-      setMessage('Karyawan disimpan.'); 
+      
       await loadAllData();
     } catch (error) { 
       setErrorMsg(error.message); 
