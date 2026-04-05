@@ -190,6 +190,7 @@ export function Dashboard({ state, actions }) {
             onDeleteTransaksi={actions.deleteTransaksi} editTransaksiForm={state.editTransaksiForm} 
             setEditTransaksiForm={actions.setEditTransaksiForm} onSubmitEditTransaksi={actions.submitEditTransaksi} 
             onStartEditTransaksi={actions.startEditTransaksi} pengeluaran={state.pengeluaranTampil}
+            onSendWA={actions.sendHistoryTransactionWA}
           />
         )}
 
