@@ -12,6 +12,7 @@ import { SiswaTab } from './tabs/SiswaTab'
 import { KasirTab } from './tabs/KasirTab'
 import { PerkembanganTab } from './tabs/PerkembanganTab'
 import { KaryawanTab } from './tabs/KaryawanTab'
+import { JadwalTab } from './JadwalTab'; // Sesuaikan dengan nama file komponen jadwal yang kita buat tadi
 import { ReviewsTab } from './tabs/ReviewsTab'
 import { LaporanTab } from './tabs/LaporanTab'
 import { PayrollTab } from './tabs/PayrollTab'
@@ -117,6 +118,11 @@ export function Dashboard({ state, actions }) {
     pengeluaran={state.pengeluaranTampil} 
   />
 )}
+{/* === TAMBAHKAN BARIS INI UNTUK JADWAL === */}
+        {activeTab === 'jadwal' && <JadwalTab usersTampil={state.usersTampil} />}
+
+        {activeTab === 'cabang' && <CabangTab branchForm={state.branchForm} setBranchForm={actions.setBranchForm} branches={state.branches} onSubmit={actions.submitBranch} onReset={actions.setBranchForm} onEdit={actions.startEditBranch} onDelete={actions.deleteBranch} />}
+        {activeTab === 'program' && <ProgramTab programForm={state.programForm} setProgramForm={actions.setProgramForm} programs={state.programs} onSubmit={actions.submitProgram} onReset={actions.setProgramForm} onEdit={actions.startEditProgram} onDelete={actions.deleteProgram} />}
         {activeTab === 'cabang' && <CabangTab branchForm={state.branchForm} setBranchForm={actions.setBranchForm} branches={state.branches} onSubmit={actions.submitBranch} onReset={actions.setBranchForm} onEdit={actions.startEditBranch} onDelete={actions.deleteBranch} />}
         {activeTab === 'program' && <ProgramTab programForm={state.programForm} setProgramForm={actions.setProgramForm} programs={state.programs} onSubmit={actions.submitProgram} onReset={actions.setProgramForm} onEdit={actions.startEditProgram} onDelete={actions.deleteProgram} />}
         {activeTab === 'users' && <UsersTab userForm={state.userForm} setUserForm={actions.setUserForm} users={state.usersTampil} branches={state.branches} programs={state.programs} onSubmit={actions.submitUser} onReset={actions.setUserForm} onEdit={actions.startEditUser} onDelete={actions.deleteUser} />}
