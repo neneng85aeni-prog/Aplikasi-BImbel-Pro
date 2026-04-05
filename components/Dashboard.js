@@ -12,7 +12,7 @@ import { SiswaTab } from './tabs/SiswaTab'
 import { KasirTab } from './tabs/KasirTab'
 import { PerkembanganTab } from './tabs/PerkembanganTab'
 import { KaryawanTab } from './tabs/KaryawanTab'
-import { JadwalTab } from './JadwalTab'; // Sesuaikan dengan nama file komponen jadwal yang kita buat tadi
+import { JadwalTab } from './tabs/JadwalTab';
 import { ReviewsTab } from './tabs/ReviewsTab'
 import { LaporanTab } from './tabs/LaporanTab'
 import { PayrollTab } from './tabs/PayrollTab'
