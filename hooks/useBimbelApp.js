@@ -268,7 +268,9 @@ export function useBimbelApp() {
         availability: INITIAL_AVAILABILITY.map(day => ({ ...day, aktif: false })),
         programs_can_handle: []
       });
-
+    setUserForm(INITIAL_USER_FORM);
+    // NOTIFIKASI DISINI:
+    setMessage(userForm.id ? '✅ Data Karyawan berhasil diperbarui!' : '✅ Karyawan baru berhasil ditambahkan!');
       setMessage('Karyawan disimpan.'); 
       await loadAllData();
     } catch (error) { 
