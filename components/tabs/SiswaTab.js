@@ -114,6 +114,20 @@ export function SiswaTab({
           </div>
           <div className="grid grid-2">
             <div className="form-row"><label>Program</label><select value={siswaForm.program_id} onChange={(e) => setSiswaForm({ ...siswaForm, program_id: e.target.value })}><option value="">Pilih program</option>{programs.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
+            {/* Ini adalah dropdown Program Belajar yang menjadi 'kunci' filter guru */}
+<div className="form-row">
+  <label>Program Belajar</label>
+  <select 
+    value={siswaForm.program_id || ''} 
+    onChange={(e) => setSiswaForm({ ...siswaForm, program_id: e.target.value })}
+    required
+  >
+    <option value="">-- Pilih Program --</option>
+    {programs.map((p) => (
+      <option key={p.id} value={p.id}>{p.nama}</option>
+    ))}
+  </select>
+</div>
             <div className="form-row"><label>Guru default</label><select value={siswaForm.guru_id} onChange={(e) => setSiswaForm({ ...siswaForm, guru_id: e.target.value })}><option value="">Pilih guru</option>{guruOptions.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
           </div>
           <div className="grid grid-2">
