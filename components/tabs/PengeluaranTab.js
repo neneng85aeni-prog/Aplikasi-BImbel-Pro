@@ -117,7 +117,7 @@ export function PengeluaranTab({
               ))}
               {filteredPengeluaran.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
                     {searchQuery ? 'Data pencarian tidak ditemukan.' : 'Belum ada data pengeluaran.'}
                   </td>
                 </tr>
