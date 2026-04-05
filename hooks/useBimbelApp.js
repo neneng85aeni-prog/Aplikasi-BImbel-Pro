@@ -558,24 +558,13 @@ export function useBimbelApp() {
     setUserForm({ 
       ...item, 
       password: '', 
-      akses: item.akses, 
-      branch_id: item.branch_id || '', 
-      no_telepon: item.no_telepon || '', 
-      salary_type: item.salary_type || 'fixed', 
-      salary_fixed: item.salary_fixed || '', 
-      student_fee_daily: item.student_fee_daily || '', 
-      monthly_bonus_target: item.monthly_bonus_target || '', 
-      bonus_amount: item.bonus_amount || '', 
-      menu_permissions: normalizePermissions(item.menu_permissions, item.akses), 
-      trial_ends_at: item.trial_ends_at || '', 
-      batas_jam_masuk: item.batas_jam_masuk || '', 
-      batas_jam_pulang: item.batas_jam_pulang || '',
-      // === TAMBAHKAN DUA BARIS INI ===
+      menu_permissions: normalizePermissions(item.menu_permissions, item.akses),
+      // Tambahkan dua baris ini agar centang jadwal & program tidak hilang saat edit:
       availability: item.availability || INITIAL_AVAILABILITY, 
       programs_can_handle: item.programs_can_handle || []
-      // ==============================
     }); 
-    setActiveTab('users') 
+    setActiveTab('users');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function startEditSiswa(item) { setSiswaForm({ id: item.id, nama: item.nama || '', branch_id: item.branch_id || '', program_id: item.program_id || '', kelas: item.kelas || '', nama_ortu: item.nama_ortu || '', no_hp: item.no_hp || '', alamat: item.alamat || '', kode_qr: item.kode_qr || '', guru_id: item.guru_id || '' }); setActiveTab('siswa') }
   function setQuickExportRange(mode) { const today = TODAY(); if (mode === 'today') { setExportDateFrom(today); setExportDateTo(today); return } if (mode === 'week') { const now = new Date(); const day = now.getDay() || 7; now.setDate(now.getDate() - (day - 1)); setExportDateFrom(now.toISOString().slice(0, 10)); setExportDateTo(today); return } if (mode === 'month') { const now = new Date(); now.setDate(1); setExportDateFrom(now.toISOString().slice(0, 10)); setExportDateTo(today); return } setExportDateFrom(''); setExportDateTo('') }
