@@ -228,7 +228,22 @@ export function useBimbelApp() {
 
   function logout() { setUser(null); setEmail(''); setPassword(''); setActiveTab('overview'); clearSession(); setMessage('Logout berhasil.') }
 
-  async function submitBranch(event) { event.preventDefault(); try { const res = await upsertBranch(validateBranchForm(branchForm), branchForm.id); if (res.error) throw res.error; setBranchForm(INITIAL_BRANCH_FORM); setMessage('Cabang disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
+  async function submitBranch(event) { 
+  event.preventDefault(); 
+  try { 
+    const res = await upsertBranch(validateBranchForm(branchForm), branchForm.id); 
+    if (res.error) throw res.error; 
+
+    // --- PERBAIKAN DI SINI ---
+    // Kita gunakan spread operator {...} agar benar-benar jadi data baru
+    setBranchForm({ ...INITIAL_BRANCH_FORM }); 
+    
+    setMessage('Cabang disimpan.'); 
+    await loadAllData(); 
+  } catch (error) { 
+    setErrorMsg(error.message); 
+  } 
+}
   async function submitProgram(event) { event.preventDefault(); try { const res = await upsertProgram(validateProgramForm(programForm), programForm.id); if (res.error) throw res.error; setProgramForm(INITIAL_PROGRAM_FORM); setMessage('Program disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   async function submitUser(event) { 
     event.preventDefault(); 
