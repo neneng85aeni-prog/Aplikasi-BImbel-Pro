@@ -557,9 +557,8 @@ export function useBimbelApp() {
   function startEditUser(item) { 
     setUserForm({ 
       ...item, 
-      password: '', 
-      menu_permissions: normalizePermissions(item.menu_permissions, item.akses),
-      // Tambahkan dua baris ini agar centang jadwal & program tidak hilang saat edit:
+      password: '', // Kosongkan password saat edit agar tidak menimpa yang lama
+      // Tambahkan dua baris ini:
       availability: item.availability || INITIAL_AVAILABILITY, 
       programs_can_handle: item.programs_can_handle || []
     }); 
