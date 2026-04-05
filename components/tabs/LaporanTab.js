@@ -144,7 +144,13 @@ export function LaporanTab({
             <tbody>
               {paginatedData.map((item) => (
                 <tr key={item.id}>
-                  <td>{formatTanggal(item.tanggal)}</td>
+                  {/* GANTI BARIS 128 MENJADI SEPERTI INI: */}
+<td>
+  <div style={{ fontWeight: '500' }}>{formatTanggal(item.tanggal)}</div>
+  <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 'bold', marginTop: '2px' }}>
+    🕒 {item.tanggal ? new Date(item.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+  </div>
+</td>
                   <td><b>{item.siswa?.nama}</b></td>
                   {/* === TAMBAHAN NAMA KASIR DI TABEL === */}
                   <td><span style={{ fontSize: '11px', color: '#94a3b8' }}>{item.users?.nama || '-'}</span></td>
