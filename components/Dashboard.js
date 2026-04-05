@@ -107,28 +107,63 @@ export function Dashboard({ state, actions }) {
         {errorMsg ? <Banner warning>{errorMsg}</Banner> : null}
 
         {/* BAGIAN YANG DIUPDATE */}
-{activeTab === 'overview' && (
-  <OverviewTab 
-    overview={overview} 
-    financeSummary={financeSummary} 
-    selectedBranch={state.selectedBranch} 
-    employeeBarcodeIn={state.employeeBarcodeIn} 
-    employeeBarcodeOut={state.employeeBarcodeOut} 
-    pembayaran={state.pembayaranTampil} 
-    pengeluaran={state.pengeluaranTampil} 
-  />
-)}
-{/* === TAMBAHKAN BARIS INI UNTUK JADWAL === */}
-        {activeTab === 'jadwal' && <JadwalTab usersTampil={state.usersTampil} />}
+{/* === AREA KONTEN TAB === */}
+        {activeTab === 'overview' && (
+          <OverviewTab 
+            overview={overview} 
+            financeSummary={financeSummary} 
+            selectedBranch={state.selectedBranch} 
+            employeeBarcodeIn={state.employeeBarcodeIn} 
+            employeeBarcodeOut={state.employeeBarcodeOut} 
+            pembayaran={state.pembayaranTampil} 
+            pengeluaran={state.pengeluaranTampil} 
+          />
+        )}
+
+        {/* JADWAL (Sudah dilengkapi data siswa & branches agar tidak crash) */}
+        {activeTab === 'jadwal' && (
+          <JadwalTab 
+            siswa={state.siswaTampil} 
+            users={state.usersTampil} 
+            branches={state.branches} 
+          />
+        )}
 
         {activeTab === 'cabang' && <CabangTab branchForm={state.branchForm} setBranchForm={actions.setBranchForm} branches={state.branches} onSubmit={actions.submitBranch} onReset={actions.setBranchForm} onEdit={actions.startEditBranch} onDelete={actions.deleteBranch} />}
+        
         {activeTab === 'program' && <ProgramTab programForm={state.programForm} setProgramForm={actions.setProgramForm} programs={state.programs} onSubmit={actions.submitProgram} onReset={actions.setProgramForm} onEdit={actions.startEditProgram} onDelete={actions.deleteProgram} />}
-        {activeTab === 'cabang' && <CabangTab branchForm={state.branchForm} setBranchForm={actions.setBranchForm} branches={state.branches} onSubmit={actions.submitBranch} onReset={actions.setBranchForm} onEdit={actions.startEditBranch} onDelete={actions.deleteBranch} />}
-        {activeTab === 'program' && <ProgramTab programForm={state.programForm} setProgramForm={actions.setProgramForm} programs={state.programs} onSubmit={actions.submitProgram} onReset={actions.setProgramForm} onEdit={actions.startEditProgram} onDelete={actions.deleteProgram} />}
+        
         {activeTab === 'users' && <UsersTab userForm={state.userForm} setUserForm={actions.setUserForm} users={state.usersTampil} branches={state.branches} programs={state.programs} onSubmit={actions.submitUser} onReset={actions.setUserForm} onEdit={actions.startEditUser} onDelete={actions.deleteUser} />}
+        
         {activeTab === 'permissions' && <PermissionsTab users={state.usersTampil} permissionUserId={state.permissionUserId} setPermissionUserId={actions.setPermissionUserId} permissionDraft={state.permissionDraft} onTogglePermission={actions.togglePermissionDraft} onSavePermissions={actions.savePermissions} onSelectAllPermissions={actions.selectAllPermissions} onResetPermissions={actions.resetPermissionDraft} />}
-        {activeTab === 'siswa' && <SiswaTab user={state.user} siswaForm={state.siswaForm} setSiswaForm={actions.setSiswaForm} siswaTampil={state.siswaTampil} programs={state.programs} guruOptions={state.guruOptions} branches={state.branches} onGenerateBarcode={actions.generateStudentBarcodeAction} onSubmit={actions.submitSiswa} onReset={actions.setSiswaForm} onEdit={actions.startEditSiswa} onDelete={actions.deleteSiswa} onPrintBarcode={actions.printStudentBarcode} perkembanganForm={state.perkembanganForm} setPerkembanganForm={actions.setPerkembanganForm} onSubmitPerkembangan={actions.submitPerkembangan} searchSiswa={state.searchSiswa} setSearchSiswa={actions.setSearchSiswa} />}
-      
+
+        {/* SISWA (Sudah ditambah props Periode & Download sesuai request Mas) */}
+        {activeTab === 'siswa' && (
+          <SiswaTab 
+            user={state.user} 
+            siswaForm={state.siswaForm} 
+            setSiswaForm={actions.setSiswaForm} 
+            siswaTampil={state.siswaTampil} 
+            programs={state.programs} 
+            guruOptions={state.guruOptions} 
+            branches={state.branches} 
+            onGenerateBarcode={actions.generateStudentBarcodeAction} 
+            onSubmit={actions.submitSiswa} 
+            onReset={actions.setSiswaForm} 
+            onEdit={actions.startEditSiswa} 
+            onDelete={actions.deleteSiswa} 
+            onPrintBarcode={actions.printStudentBarcode} 
+            searchSiswa={state.searchSiswa} 
+            setSearchSiswa={actions.setSearchSiswa}
+            exportDateFrom={state.exportDateFrom}
+            setExportDateFrom={actions.setExportDateFrom}
+            exportDateTo={state.exportDateTo}
+            setExportDateTo={actions.setExportDateTo}
+            handleDownload={actions.handleDownload}
+          />
+        )}
+        
+        {/* ... (Tab kasir, perkembangan, dll ke bawah tetap sama) ... */}
         {activeTab === 'kasir' && <KasirTab branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} siswaOptions={state.siswaTampil} selectedStudent={state.selectedStudent} kasirForm={state.kasirForm} setKasirForm={actions.setKasirForm} studentScanInfo={state.studentScanInfo} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanText={state.studentScanText} onSelectStudent={actions.selectStudentById} onSubmitKasir={actions.submitKasir} onPrintReceiptDesktop={actions.printThermalReceiptDesktop} onPrintReceiptAndroid={actions.printThermalReceiptAndroid} onSendReceiptWA={actions.sendThermalReceiptWA} inventoryTampil={state.inventoryTampil} showReceiptPopup={state.showReceiptPopup} setShowReceiptPopup={actions.setShowReceiptPopup} lastReceipt={state.lastReceipt} />}
         
         {activeTab === 'perkembangan' && <PerkembanganTab user={state.user} perkembanganForm={state.perkembanganForm} setPerkembanganForm={actions.setPerkembanganForm} siswaTampil={state.siswaTampil} guruOptions={state.guruOptions} perkembanganHistory={state.perkembanganHistory} selectedProgressStudent={state.selectedProgressStudent} progressInputMode={state.progressInputMode} setProgressInputMode={actions.setProgressInputMode} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanInfo={state.studentScanInfo} onSelectProgressStudent={actions.selectProgressStudentById} onSubmit={actions.submitPerkembangan} onSendPerkembanganWA={actions.sendPerkembanganWA} perkembanganTampil={state.perkembanganTampil} onDeletePerkembangan={actions.deletePerkembangan} />}
