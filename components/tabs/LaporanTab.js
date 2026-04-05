@@ -5,7 +5,8 @@ export function LaporanTab({
   financeSummary, pembayaran, branches, selectedBranchId, setSelectedBranchId, 
   searchTransaksi, setSearchTransaksi, onDeleteTransaksi,
   editTransaksiForm, setEditTransaksiForm, onSubmitEditTransaksi, onStartEditTransaksi,
-  pengeluaran = [] 
+  pengeluaran = [],
+  onSendWA
 }) {
   // === STATE UNTUK PERIODE & PAGINATION ===
   const [startDate, setStartDate] = useState('');
@@ -144,29 +145,50 @@ export function LaporanTab({
             <tbody>
               {paginatedData.map((item) => (
                 <tr key={item.id}>
-                  {/* GANTI BARIS 128 MENJADI SEPERTI INI: */}
-<td>
-  <div style={{ fontWeight: '500' }}>{formatTanggal(item.tanggal)}</div>
-  <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 'bold', marginTop: '2px' }}>
-    🕒 {item.tanggal ? new Date(item.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-  </div>
-</td>
-                  <td><b>{item.siswa?.nama}</b></td>
-                  {/* === TAMBAHAN NAMA KASIR DI TABEL === */}
-                  <td><span style={{ fontSize: '11px', color: '#94a3b8' }}>{item.users?.nama || '-'}</span></td>
-                  {/* ==================================== */}
-                  <td>{item.keterangan || item.programs?.nama}</td>
-                  <td><b style={{ color: '#10b981' }}>{formatRupiah(item.nominal)}</b></td>
+                  {/* KOLOM TANGGAL & JAM */}
                   <td>
-                    <div className="btn-row">
+                    <div style={{ fontWeight: '500' }}>{formatTanggal(item.tanggal)}</div>
+                    <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 'bold', marginTop: '2px' }}>
+                      🕒 {item.tanggal ? new Date(item.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    </div>
+                  </td>
+                  
+                  {/* KOLOM SISWA */}
+                  <td><b>{item.siswa?.nama}</b></td>
+                  
+                  {/* KOLOM KASIR */}
+                  <td><span style={{ fontSize: '11px', color: '#94a3b8' }}>{item.users?.nama || '-'}</span></td>
+                  
+                  {/* KOLOM KETERANGAN */}
+                  <td>{item.keterangan || item.programs?.nama}</td>
+                  
+                  {/* KOLOM NOMINAL */}
+                  <td><b style={{ color: '#10b981' }}>{formatRupiah(item.nominal)}</b></td>
+                  
+                  {/* KOLOM AKSI (TOMBOL WA, EDIT, HAPUS) */}
+                  <td>
+                    <div className="btn-row" style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap' }}>
+                      <button 
+                        className="btn btn-primary btn-small" 
+                        onClick={() => onSendWA(item)}
+                        style={{ background: '#25d366', borderColor: '#25d366', color: 'white' }}
+                      >
+                        WA
+                      </button>
                       <button className="btn btn-secondary btn-small" onClick={() => onStartEditTransaksi(item)}>Edit</button>
                       <button className="btn btn-danger btn-small" onClick={() => onDeleteTransaksi(item.id, item.keterangan || item.siswa?.nama || 'Transaksi ini')}>Hapus</button>
                     </div>
                   </td>
                 </tr>
               ))}
+              
+              {/* JIKA DATA KOSONG */}
               {paginatedData.length === 0 && (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px' }} className="text-muted">Tidak ada transaksi.</td></tr>
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }} className="text-muted">
+                    Tidak ada transaksi.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
