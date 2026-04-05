@@ -235,7 +235,7 @@ export function useBimbelApp() {
     try { 
       const payload = validateUserForm({ 
         ...userForm, 
-        menu_permissions: userForm.menu_permissions?.length ? userForm.menu_permissions : defaultPermissionsByRole(userForm.akses) 
+        menu_permissions: userForm.menu_permissions?.length ? userForm.menu_permissions : defaultPermissionsByRole(userForm.akses),
         // === TAMBAHKAN DUA BARIS INI ===
         availability: userForm.availability,
         programs_can_handle: userForm.programs_can_handle
