@@ -260,9 +260,17 @@ export function useBimbelApp() {
       const res = await upsertUserViaRpc(payload, userForm.id); 
       if (res.error) throw res.error; 
       
-      setUserForm(INITIAL_USER_FORM); 
+      // === RESET FORM DENGAN MEMBERSIHKAN CHECKLIST ===
+      setUserForm({
+        ...INITIAL_USER_FORM,
+        akses: '', // Agar kotak jadwal Guru otomatis sembunyi setelah simpan
+        // Ini kunci utamanya: Kita fotokopi ulang jadwal agar semua centang (aktif) jadi false
+        availability: INITIAL_AVAILABILITY.map(day => ({ ...day, aktif: false })),
+        programs_can_handle: []
+      });
+
       setMessage('Karyawan disimpan.'); 
-      await loadAllData(); 
+      await loadAllData();
     } catch (error) { 
       setErrorMsg(error.message); 
     } 
