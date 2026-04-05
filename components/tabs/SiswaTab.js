@@ -108,42 +108,96 @@ export function SiswaTab({
         <h2 className="section-title">Pendaftaran siswa</h2>
         {/* KABEL YANG BENAR: onSubmit={onSubmit} agar tidak crash */}
         <form onSubmit={onSubmit}>
+          {/* --- BAGIAN 1: DATA DIRI SISWA --- */}
           <div className="grid grid-2">
-            <div className="form-row"><label>Nama siswa</label><input value={siswaForm.nama} onChange={(e) => setSiswaForm({ ...siswaForm, nama: e.target.value })} required /></div>
-            <div className="form-row"><label>Cabang</label><select value={siswaForm.branch_id} onChange={(e) => setSiswaForm({ ...siswaForm, branch_id: e.target.value })}><option value="">Pilih cabang</option>{branches.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
+            <div className="form-row">
+              <label>Nama siswa</label>
+              <input value={siswaForm.nama} onChange={(e) => setSiswaForm({ ...siswaForm, nama: e.target.value })} required />
+            </div>
+            <div className="form-row">
+              <label>Cabang</label>
+              <select value={siswaForm.branch_id} onChange={(e) => setSiswaForm({ ...siswaForm, branch_id: e.target.value })}>
+                <option value="">Pilih cabang</option>
+                {branches.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}
+              </select>
+            </div>
           </div>
+
           <div className="grid grid-2">
-            <div className="form-row"><label>Program</label><select value={siswaForm.program_id} onChange={(e) => setSiswaForm({ ...siswaForm, program_id: e.target.value })}><option value="">Pilih program</option>{programs.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
-            {/* Ini adalah dropdown Program Belajar yang menjadi 'kunci' filter guru */}
-<div className="form-row">
-  <label>Program Belajar</label>
-  <select 
-    value={siswaForm.program_id || ''} 
-    onChange={(e) => setSiswaForm({ ...siswaForm, program_id: e.target.value })}
-    required
-  >
-    <option value="">-- Pilih Program --</option>
-    {programs.map((p) => (
-      <option key={p.id} value={p.id}>{p.nama}</option>
-    ))}
-  </select>
-</div>
-            <div className="form-row"><label>Guru default</label><select value={siswaForm.guru_id} onChange={(e) => setSiswaForm({ ...siswaForm, guru_id: e.target.value })}><option value="">Pilih guru</option>{guruOptions.map((item) => <option key={item.id} value={item.id}>{item.nama}</option>)}</select></div>
+            <div className="form-row">
+              <label>Program Belajar</label>
+              <select 
+                value={siswaForm.program_id || ''} 
+                onChange={(e) => setSiswaForm({ ...siswaForm, program_id: e.target.value })}
+                required
+              >
+                <option value="">-- Pilih Program --</option>
+                {programs.map((p) => <option key={p.id} value={p.id}>{p.nama}</option>)}
+              </select>
+            </div>
+            <div className="form-row">
+              <label>Kelas</label>
+              <input value={siswaForm.kelas} onChange={(e) => setSiswaForm({ ...siswaForm, kelas: e.target.value })} placeholder="Cth: 1 SD" />
+            </div>
           </div>
+
+          {/* --- BAGIAN 2: JADWAL & GURU (KOTAK BIRU) --- */}
+          <div style={{ marginTop: '10px', marginBottom: '20px', padding: '15px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+            <div className="grid grid-2">
+              <div className="form-row">
+                <label>Pilih Hari Les</label>
+                <select value={siswaForm.hari || ''} onChange={(e) => setSiswaForm({ ...siswaForm, hari: e.target.value })} required>
+                  <option value="">-- Pilih Hari --</option>
+                  {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+              <div className="form-row">
+                <label>Jam Mulai</label>
+                <input type="time" value={siswaForm.jam_mulai || '14:00'} onChange={(e) => setSiswaForm({ ...siswaForm, jam_mulai: e.target.value })} required />
+              </div>
+            </div>
+
+            <div className="form-row" style={{ marginTop: '15px' }}>
+              <label>Guru Pengampu (Filter Otomatis)</label>
+              <select 
+                value={siswaForm.guru_id || ''} 
+                onChange={(e) => setSiswaForm({ ...siswaForm, guru_id: e.target.value })}
+                required
+                disabled={!siswaForm.hari || !siswaForm.program_id}
+              >
+                <option value="">{!siswaForm.hari ? '-- Pilih Hari & Program Dulu --' : '-- Pilih Guru Tersedia --'}</option>
+                {guruOptions.filter(guru => {
+                  const bisaProgram = guru.programs_can_handle?.includes(siswaForm.program_id);
+                  const jadwalHari = guru.availability?.find(a => a.hari === siswaForm.hari && a.aktif);
+                  const jamCocok = jadwalHari && siswaForm.jam_mulai >= jadwalHari.jam_masuk && siswaForm.jam_mulai <= jadwalHari.jam_pulang;
+                  return bisaProgram && jamCocok;
+                }).map(guru => <option key={guru.id} value={guru.id}>{guru.nama}</option>)}
+              </select>
+            </div>
+          </div>
+
           <div className="grid grid-2">
-            <div className="form-row"><label>Kelas</label><input value={siswaForm.kelas} onChange={(e) => setSiswaForm({ ...siswaForm, kelas: e.target.value })} /></div>
             <div className="form-row"><label>Nama orang tua</label><input value={siswaForm.nama_ortu} onChange={(e) => setSiswaForm({ ...siswaForm, nama_ortu: e.target.value })} /></div>
+            <div className="form-row"><label>No HP (WA)</label><input value={siswaForm.no_hp} onChange={(e) => setSiswaForm({ ...siswaForm, no_hp: e.target.value })} placeholder="Cth: 0812..." /></div>
           </div>
-          <div className="grid grid-2">
-            <div className="form-row"><label>No HP</label><input value={siswaForm.no_hp} onChange={(e) => setSiswaForm({ ...siswaForm, no_hp: e.target.value })} placeholder="Cth: 0812..." /></div>
-            <div className="form-row"><label>Alamat</label><input value={siswaForm.alamat} onChange={(e) => setSiswaForm({ ...siswaForm, alamat: e.target.value })} /></div>
+
+          <div className="form-row">
+            <label>Alamat Lengkap</label>
+            <input value={siswaForm.alamat} onChange={(e) => setSiswaForm({ ...siswaForm, alamat: e.target.value })} />
           </div>
-          <div className="form-row"><label>Barcode siswa otomatis</label><div className="btn-row"><input value={siswaForm.kode_qr} onChange={(e) => setSiswaForm({ ...siswaForm, kode_qr: e.target.value })} placeholder="Klik generate jika ingin otomatis" /><button className="btn btn-secondary" type="button" onClick={onGenerateBarcode}>Generate</button></div></div>
-          {siswaForm.kode_qr ? (
+
+          {/* --- BAGIAN 3: BARCODE & TOMBOL PRINT (DIJAMIN TIDAK TERHAPUS) --- */}
+          <div className="form-row">
+            <label>Barcode siswa otomatis</label>
+            <div className="btn-row">
+              <input value={siswaForm.kode_qr} onChange={(e) => setSiswaForm({ ...siswaForm, kode_qr: e.target.value })} placeholder="Klik generate" />
+              <button className="btn btn-secondary" type="button" onClick={onGenerateBarcode}>Generate</button>
+            </div>
+          </div>
+
+          {siswaForm.kode_qr && (
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
               <BarcodePreview value={siswaForm.kode_qr} title="Preview barcode siswa" compact />
-              
-              {/* Grup Tombol Print (Ditumpuk ke bawah) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <button 
                   className="btn btn-secondary" 
@@ -155,14 +209,23 @@ export function SiswaTab({
                 <button 
                   className="btn btn-primary" 
                   type="button" 
-                  onClick={() => openAndroidQrSharePage({ nama: siswaForm.nama || 'Siswa', kelas: siswaForm.kelas || '', kode_qr: siswaForm.kode_qr, branches: { nama: branches.find((item) => item.id === siswaForm.branch_id)?.nama || '-' } })}
+                  onClick={() => openAndroidQrSharePage({ 
+                    nama: siswaForm.nama || 'Siswa', 
+                    kelas: siswaForm.kelas || '', 
+                    kode_qr: siswaForm.kode_qr, 
+                    branches: { nama: branches.find((item) => item.id === siswaForm.branch_id)?.nama || '-' } 
+                  })}
                 >
                   Print Android
                 </button>
               </div>
             </div>
-          ) : null}
-          <div className="btn-row"><button className="btn btn-primary" type="submit">{siswaForm.id ? 'Update siswa' : 'Simpan siswa'}</button><button className="btn btn-secondary" type="button" onClick={() => onReset(INITIAL_SISWA_FORM)}>Reset</button></div>
+          )}
+
+          <div className="btn-row">
+            <button className="btn btn-primary" type="submit">{siswaForm.id ? '💾 Update siswa' : '💾 Simpan siswa'}</button>
+            <button className="btn btn-secondary" type="button" onClick={() => onReset(INITIAL_SISWA_FORM)}>Reset</button>
+          </div>
         </form>
       </div>
 
