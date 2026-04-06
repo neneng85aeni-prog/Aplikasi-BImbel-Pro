@@ -149,7 +149,11 @@ export function LaporanTab({
                   <td>
                     <div style={{ fontWeight: '500' }}>{formatTanggal(item.tanggal)}</div>
                     <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 'bold', marginTop: '2px' }}>
-                      🕒 {item.tanggal ? new Date(item.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                      🕒 {item.tanggal 
+      ? (item.tanggal.length > 10 
+          ? new Date(item.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) 
+          : '--:--') 
+      : '--:--'}
                     </div>
                   </td>
                   
