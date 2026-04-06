@@ -67,6 +67,18 @@ export function Dashboard({ state, actions }) {
             <p className="text-muted hide-on-mobile">{user.nama}<br />{user.email}</p>
           </div>
 
+          {/* === TOMBOL LOGOUT KHUSUS MOBILE === */}
+          <div className="mobile-actions" style={{ display: 'none' }}>
+            <button 
+              className="btn btn-danger btn-small" 
+              onClick={actions.logout} 
+              style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px' }}
+            >
+              🚪 Keluar
+            </button>
+          </div>
+          {/* =================================== */}
+          
         </div>
 
         <div className="nav-stack">
