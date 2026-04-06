@@ -143,38 +143,83 @@ export function SiswaTab({
 
           {/* --- BAGIAN 2: JADWAL & GURU (KOTAK BIRU) --- */}
           <div style={{ marginTop: '10px', marginBottom: '20px', padding: '15px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-            <div className="grid grid-2">
-              <div className="form-row">
-                <label>Pilih Hari Les</label>
-                <select value={siswaForm.hari || ''} onChange={(e) => setSiswaForm({ ...siswaForm, hari: e.target.value })} required>
-                  <option value="">-- Pilih Hari --</option>
-                  {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
+            
+            {/* === CHECKLIST HARI MASUK === */}
+            <div className="form-row" style={{ marginBottom: '15px' }}>
+              <label>Hari Masuk <span style={{fontSize: '11px', color: '#94a3b8'}}>(Bisa pilih lebih dari satu)</span></label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginTop: '8px' }}>
+                {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map(day => {
+                  const isSelected = siswaForm.hari?.includes(day);
+                  
+                  return (
+                    <label key={day} style={{ 
+                      display: 'flex', alignItems: 'center', gap: '8px', 
+                      background: isSelected ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)', 
+                      padding: '8px 10px', borderRadius: '6px', cursor: 'pointer',
+                      border: `1px solid ${isSelected ? '#3b82f6' : 'transparent'}`,
+                      transition: 'all 0.2s'
+                    }}>
+                      <input 
+                        type="checkbox" 
+                        checked={isSelected || false}
+                        onChange={(e) => {
+                          let currentDays = siswaForm.hari ? siswaForm.hari.split(',').map(d => d.trim()).filter(d => d) : [];
+                          
+                          if (e.target.checked) {
+                            if(!currentDays.includes(day)) currentDays.push(day);
+                          } else {
+                            currentDays = currentDays.filter(d => d !== day);
+                          }
+                          
+                          // Urutkan hari sesuai urutan kalender
+                          const dayOrder = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+                          currentDays.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+
+                          setSiswaForm({ ...siswaForm, hari: currentDays.join(', ') });
+                        }}
+                        style={{ cursor: 'pointer', accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                      />
+                      <span style={{ fontSize: '13px', fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? '#60a5fa' : 'white' }}>
+                        {day}
+                      </span>
+                    </label>
+                  )
+                })}
               </div>
+            </div>
+
+            <div className="grid grid-2">
               <div className="form-row">
                 <label>Jam Mulai</label>
                 <input type="time" value={siswaForm.jam_mulai || '14:00'} onChange={(e) => setSiswaForm({ ...siswaForm, jam_mulai: e.target.value })} required />
               </div>
-            </div>
+              <div className="form-row">
+                <label>Guru Pengampu (Filter Otomatis)</label>
+                <select 
+                  value={siswaForm.guru_id || ''} 
+                  onChange={(e) => setSiswaForm({ ...siswaForm, guru_id: e.target.value })}
+                  required
+                  disabled={!siswaForm.hari || !siswaForm.program_id}
+                >
+                  <option value="">{!siswaForm.hari ? '-- Pilih Hari & Program Dulu --' : '-- Pilih Guru Tersedia --'}</option>
+                  {(guruOptions || []).filter(guru => {
+                    const bisaProgram = guru.programs_can_handle?.includes(siswaForm.program_id);
+                    
+                    // Cek apakah guru tersedia di SEMUA hari yang dipilih siswa
+                    const selectedDays = siswaForm.hari ? siswaForm.hari.split(',').map(d => d.trim()).filter(d => d) : [];
+                    const bisaJadwal = selectedDays.length > 0 && selectedDays.every(day => {
+                      const jadwalHari = guru.availability?.find(a => a.hari === day && a.aktif);
+                      return jadwalHari && siswaForm.jam_mulai >= jadwalHari.jam_masuk && siswaForm.jam_mulai <= jadwalHari.jam_pulang;
+                    });
 
-            <div className="form-row" style={{ marginTop: '15px' }}>
-              <label>Guru Pengampu (Filter Otomatis)</label>
-              <select 
-                value={siswaForm.guru_id || ''} 
-                onChange={(e) => setSiswaForm({ ...siswaForm, guru_id: e.target.value })}
-                required
-                disabled={!siswaForm.hari || !siswaForm.program_id}
-              >
-                <option value="">{!siswaForm.hari ? '-- Pilih Hari & Program Dulu --' : '-- Pilih Guru Tersedia --'}</option>
-                {(guruOptions || []).filter(guru => {
-  const bisaProgram = guru.programs_can_handle?.includes(siswaForm.program_id);
-                  const jadwalHari = guru.availability?.find(a => a.hari === siswaForm.hari && a.aktif);
-                  const jamCocok = jadwalHari && siswaForm.jam_mulai >= jadwalHari.jam_masuk && siswaForm.jam_mulai <= jadwalHari.jam_pulang;
-                  return bisaProgram && jamCocok;
-                }).map(guru => <option key={guru.id} value={guru.id}>{guru.nama}</option>)}
-              </select>
+                    return bisaProgram && bisaJadwal;
+                  }).map(guru => <option key={guru.id} value={guru.id}>{guru.nama}</option>)}
+                </select>
+              </div>
             </div>
           </div>
+          
+          {/* LANJUTANNYA ADALAH: <div className="grid grid-2"> (Bagian Nama Ortu) */}
 
           <div className="grid grid-2">
             <div className="form-row"><label>Nama orang tua</label><input value={siswaForm.nama_ortu} onChange={(e) => setSiswaForm({ ...siswaForm, nama_ortu: e.target.value })} /></div>
