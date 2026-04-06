@@ -6,7 +6,8 @@ export function LaporanTab({
   searchTransaksi, setSearchTransaksi, onDeleteTransaksi,
   editTransaksiForm, setEditTransaksiForm, onSubmitEditTransaksi, onStartEditTransaksi,
   pengeluaran = [],
-  onSendWA
+  onSendWA,
+  canSeeStats
 }) {
   // === STATE UNTUK PERIODE & PAGINATION ===
   const [startDate, setStartDate] = useState('');
