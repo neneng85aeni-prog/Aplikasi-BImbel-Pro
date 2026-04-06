@@ -82,25 +82,28 @@ export function LaporanTab({
   return (
     <div className="grid gap-lg">
       
-      {/* 1. STATISTIK HARIAN, MINGGUAN, BULANAN */}
-      <div className="grid grid-3 compact-stats" style={{ marginTop: '-10px' }}>
-        <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #3b82f6' }}>
-          <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Hari Ini</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.harianMasuk)}</b></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.harianKeluar)}</b></div>
+      {/* 1. STATISTIK HANYA MUNCUL JIKA canSeeStats bernilai TRUE */}
+      {canSeeStats && (
+        <div className="grid grid-3 compact-stats" style={{ marginTop: '-10px' }}>
+          <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #3b82f6' }}>
+            <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Hari Ini</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.harianMasuk)}</b></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.harianKeluar)}</b></div>
+          </div>
+          <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #8b5cf6' }}>
+            <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Minggu Ini</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.mingguanMasuk)}</b></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.mingguanKeluar)}</b></div>
+          </div>
+          <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #f59e0b' }}>
+            <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Bulan Ini</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.bulananMasuk)}</b></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.bulananKeluar)}</b></div>
+          </div>
         </div>
-        <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #8b5cf6' }}>
-          <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Minggu Ini</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.mingguanMasuk)}</b></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.mingguanKeluar)}</b></div>
-        </div>
-        <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #f59e0b' }}>
-          <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Bulan Ini</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.bulananMasuk)}</b></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.bulananKeluar)}</b></div>
-        </div>
-      </div>
+      )}
 
+      {/* Bagian Riwayat Transaksi ke bawah tetap sama... */}
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Riwayat Transaksi</h2>
