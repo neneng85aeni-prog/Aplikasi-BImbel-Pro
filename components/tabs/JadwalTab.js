@@ -85,7 +85,7 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
                   {timeSlots.map(slot => {
                     const matchSiswa = (siswa || []).filter(s => 
                       s.guru_id === guru.id && 
-                      s.hari === selectedDay && 
+                      s.hari?.includes(selectedDay) &&
                       s.jam_mulai && s.jam_mulai.startsWith(slot.substring(0, 2))
                     )
 
