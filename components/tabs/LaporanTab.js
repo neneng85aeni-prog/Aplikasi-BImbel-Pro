@@ -146,14 +146,12 @@ export function LaporanTab({
               {paginatedData.map((item) => (
                 <tr key={item.id}>
                   {/* KOLOM TANGGAL & JAM */}
+                  {/* KOLOM TANGGAL & JAM */}
                   <td>
                     <div style={{ fontWeight: '500' }}>{formatTanggal(item.tanggal)}</div>
                     <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 'bold', marginTop: '2px' }}>
-                      🕒 {item.tanggal 
-      ? (item.tanggal.length > 10 
-          ? new Date(item.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) 
-          : '--:--') 
-      : '--:--'}
+                      {/* KITA GUNAKAN created_at KHUSUS UNTUK JAM */}
+                      🕒 {item.created_at ? new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </div>
                   </td>
                   
