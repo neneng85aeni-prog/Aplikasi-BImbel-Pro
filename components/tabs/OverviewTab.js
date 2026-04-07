@@ -224,6 +224,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
              </ResponsiveContainer>
            </div>
          </div>
+        </div>
 
       {/* GRAFIK HARIAN */}
       <div className="glass-card">
