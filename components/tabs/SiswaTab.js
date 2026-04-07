@@ -89,9 +89,12 @@ export function SiswaTab({
     setCurrentPage(1); 
   };
 
-  // LOGIKA PEMOTONGAN DATA UNTUK HALAMAN
-  const totalPages = Math.ceil(siswaTampil.length / ITEMS_PER_PAGE);
-  const paginatedData = siswaTampil.slice(
+  // === FILTER SAKTI DI SINI ===
+  const siswaAktifTampil = siswaTampil.filter(s => s.status !== 'nonaktif' && s.status !== 'Nonaktif');
+
+  // LOGIKA PEMOTONGAN DATA UNTUK HALAMAN (Ganti pakai siswaAktifTampil)
+  const totalPages = Math.ceil(siswaAktifTampil.length / ITEMS_PER_PAGE);
+  const paginatedData = siswaAktifTampil.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -123,7 +126,8 @@ export function SiswaTab({
             </div>
           </div>
 
-          <div className="grid grid-2">
+          {/* UBAH grid-2 JADI grid-3 */}
+          <div className="grid grid-3" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
             <div className="form-row">
               <label>Program Belajar</label>
               <select 
@@ -137,7 +141,20 @@ export function SiswaTab({
             </div>
             <div className="form-row">
               <label>Kelas</label>
-              <input value={siswaForm.kelas} onChange={(e) => setSiswaForm({ ...siswaForm, kelas: e.target.value })} placeholder="Cth: 1 SD" />
+              <input value={siswaForm.kelas || ''} onChange={(e) => setSiswaForm({ ...siswaForm, kelas: e.target.value })} placeholder="Cth: 1 SD" />
+            </div>
+            
+            {/* === KOTAK BARU: STATUS SISWA === */}
+            <div className="form-row">
+              <label>Status Siswa</label>
+              <select 
+                value={siswaForm.status || 'aktif'} 
+                onChange={(e) => setSiswaForm({ ...siswaForm, status: e.target.value })}
+                style={{ border: siswaForm.status === 'nonaktif' ? '1px solid #ef4444' : '' }}
+              >
+                <option value="aktif">🟢 Aktif</option>
+                <option value="nonaktif">🔴 Nonaktif</option>
+              </select>
             </div>
           </div>
 
@@ -359,7 +376,7 @@ export function SiswaTab({
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', gap: '15px' }}>
             <span style={{ fontSize: '13px', color: '#94a3b8' }}>
-              Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, siswaTampil.length)} dari {siswaTampil.length} siswa
+              Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, siswaAktifTampil.length)} dari {siswaAktifTampil.length} siswa aktif
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button className="btn btn-secondary btn-small" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>
