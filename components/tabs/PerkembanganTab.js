@@ -64,9 +64,21 @@ export function PerkembanganTab({
     return true;
   });
 
-  // === PAGINASI ===
+  // === PAGINASI & SORTING (Berdasarkan Jam Sesi Siswa) ===
   const totalPages = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE);
-  const paginatedData = filteredHistory.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  
+  // 1. Urutkan data berdasarkan jam_mulai siswa (Pagi -> Sore)
+  const sortedHistory = [...filteredHistory].sort((a, b) => {
+    // Ambil jam mulai siswa dari relasi Supabase
+    // Jika data lama tidak punya jam, taruh paling bawah ('99:99')
+    const jamA = a.siswa?.jam_mulai || '99:99'; 
+    const jamB = b.siswa?.jam_mulai || '99:99';
+    
+    return jamA.localeCompare(jamB);
+  });
+
+  // 2. Baru dipotong untuk halaman
+  const paginatedData = sortedHistory.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const goToPage = (page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
 
