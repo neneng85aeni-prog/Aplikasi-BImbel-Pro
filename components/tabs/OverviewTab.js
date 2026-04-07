@@ -1,8 +1,16 @@
 import { useMemo } from 'react'
 import { formatRupiah } from '../../lib/format'
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { 
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer, PieChart, Pie, Cell, RadialBarChart, RadialBar 
+} from 'recharts'
 
-export function OverviewTab({ stats, overview, financeSummary, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, pembayaran = [], pengeluaran = [] }) {
+export function OverviewTab({ 
+  stats, overview, financeSummary, selectedBranch, 
+  employeeBarcodeIn, employeeBarcodeOut, 
+  pembayaran = [], pengeluaran = [], 
+  siswa = [], perkembangan = [] // Tambahkan ini agar bisa hitung absen hari ini
+}) {
   
   // === FUNGSI PRINT QR CODE ===
   function printQRCode(title, qrData, branchName) {
@@ -19,9 +27,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
           img { width: 450px; height: 450px; border: 4px solid #1e293b; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
           p { font-size: 20px; margin-top: 25px; color: #94a3b8; font-weight: bold; letter-spacing: 3px; }
           .footer { margin-top: 50px; font-size: 16px; color: #64748b; }
-          @media print {
-            body { height: auto; margin-top: 80px; }
-          }
+          @media print { body { height: auto; margin-top: 80px; } }
         </style>
       </head>
       <body onload="window.print()">
@@ -34,157 +40,154 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
       </html>
     `
     const w = window.open('', '_blank', 'width=800,height=900')
-    if (w) {
-      w.document.write(html)
-      w.document.close()
-    } else {
-      alert('Popup diblokir browser! Tolong izinkan popup untuk mencetak.')
-    }
+    if (w) { w.document.write(html); w.document.close(); }
   }
 
-  // === MENGHITUNG DATA HARIAN (BULAN BERJALAN) ===
+  // === LOGIKA BARU: HITUNG ABSENSI HARI INI ===
+  const attendanceToday = useMemo(() => {
+    const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const todayName = hariMap[new Date().getDay()];
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const branchId = selectedBranch?.id;
+
+    // 1. Siswa yang SEHARUSNYA datang hari ini (berdasarkan jadwal)
+    const targetSiswa = (siswa || []).filter(s => {
+      const matchBranch = !branchId || s.branch_id === branchId;
+      const matchDay = s.hari?.includes(todayName);
+      return matchBranch && matchDay;
+    });
+
+    // 2. Siswa yang SUDAH input perkembangan hari ini
+    const actualHadir = (perkembangan || []).filter(p => {
+      const isToday = p.tanggal?.startsWith(todayStr);
+      const isTargetBranch = !branchId || p.siswa?.branch_id === branchId || p.branch_id === branchId;
+      return isToday && isTargetBranch;
+    });
+
+    const targetCount = targetSiswa.length;
+    const hadirCount = actualHadir.length;
+    const persen = targetCount > 0 ? Math.round((hadirCount / targetCount) * 100) : 0;
+
+    return [
+      { name: 'Target Jadwal', value: targetCount, fill: 'rgba(255,255,255,0.1)' },
+      { name: 'Aktual Hadir', value: hadirCount, fill: '#10b981' },
+      { percentage: persen, target: targetCount, hadir: hadirCount }
+    ];
+  }, [siswa, perkembangan, selectedBranch]);
+
+  // === DATA KEUANGAN HARIAN ===
   const dailyData = useMemo(() => {
     const today = new Date();
     const currentMonthPrefix = today.toISOString().slice(0, 7);
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-
     const daysArray = [];
     for (let i = 1; i <= daysInMonth; i++) {
       const dayString = i < 10 ? `0${i}` : `${i}`;
-      daysArray.push({
-        tanggalFilter: `${currentMonthPrefix}-${dayString}`,
-        labelTanggal: `${i}`,
-        Pemasukan: 0,
-        Pengeluaran: 0
-      });
+      daysArray.push({ tanggalFilter: `${currentMonthPrefix}-${dayString}`, labelTanggal: `${i}`, Pemasukan: 0, Pengeluaran: 0 });
     }
-
     const branchId = selectedBranch?.id;
-
     pembayaran.forEach(p => {
       if (branchId && p.branch_id !== branchId && p.siswa?.branch_id !== branchId) return;
       const tglFull = p.tanggal ? p.tanggal.slice(0, 10) : '';
       if (tglFull.startsWith(currentMonthPrefix)) {
         const index = daysArray.findIndex(d => d.tanggalFilter === tglFull);
-        if (index !== -1) daysArray[index].Pemasukan += Number(p.nominal || p.jumlah_bayar || 0);
+        if (index !== -1) daysArray[index].Pemasukan += Number(p.nominal || 0);
       }
     });
-
     pengeluaran.forEach(p => {
       if (branchId && p.branch_id !== branchId) return;
       const tglFull = p.tanggal ? p.tanggal.slice(0, 10) : '';
       if (tglFull.startsWith(currentMonthPrefix)) {
         const index = daysArray.findIndex(d => d.tanggalFilter === tglFull);
-        if (index !== -1) daysArray[index].Pengeluaran += Number(p.nominal || p.jumlah || 0);
+        if (index !== -1) daysArray[index].Pengeluaran += Number(p.nominal || 0);
       }
     });
-
     return daysArray;
   }, [pembayaran, pengeluaran, selectedBranch]);
 
-  // === DATA PIE CHART (SEBARAN PROGRAM) ===
-  const programData = overview?.studentDistribution || [
-    { name: 'Belum Ada Data', value: 1 } // Fallback jika data kosong
-  ]; 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+  // Warna Pie Chart
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
+  const renderCustomLegend = (value, entry) => (
+    <span style={{ color: '#94a3b8', fontSize: '11px', marginLeft: '5px' }}>
+      {value} <b style={{ color: '#fff' }}>({entry.payload.value})</b>
+    </span>
+  );
 
   return (
     <div className="grid gap-lg">
       
-      {/* BARIS 1: KARTU STATISTIK CEPAT (QUICK STATS) */}
+      {/* BARIS 1: KARTU STATISTIK */}
       {stats && overview && (
         <div className="grid grid-4" style={{ gap: '15px' }}>
-          <StatCard title="Total Siswa Aktif" value={stats.siswa || 0} unit="Anak" icon="👨‍🎓" color="#3b82f6" />
+          <StatCard title="Total Siswa" value={stats.siswa || 0} unit="Anak Aktif" icon="👨‍🎓" color="#3b82f6" />
           <StatCard title="Pendapatan" value={formatRupiah(overview.monthlyRevenue || 0)} unit="Bulan Ini" icon="📈" color="#10b981" />
           <StatCard title="Pengeluaran" value={formatRupiah(overview.monthlyExpense || 0)} unit="Bulan Ini" icon="📉" color="#ef4444" />
-          <StatCard title="Estimasi Profit Bersih" value={formatRupiah((overview.monthlyRevenue || 0) - (overview.monthlyExpense || 0))} unit="Bulan Ini" icon="💎" color="#8b5cf6" />
+          <StatCard title="Estimasi Profit" value={formatRupiah((overview.monthlyRevenue || 0) - (overview.monthlyExpense || 0))} unit="Bulan Ini" icon="💎" color="#8b5cf6" />
         </div>
       )}
 
-      {/* BARIS 2: QR CODE & PIE CHART */}
-      <div className="grid grid-2" style={{ gap: '20px', gridTemplateColumns: '1fr 1fr' }}>
+      {/* BARIS 2: MONITORING KEHADIRAN & QR CODE */}
+      <div className="grid grid-3" style={{ gap: '20px', gridTemplateColumns: '1fr 1fr 1fr' }}>
          
-         {/* KARTU KIRI: QR CODE ABSENSI */}
-         <div className="glass-card" style={{ textAlign: 'center' }}>
-            <h2 className="section-title">QR Code Kehadiran Pegawai</h2>
-            <p className="text-muted" style={{ marginBottom: '20px', fontSize: '13px' }}>
-              Cabang: <b>{selectedBranch?.nama || 'Semua Cabang'}</b>
-            </p>
-            <div className="grid grid-2" style={{ gap: '15px' }}>
-               <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                 <h4 style={{ marginBottom: '10px', color: '#10b981', fontWeight: 'bold' }}>Masuk</h4>
-                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeIn}`} alt="QR Masuk" style={{ borderRadius: '8px', background: '#fff', padding: '5px' }} />
-                 <button className="btn btn-primary btn-small" onClick={() => printQRCode('Masuk', employeeBarcodeIn, selectedBranch?.nama)} style={{ width: '100%', marginTop: '15px' }}>🖨️ Cetak</button>
-               </div>
-               <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                 <h4 style={{ marginBottom: '10px', color: '#ef4444', fontWeight: 'bold' }}>Pulang</h4>
-                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeOut}`} alt="QR Pulang" style={{ borderRadius: '8px', background: '#fff', padding: '5px' }} />
-                 <button className="btn btn-secondary btn-small" onClick={() => printQRCode('Pulang', employeeBarcodeOut, selectedBranch?.nama)} style={{ width: '100%', marginTop: '15px' }}>🖨️ Cetak</button>
-               </div>
+         {/* KIRI: GAUGE KEHADIRAN HARI INI */}
+         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <h2 className="section-title" style={{ position: 'absolute', top: '15px', left: '20px' }}>Kehadiran Hari Ini</h2>
+            <div style={{ width: '100%', height: '180px', marginTop: '30px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart cx="50%" cy="50%" innerRadius="60%" outerRadius="100%" barSize={15} data={[attendanceToday[1]]} startAngle={180} endAngle={180 - (attendanceToday[2].percentage * 1.8)}>
+                  <RadialBar background clockWise dataKey="value" cornerRadius={10} fill="#10b981" />
+                </RadialBarChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '-40px' }}>
+               <div style={{ fontSize: '32px', fontWeight: 'bold' }}>{attendanceToday[2].percentage}%</div>
+               <div style={{ fontSize: '12px', color: '#94a3b8' }}>{attendanceToday[2].hadir} / {attendanceToday[2].target} Siswa Hadir</div>
             </div>
          </div>
 
-         {/* KARTU KANAN: PIE CHART (SEBARAN PROGRAM) */}
+         {/* TENGAH: QR CODE */}
+         <div className="glass-card" style={{ textAlign: 'center' }}>
+            <h4 style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '15px' }}>Cetak QR Absensi</h4>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+               <div style={{ padding: '10px', background: 'white', borderRadius: '10px' }}>
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${employeeBarcodeIn}`} alt="IN" style={{ width: '80px' }} />
+               </div>
+               <div style={{ padding: '10px', background: 'white', borderRadius: '10px' }}>
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${employeeBarcodeOut}`} alt="OUT" style={{ width: '80px' }} />
+               </div>
+            </div>
+            <button className="btn btn-primary btn-small" onClick={() => printQRCode('Absensi', employeeBarcodeIn, selectedBranch?.nama)} style={{ marginTop: '15px', width: '100%' }}>🖨️ Cetak Kertas Absen</button>
+         </div>
+
+         {/* KANAN: PIE CHART PROGRAM */}
          <div className="glass-card">
-           <h2 className="section-title">Komposisi Program Belajar</h2>
-           <p className="text-muted" style={{ marginBottom: '10px', fontSize: '13px' }}>
-             Distribusi siswa aktif per program
-           </p>
-           <div style={{ width: '100%', height: '230px' }}>
+           <h4 style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '10px' }}>Program Belajar</h4>
+           <div style={{ width: '100%', height: '180px' }}>
              <ResponsiveContainer width="100%" height="100%">
                <PieChart>
-                 <Pie
-                   data={programData}
-                   innerRadius={60}
-                   outerRadius={80}
-                   paddingAngle={5}
-                   dataKey="value"
-                 >
-                   {programData.map((entry, index) => (
-                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                   ))}
+                 <Pie data={overview?.studentDistribution || []} innerRadius={40} outerRadius={55} paddingAngle={2} dataKey="value">
+                   {(overview?.studentDistribution || []).map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                  </Pie>
-                 <Tooltip 
-                   contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
-                   itemStyle={{ color: '#fff' }}
-                 />
-                 <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: '12px' }} />
+                 <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', fontSize: '12px' }} />
                </PieChart>
              </ResponsiveContainer>
            </div>
          </div>
-
       </div>
 
-      {/* BARIS 3: GRAFIK HARIAN (COMPOSED CHART MAS HAMZAH) */}
+      {/* BARIS 3: GRAFIK HARIAN */}
       <div className="glass-card">
-        <h2 className="section-title">Tren Arus Kas Harian (Bulan Ini)</h2>
-        <p className="text-muted" style={{ marginBottom: '20px', fontSize: '13px' }}>
-          Pergerakan transaksi <b>{selectedBranch?.nama || 'Semua Cabang'}</b> dari tanggal 1 hingga akhir bulan.
-        </p>
-        
-        <div style={{ width: '100%', height: '350px' }}>
+        <h2 className="section-title">Tren Arus Kas Harian</h2>
+        <div style={{ width: '100%', height: '300px' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={dailyData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
-              
-              <XAxis dataKey="labelTanggal" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(val) => `Rp${val/1000}k`} tickLine={false} axisLine={false} />
-              
-              <Tooltip 
-                labelFormatter={(label) => `Tanggal ${label}`}
-                formatter={(value) => formatRupiah(value)} 
-                cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} 
-                contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }} 
-                itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-              />
-              <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} iconType="circle" />
-              
-              <Bar dataKey="Pemasukan" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={30} />
-              <Bar dataKey="Pengeluaran" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={30} />
-
-              <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
-              <Line type="monotone" dataKey="Pengeluaran" stroke="#f59e0b" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
+            <ComposedChart data={dailyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey="labelTanggal" stroke="#94a3b8" fontSize={12} axisLine={false} tickLine={false} />
+              <YAxis stroke="#94a3b8" fontSize={12} axisLine={false} tickLine={false} tickFormatter={(v) => `Rp${v/1000}k`} />
+              <Tooltip formatter={(v) => formatRupiah(v)} contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '12px' }} />
+              <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px' }} />
+              <Bar dataKey="Pemasukan" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={3} dot={false} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -194,16 +197,15 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
   )
 }
 
-// === KOMPONEN KECIL: KARTU STATISTIK ===
 function StatCard({ title, value, unit, icon, color }) {
   return (
-    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', borderLeft: `5px solid ${color}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', borderLeft: `5px solid ${color}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div>
-        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</div>
-        <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#fff' }}>{value}</div>
-        <div style={{ fontSize: '11px', color: color, marginTop: '5px', fontWeight: 'bold' }}>{unit}</div>
+        <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase' }}>{title}</div>
+        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff', margin: '5px 0' }}>{value}</div>
+        <div style={{ fontSize: '10px', color: color, fontWeight: 'bold' }}>{unit}</div>
       </div>
-      <div style={{ fontSize: '35px', opacity: 0.8 }}>{icon}</div>
+      <div style={{ fontSize: '30px', opacity: 0.5 }}>{icon}</div>
     </div>
   );
 }
