@@ -203,9 +203,59 @@ export function PerkembanganTab({
               </div>
             </div>
 
+            {/* === KOTAK INPUT CEPAT (KLIK CENTANG) === */}
             <div className="form-row">
-              <label>Catatan Materi</label>
-              <textarea value={perkembanganForm.catatan} onChange={(e) => setPerkembanganForm({ ...perkembanganForm, catatan: e.target.value })} placeholder="Tulis progres belajar siswa..." rows="4" required />
+              <label>Penilaian Cepat <span style={{fontSize: '11px', color: '#94a3b8'}}>(Klik untuk memilih, bisa lebih dari satu)</span></label>
+              
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                {[
+                  "Sangat Fokus 🌟", "Aktif Bertanya 🙋‍♂️", "Kurang Fokus 🤔", 
+                  "Pemahaman Baik ✅", "Butuh Pengulangan 🔄", "Mandiri Mengerjakan Tugas ✍️", 
+                  "Membaca Lancar 📖", "Berhitung Cepat 🧮", "Hafalan Lancar 🧠"
+                ].map(tag => {
+                  const currentCatatan = perkembanganForm.catatan || '';
+                  const tagsArray = currentCatatan.split(', ').filter(t => t.trim() !== '');
+                  const isSelected = tagsArray.includes(tag);
+
+                  return (
+                    <div 
+                      key={tag}
+                      onClick={() => {
+                        let newTags = [...tagsArray];
+                        if (isSelected) {
+                          newTags = newTags.filter(t => t !== tag); // Hapus jika sudah ada
+                        } else {
+                          newTags.push(tag); // Tambah jika belum ada
+                        }
+                        setPerkembanganForm({ ...perkembanganForm, catatan: newTags.join(', ') });
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        background: isSelected ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                        color: isSelected ? '#fff' : '#cbd5e1',
+                        border: `1px solid ${isSelected ? '#3b82f6' : 'rgba(255,255,255,0.2)'}`,
+                        transition: 'all 0.2s ease',
+                        userSelect: 'none'
+                      }}
+                    >
+                      {isSelected ? '✓ ' : '+ '} {tag}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Kotak teks ini tetap ada untuk melihat hasil centang / menambah teks manual */}
+              <textarea 
+                value={perkembanganForm.catatan} 
+                onChange={(e) => setPerkembanganForm({ ...perkembanganForm, catatan: e.target.value })} 
+                placeholder="Hasil centang akan muncul di sini. Bisa diedit manual..." 
+                rows="2" 
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px' }}
+                required 
+              />
             </div>
             
             <div className="btn-row" style={{ marginTop: '20px' }}>
