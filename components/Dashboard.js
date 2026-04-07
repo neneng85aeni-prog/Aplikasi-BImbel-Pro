@@ -130,6 +130,8 @@ export function Dashboard({ state, actions }) {
             employeeBarcodeOut={state.employeeBarcodeOut} 
             pembayaran={state.pembayaranTampil} 
             pengeluaran={state.pengeluaranTampil} 
+            siswa={state.siswaTampil} 
+            perkembangan={state.perkembanganTampil}
           />
         )}
 
