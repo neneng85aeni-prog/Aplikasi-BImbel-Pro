@@ -89,8 +89,12 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
                   </td>
 
                   {/* SLOT JADWAL */}
+                  {/* SLOT JADWAL */}
                   {timeSlots.map(slot => {
                     const matchSiswa = (siswa || []).filter(s => 
+                      // 1. FILTER SAKTI: Buang siswa nonaktif
+                      s.status !== 'nonaktif' && s.status !== 'Nonaktif' &&
+                      // 2. Cocokkan jadwal
                       s.guru_id === guru.id && 
                       s.hari?.includes(selectedDay) &&
                       s.jam_mulai && s.jam_mulai.startsWith(slot.substring(0, 2))
