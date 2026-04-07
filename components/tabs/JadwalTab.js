@@ -49,19 +49,26 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
           <table style={{ borderCollapse: 'separate', borderSpacing: '0', width: '100%', fontSize: '13px' }}>
             <thead>
               <tr>
+                {/* HEADER GURU (Pojok Kiri Atas - Sticky Horizontal & Vertikal) */}
                 <th style={{ 
-                  position: 'sticky', left: 0, zIndex: 10, 
-                  background: '#1e293b', minWidth: '130px', // Nama guru lebih sempit
+                  position: 'sticky', top: 0, left: 0, zIndex: 20, 
+                  background: '#1e293b', 
+                  minWidth: '100px',
+                  padding: '8px',
                   borderBottom: '2px solid rgba(255,255,255,0.1)'
                 }}>Guru</th>
                 
+                {/* HEADER JAM (Baris Atas - Sticky Vertikal) */}
                 {timeSlots.map(time => (
                   <th key={time} style={{ 
+                    position: 'sticky', top: 0, zIndex: 10, // <--- KUNCI AGAR TIDAK HILANG SAAT SCROLL BAWAH
                     textAlign: 'center', 
-                    minWidth: '65px', // Lebar jam diperkecil dari 120 ke 90
-                    background: 'rgba(255,255,255,0.02)',
+                    minWidth: '65px', 
+                    padding: '8px 2px',
+                    background: '#1e293b', // <--- WARNA DIBUAT SOLID AGAR BARIS DI BAWAHNYA TIDAK TEMBUS PANDANG
                     fontSize: '11px',
-                    borderBottom: '2px solid rgba(255,255,255,0.1)'
+                    borderBottom: '2px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)' // Sedikit bayangan pemisah
                   }}>{time}</th>
                 ))}
               </tr>
