@@ -150,7 +150,22 @@ export function useBimbelApp() {
   usersTampil.filter((item) => item.akses && item.akses.toLowerCase().trim() === 'guru'), 
 [usersTampil])
   const targetPayrollDate = useMemo(() => new Date(payrollYear, payrollMonth - 1, 1), [payrollMonth, payrollYear])
-  const payrollRows = useMemo(() => computePayroll({ users: usersTampil, absensiSiswa: absensiSiswaTampil, absensiKaryawan: absensiKaryawanTampil, bonusManual: bonusManualTampil, targetDate: targetPayrollDate }), [usersTampil, absensiSiswaTampil, absensiKaryawanTampil, bonusManualTampil, targetPayrollDate])
+  
+  // === SARINGAN KHUSUS PAYROLL (HANYA AMBIL DATA SESUAI BULAN & TAHUN YANG DIPILIH) ===
+  const absKaryawanPayroll = useMemo(() => absensiKaryawanTampil.filter(item => item.tanggal && new Date(item.tanggal).getMonth() + 1 === payrollMonth && new Date(item.tanggal).getFullYear() === payrollYear), [absensiKaryawanTampil, payrollMonth, payrollYear]);
+  const bonusPayroll = useMemo(() => bonusManualTampil.filter(item => item.bonus_date && new Date(item.bonus_date).getMonth() + 1 === payrollMonth && new Date(item.bonus_date).getFullYear() === payrollYear), [bonusManualTampil, payrollMonth, payrollYear]);
+  const absSiswaPayroll = useMemo(() => absensiSiswaTampil.filter(item => item.tanggal && new Date(item.tanggal).getMonth() + 1 === payrollMonth && new Date(item.tanggal).getFullYear() === payrollYear), [absensiSiswaTampil, payrollMonth, payrollYear]);
+
+  // Masukkan data yang SUDAH DISARING ke dalam mesin hitung Payroll
+  const payrollRows = useMemo(() => computePayroll({ 
+    users: usersTampil, 
+    absensiSiswa: absSiswaPayroll, 
+    absensiKaryawan: absKaryawanPayroll, 
+    bonusManual: bonusPayroll, 
+    targetDate: targetPayrollDate 
+  }), [usersTampil, absSiswaPayroll, absKaryawanPayroll, bonusPayroll, targetPayrollDate])
+  // ===================================================================================
+
   const overview = useMemo(() => computeOverview({ pembayaran: pembayaranTampil, pengeluaran: pengeluaranTampil, siswa: siswaTampil, users: usersTampil, branches: selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches, payrollRows }), [pembayaranTampil, pengeluaranTampil, siswaTampil, usersTampil, branches, selectedBranchId, payrollRows])
   const financeSummary = useMemo(() => buildFinanceSummary(pembayaranTampil, pengeluaranTampil, payrollRows, bonusManualTampil, selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches), [pembayaranTampil, pengeluaranTampil, payrollRows, bonusManualTampil, branches, selectedBranchId])
   const stats = useMemo(() => ({ siswa: siswaTampil.length, pegawai: usersTampil.length, program: programs.length, pemasukan: pembayaranTampil.reduce((sum, item) => sum + Number(item.nominal || 0), 0) }), [siswaTampil, usersTampil, programs, pembayaranTampil])
