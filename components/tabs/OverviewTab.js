@@ -50,22 +50,34 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
     w?.document.write(html); w?.document.close();
   }
 
-  // === 2. LOGIKA HITUNG KPI KEHADIRAN (BARU) ===
+  // === LOGIKA HITUNG KPI KEHADIRAN (VERSI SUPER AMAN) ===
   const attendanceKPI = useMemo(() => {
+    // 1. Setel Waktu ke WIB (Waktu Indonesia Barat) biar akurat
+    const wibTime = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
     const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const now = new Date();
-    const todayName = hariMap[now.getDay()]; // Contoh: "Selasa"
-    const todayStr = now.toISOString().slice(0, 10); // Contoh: "2026-04-07"
+    
+    // getUTCDay() digunakan karena kita sudah menambahkan +7 Jam (WIB) secara manual
+    const todayName = hariMap[wibTime.getUTCDay()]; 
+    const todayStr = wibTime.toISOString().slice(0, 10); 
+    
     const branchId = selectedBranch?.id;
 
-    // A. Cari siswa yang punya jadwal hari ini
+    // 2. Hitung Target: Siswa yang jadwalnya hari ini
     const targetSiswa = (siswa || []).filter(s => {
       const matchBranch = !branchId || s.branch_id === branchId;
-      const matchDay = s.hari && s.hari.toLowerCase().includes(todayName.toLowerCase());
+      
+      let matchDay = false;
+      // Cek dengan aman: Apakah datanya Array atau Teks biasa?
+      if (Array.isArray(s.hari)) {
+        matchDay = s.hari.some(h => h?.toLowerCase() === todayName.toLowerCase());
+      } else if (typeof s.hari === 'string') {
+        matchDay = s.hari.toLowerCase().includes(todayName.toLowerCase());
+      }
+      
       return matchBranch && matchDay;
     });
 
-    // B. Cari record absen (perkembangan) hari ini
+    // 3. Hitung Aktual: Siswa yang sudah diabsen hari ini
     const actualHadir = (perkembangan || []).filter(p => {
       const isToday = p.tanggal && p.tanggal.startsWith(todayStr);
       const isTargetBranch = !branchId || p.branch_id === branchId || p.siswa?.branch_id === branchId;
@@ -74,7 +86,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
 
     return [
       {
-        name: todayName,
+        name: todayName, // Akan memunculkan "Selasa"
         Target: targetSiswa.length,
         Aktual: actualHadir.length
       }
