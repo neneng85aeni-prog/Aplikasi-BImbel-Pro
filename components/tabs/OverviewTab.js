@@ -51,23 +51,23 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
   }
 
   // === LOGIKA HITUNG KPI KEHADIRAN (VERSI SUPER AMAN) ===
+  // === LOGIKA HITUNG KPI KEHADIRAN ===
   const attendanceKPI = useMemo(() => {
-    // 1. Setel Waktu ke WIB (Waktu Indonesia Barat) biar akurat
     const wibTime = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
     const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    
-    // getUTCDay() digunakan karena kita sudah menambahkan +7 Jam (WIB) secara manual
     const todayName = hariMap[wibTime.getUTCDay()]; 
     const todayStr = wibTime.toISOString().slice(0, 10); 
-    
     const branchId = selectedBranch?.id;
 
-    // 2. Hitung Target: Siswa yang jadwalnya hari ini
     const targetSiswa = (siswa || []).filter(s => {
+      // 1. FILTER STATUS: Buang siswa yang nonaktif
+      if (s.status === 'nonaktif' || s.status === 'Nonaktif') return false;
+
+      // 2. Filter Cabang
       const matchBranch = !branchId || s.branch_id === branchId;
       
+      // 3. Filter Hari
       let matchDay = false;
-      // Cek dengan aman: Apakah datanya Array atau Teks biasa?
       if (Array.isArray(s.hari)) {
         matchDay = s.hari.some(h => h?.toLowerCase() === todayName.toLowerCase());
       } else if (typeof s.hari === 'string') {
@@ -77,20 +77,13 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
       return matchBranch && matchDay;
     });
 
-    // 3. Hitung Aktual: Siswa yang sudah diabsen hari ini
     const actualHadir = (perkembangan || []).filter(p => {
       const isToday = p.tanggal && p.tanggal.startsWith(todayStr);
       const isTargetBranch = !branchId || p.branch_id === branchId || p.siswa?.branch_id === branchId;
       return isToday && isTargetBranch;
     });
 
-    return [
-      {
-        name: todayName, // Akan memunculkan "Selasa"
-        Target: targetSiswa.length,
-        Aktual: actualHadir.length
-      }
-    ];
+    return [{ name: todayName, Target: targetSiswa.length, Aktual: actualHadir.length }];
   }, [siswa, perkembangan, selectedBranch]);
 
   // === 3. DATA KEUANGAN HARIAN ===
