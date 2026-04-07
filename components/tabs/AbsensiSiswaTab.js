@@ -48,11 +48,19 @@ export function AbsensiSiswaTab({
   // 1. CARI: Siswa yang jadwal harinya hari ini
   const siswaJadwalHariIni = (siswaTampil || []).filter(s => s.hari?.includes(todayName))
 
-  // 2. FILTER: Siswa yang belum diinput perkembangannya hari ini
+  // 2. FILTER & SORTING: Siswa yang belum diinput perkembangannya hari ini
   const siswaBelumHadir = siswaJadwalHariIni.filter(s => {
+    // Buang siswa yang statusnya sudah nonaktif agar tidak ditagih absen
+    if (s.status === 'nonaktif' || s.status === 'Nonaktif') return false;
+
     const sudahHadir = (perkembanganTampil || []).some(p => p.siswa_id === s.id && p.tanggal.startsWith(todayStr))
     return !sudahHadir
-  })
+  }).sort((a, b) => {
+    // Urutkan dari jam sesi paling pagi (terkecil) ke sore
+    const jamA = a.jam_mulai || '99:99';
+    const jamB = b.jam_mulai || '99:99';
+    return jamA.localeCompare(jamB);
+  });
 
   // 3. PAGINATION
   const totalPages = Math.ceil(siswaBelumHadir.length / ITEMS_PER_PAGE);
