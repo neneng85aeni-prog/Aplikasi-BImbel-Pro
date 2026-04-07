@@ -216,7 +216,13 @@ export function Dashboard({ state, actions }) {
             absensiSiswa={state.absensiSiswaTampil} 
           />
         )}
-
+        {activeTab === 'absensi_siswa' && (
+          <AbsensiSiswaTab 
+            siswaTampil={state.siswaTampil}
+            perkembanganTampil={state.perkembanganTampil}
+            openSmartWA={actions.openSmartWA}
+          />
+        )}
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
         {activeTab === 'maintenance' && <MaintenanceTab pembayaran={state.pembayaranTampil} perkembangan={state.perkembanganTampil} onTriggerArchive={actions.triggerManualArchive} />}
        
