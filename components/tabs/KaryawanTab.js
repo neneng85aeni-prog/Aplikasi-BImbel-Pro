@@ -51,12 +51,14 @@ export function KaryawanTab({
   // PERMINTAAN: 5 ROWS PER HALAMAN
   const ITEMS_PER_PAGE = 5 
 
-  // 1. CEK HAK AKSES
+ // 1. CEK HAK AKSES
   const canViewAll = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('permissions')
   
   // === PENYESUAIAN HAK AKSES INPUT MANUAL ===
-  // Cek apakah user punya hak akses menu 'users' (Daftar/Input Karyawan)
-  const canInputManual = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('users')
+  // Menggunakan hak akses 'karyawan' sesuai menu permissions di aplikasi
+  const canInputManual = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('karyawan')
+
+  // 2. FILTER BERDASARKAN USER YANG LOGIN
 
   // 2. FILTER BERDASARKAN USER YANG LOGIN
   const roleFilteredAbsensi = (absensiKaryawan || []).filter(item => {
@@ -266,7 +268,14 @@ export function KaryawanTab({
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Tanggal</th><th>Karyawan</th><th>Status</th><th>Jam Masuk - Pulang</th></tr>
+              <tr>
+                <th>Tanggal</th>
+                <th>Karyawan</th>
+                <th>Status</th>
+                <th>Jam Masuk - Pulang</th>
+                <th>Catatan</th>
+                {canInputManual && <th>Aksi</th>}
+              </tr>
             </thead>
             <tbody>
               {paginatedData.map((item) => {
@@ -296,12 +305,34 @@ export function KaryawanTab({
                         </div>
                       )}
                     </td>
+                    <td>{item.catatan || '-'}</td>
+                    {canInputManual && (
+                      <td>
+                        <button 
+                          className="btn btn-secondary btn-small"
+                          onClick={() => {
+                            setEmployeeManualForm({
+                              id: item.id,
+                              user_id: item.user_id,
+                              tanggal: item.tanggal,
+                              jam_datang: item.jam_datang ? formatJam(item.jam_datang) : '',
+                              jam_pulang: item.jam_pulang ? formatJam(item.jam_pulang) : '',
+                              status: item.status,
+                              catatan: item.catatan || ''
+                            });
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        >
+                          ✏️ Edit
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 )
               })}
               {paginatedData.length === 0 && (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                  <td colSpan={canInputManual ? "6" : "5"} style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
                     {searchQuery || startDate || endDate ? 'Data pencarian / periode tidak ditemukan.' : 'Belum ada data absensi untuk ditampilkan.'}
                   </td>
                 </tr>
