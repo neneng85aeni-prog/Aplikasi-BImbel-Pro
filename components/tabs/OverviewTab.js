@@ -1,13 +1,24 @@
 import { useMemo } from 'react'
 import { formatRupiah } from '../../lib/format'
 import { 
-  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-  ResponsiveContainer, PieChart, Pie, Cell 
+  ComposedChart, 
+  BarChart, // <--- BARU (Tambahkan ini)
+  Bar, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell 
 } from 'recharts'
 
-export function OverviewTab({ stats, overview, financeSummary, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, pembayaran = [], pengeluaran = [] }) {
+export function OverviewTab({ stats, overview, financeSummary, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, pembayaran = [], pengeluaran = [], siswa = [], perkembangan = [] }) {
   
-  // === FUNGSI PRINT / SAVE PDF (Masing-masing) ===
+  // === 1. FUNGSI PRINT / SAVE PDF ===
   function printQRCode(title, qrData, branchName) {
     const html = `
       <!doctype html>
@@ -16,35 +27,13 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
         <meta charset="utf-8">
         <title>Cetak QR ${title}</title>
         <style>
-          body { 
-            font-family: 'Arial', sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
-            text-align: center;
-          }
-          .container {
-            border: 2px dashed #ccc;
-            padding: 50px;
-            border-radius: 20px;
-          }
+          body { font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+          .container { border: 2px dashed #ccc; padding: 50px; border-radius: 20px; }
           h1 { font-size: 54px; margin-bottom: 10px; color: #1e293b; }
           h2 { font-size: 32px; color: #64748b; margin-bottom: 40px; }
-          img { 
-            width: 500px; 
-            height: 500px; 
-            border: 5px solid #000; 
-            padding: 20px; 
-            border-radius: 20px;
-          }
+          img { width: 500px; height: 500px; border: 5px solid #000; padding: 20px; border-radius: 20px; }
           .code-text { font-size: 24px; margin-top: 30px; font-weight: bold; color: #1e293b; }
-          @media print {
-            @page { size: A4; margin: 0; }
-            body { height: 95vh; }
-          }
+          @media print { @page { size: A4; margin: 0; } body { height: 95vh; } }
         </style>
       </head>
       <body onload="window.print()">
@@ -58,11 +47,41 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
       </html>
     `
     const w = window.open('', '_blank');
-    w?.document.write(html);
-    w?.document.close();
+    w?.document.write(html); w?.document.close();
   }
 
-  // === DATA KEUANGAN HARIAN ===
+  // === 2. LOGIKA HITUNG KPI KEHADIRAN (BARU) ===
+  const attendanceKPI = useMemo(() => {
+    const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const now = new Date();
+    const todayName = hariMap[now.getDay()]; // Contoh: "Selasa"
+    const todayStr = now.toISOString().slice(0, 10); // Contoh: "2026-04-07"
+    const branchId = selectedBranch?.id;
+
+    // A. Cari siswa yang punya jadwal hari ini
+    const targetSiswa = (siswa || []).filter(s => {
+      const matchBranch = !branchId || s.branch_id === branchId;
+      const matchDay = s.hari && s.hari.toLowerCase().includes(todayName.toLowerCase());
+      return matchBranch && matchDay;
+    });
+
+    // B. Cari record absen (perkembangan) hari ini
+    const actualHadir = (perkembangan || []).filter(p => {
+      const isToday = p.tanggal && p.tanggal.startsWith(todayStr);
+      const isTargetBranch = !branchId || p.branch_id === branchId || p.siswa?.branch_id === branchId;
+      return isToday && isTargetBranch;
+    });
+
+    return [
+      {
+        name: todayName,
+        Target: targetSiswa.length,
+        Aktual: actualHadir.length
+      }
+    ];
+  }, [siswa, perkembangan, selectedBranch]);
+
+  // === 3. DATA KEUANGAN HARIAN ===
   const dailyData = useMemo(() => {
     const today = new Date();
     const currentMonthPrefix = today.toISOString().slice(0, 7);
@@ -88,14 +107,8 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
     return daysArray;
   }, [pembayaran, pengeluaran, selectedBranch]);
 
-  // === WARNA & LEGEND PIE CHART ===
-  const COLORS = [
-    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
-    '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
-    '#14b8a6', '#facc15', '#a855f7', '#fb7185', '#2dd4bf',
-    '#94a3b8', '#475569', '#52525b', '#0ea5e9', '#6d28d9'
-  ];
-
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
+  
   const renderCustomLegend = (value, entry) => (
     <span style={{ color: '#94a3b8', fontSize: '11px', marginLeft: '5px' }}>
       {value} <b style={{ color: '#fff' }}>( {entry.payload.value} )</b>
@@ -115,58 +128,51 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
         </div>
       )}
 
-      {/* BARIS 2: QR CODE & PIE CHART */}
-      <div className="grid grid-2" style={{ gap: '20px', gridTemplateColumns: '1.3fr 1.7fr' }}>
+      {/* BARIS 2: KPI, QR & PIE (UBAH MENJADI GRID 3) */}
+      <div className="grid grid-3" style={{ gap: '20px', gridTemplateColumns: '1.2fr 1fr 1.5fr' }}>
          
-         {/* KARTU QR ABSENSI */}
-         <div className="glass-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-               <h2 className="section-title">QR Absensi</h2>
-               <p className="text-muted" style={{ fontSize: '12px', marginBottom: '15px' }}>{selectedBranch?.nama || 'Cabang Pusat'}</p>
-               
-               <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' }}>
-                  <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', width: '120px' }}>
-                     <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${employeeBarcodeIn}`} width="100%" />
-                     <div style={{ color: '#000', fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>MASUK</div>
-                     <button 
-                        className="btn btn-primary btn-small" 
-                        onClick={() => printQRCode('Masuk', employeeBarcodeIn, selectedBranch?.nama)}
-                        style={{ marginTop: '10px', width: '100%', fontSize: '10px', padding: '5px' }}
-                     >
-                        🖨️ Cetak
-                     </button>
-                  </div>
-                  <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', width: '120px' }}>
-                     <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${employeeBarcodeOut}`} width="100%" />
-                     <div style={{ color: '#000', fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>PULANG</div>
-                     <button 
-                        className="btn btn-secondary btn-small" 
-                        onClick={() => printQRCode('Pulang', employeeBarcodeOut, selectedBranch?.nama)}
-                        style={{ marginTop: '10px', width: '100%', fontSize: '10px', padding: '5px' }}
-                     >
-                        🖨️ Cetak
-                     </button>
-                  </div>
-               </div>
+         {/* KARTU 1: KPI KEHADIRAN (BARU) */}
+         <div className="glass-card">
+            <h2 className="section-title" style={{ fontSize: '14px' }}>KPI Kehadiran Siswa</h2>
+            <p className="text-muted" style={{ fontSize: '11px', marginBottom: '15px' }}>Target Jadwal vs Aktual Datang</p>
+            <div style={{ width: '100%', height: '180px' }}>
+               <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={attendanceKPI} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                     <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={12} stroke="#94a3b8" />
+                     <YAxis axisLine={false} tickLine={false} fontSize={12} stroke="#94a3b8" />
+                     <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px' }} />
+                     <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                     <Bar dataKey="Target" fill="rgba(59, 130, 246, 0.3)" radius={[4, 4, 0, 0]} barSize={40} />
+                     <Bar dataKey="Aktual" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
+               </ResponsiveContainer>
             </div>
-            <p style={{ fontSize: '11px', color: '#64748b' }}>Klik tombol Cetak untuk menyimpan sebagai PDF</p>
          </div>
 
-         {/* PIE CHART PROGRAM */}
+         {/* KARTU 2: QR ABSENSI (MODIFIKASI UKURAN) */}
+         <div className="glass-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '10px' }}>
+               <div style={{ background: '#fff', padding: '5px', borderRadius: '8px' }}>
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${employeeBarcodeIn}`} width="60" />
+               </div>
+               <div style={{ background: '#fff', padding: '5px', borderRadius: '8px' }}>
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${employeeBarcodeOut}`} width="60" />
+               </div>
+            </div>
+            <button className="btn btn-primary btn-small" onClick={() => printQRCode('Absensi', employeeBarcodeIn, selectedBranch?.nama)}>🖨️ Cetak</button>
+         </div>
+
+         {/* KARTU 3: PIE CHART PROGRAM */}
          <div className="glass-card">
-           <h2 className="section-title">Komposisi Program</h2>
-           <div style={{ width: '100%', height: '280px' }}>
+           <h2 className="section-title" style={{ fontSize: '14px' }}>Komposisi Program</h2>
+           <div style={{ width: '100%', height: '200px' }}>
              <ResponsiveContainer width="100%" height="100%">
                <PieChart>
-                 <Pie data={overview?.studentDistribution || []} innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
+                 <Pie data={overview?.studentDistribution || []} innerRadius={45} outerRadius={60} paddingAngle={2} dataKey="value">
                    {(overview?.studentDistribution || []).map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="rgba(0,0,0,0.2)" />)}
                  </Pie>
-                 <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', fontSize: '12px' }} />
-                 <Legend 
-                    layout="vertical" align="right" verticalAlign="middle" 
-                    formatter={renderCustomLegend} 
-                    wrapperStyle={{ paddingLeft: '20px', maxHeight: '250px', overflowY: 'auto' }} 
-                 />
+                 <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
+                 <Legend layout="vertical" align="right" verticalAlign="middle" formatter={renderCustomLegend} wrapperStyle={{ paddingLeft: '10px', maxHeight: '180px', overflowY: 'auto' }} />
                </PieChart>
              </ResponsiveContainer>
            </div>
@@ -176,7 +182,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
       {/* GRAFIK HARIAN */}
       <div className="glass-card">
         <h2 className="section-title">Tren Arus Kas Harian</h2>
-        <div style={{ width: '100%', height: '320px' }}>
+        <div style={{ width: '100%', height: '300px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={dailyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
@@ -197,13 +203,13 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
 
 function StatCard({ title, value, unit, icon, color }) {
   return (
-    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', borderLeft: `5px solid ${color}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '12px', borderLeft: `5px solid ${color}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <div>
-        <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase' }}>{title}</div>
-        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff', margin: '5px 0' }}>{value}</div>
+        <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' }}>{title}</div>
+        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#fff', margin: '3px 0' }}>{value}</div>
         <div style={{ fontSize: '10px', color: color }}>{unit}</div>
       </div>
-      <div style={{ fontSize: '30px', opacity: 0.5 }}>{icon}</div>
+      <div style={{ fontSize: '24px', opacity: 0.4 }}>{icon}</div>
     </div>
   );
 }
