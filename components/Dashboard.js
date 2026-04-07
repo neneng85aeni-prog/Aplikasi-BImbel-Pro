@@ -67,7 +67,6 @@ export function Dashboard({ state, actions }) {
             <h1 className="sidebar-title">Final Stable</h1>
             <p className="text-muted hide-on-mobile">{user.nama}<br />{user.email}</p>
           </div>
-
           {/* === TOMBOL LOGOUT KHUSUS MOBILE === */}
           <div className="mobile-actions" style={{ display: 'none' }}>
             <button 
@@ -78,19 +77,44 @@ export function Dashboard({ state, actions }) {
               🚪 Keluar
             </button>
           </div>
-          {/* =================================== */}
-          
         </div>
 
         <div className="nav-stack">
-          {visibleTabs.map((tab) => (
-            <button key={tab} className={`tab ${activeTab === tab ? 'active' : ''}`} onClick={() => actions.setActiveTab(tab)}>
-              {TAB_LABELS[tab] || tab}
-            </button>
-          ))}
+          {/* === KATEGORI UTAMA === */}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '5px' }}>Utama</div>
           
-         
-         
+          {visibleTabs.includes('overview') && <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => actions.setActiveTab('overview')}>📊 Dashboard</button>}
+          {visibleTabs.includes('kasir') && <button className={`tab ${activeTab === 'kasir' ? 'active' : ''}`} onClick={() => actions.setActiveTab('kasir')}>🧾 Kasir</button>}
+
+          {/* === KATEGORI AKADEMIK === */}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '10px' }}>Akademik</div>
+          
+          {visibleTabs.includes('siswa') && <button className={`tab ${activeTab === 'siswa' ? 'active' : ''}`} onClick={() => actions.setActiveTab('siswa')}>👨‍🎓 Data Siswa</button>}
+          {visibleTabs.includes('jadwal') && <button className={`tab ${activeTab === 'jadwal' ? 'active' : ''}`} onClick={() => actions.setActiveTab('jadwal')}>📅 Jadwal Guru</button>}
+          {visibleTabs.includes('perkembangan') && <button className={`tab ${activeTab === 'perkembangan' ? 'active' : ''}`} onClick={() => actions.setActiveTab('perkembangan')}>📝 Input Laporan</button>}
+          {visibleTabs.includes('absensi_siswa') && <button className={`tab ${activeTab === 'absensi_siswa' ? 'active' : ''}`} onClick={() => actions.setActiveTab('absensi_siswa')}>⏳ Monitor Absen</button>}
+          {visibleTabs.includes('laporan_guru') && <button className={`tab ${activeTab === 'laporan_guru' ? 'active' : ''}`} onClick={() => actions.setActiveTab('laporan_guru')}>👨‍🏫 Laporan Guru</button>}
+          {visibleTabs.includes('review') && <button className={`tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => actions.setActiveTab('review')}>⭐ Penilaian Guru</button>}
+
+          {/* === KATEGORI KEUANGAN === */}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '10px' }}>Keuangan</div>
+          
+          {visibleTabs.includes('laporan') && <button className={`tab ${activeTab === 'laporan' ? 'active' : ''}`} onClick={() => actions.setActiveTab('laporan')}>💰 Pemasukan</button>}
+          {visibleTabs.includes('pengeluaran') && <button className={`tab ${activeTab === 'pengeluaran' ? 'active' : ''}`} onClick={() => actions.setActiveTab('pengeluaran')}>💸 Pengeluaran</button>}
+          {visibleTabs.includes('payroll') && <button className={`tab ${activeTab === 'payroll' ? 'active' : ''}`} onClick={() => actions.setActiveTab('payroll')}>🧧 Gaji & Bonus</button>}
+
+          {/* === KATEGORI PENGATURAN === */}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '10px' }}>Sistem</div>
+          
+          {visibleTabs.includes('karyawan') && <button className={`tab ${activeTab === 'karyawan' ? 'active' : ''}`} onClick={() => actions.setActiveTab('karyawan')}>👥 Karyawan</button>}
+          {visibleTabs.includes('users') && <button className={`tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => actions.setActiveTab('users')}>🔑 Akun & User</button>}
+          {visibleTabs.includes('cabang') && <button className={`tab ${activeTab === 'cabang' ? 'active' : ''}`} onClick={() => actions.setActiveTab('cabang')}>🏢 Cabang</button>}
+          {visibleTabs.includes('program') && <button className={`tab ${activeTab === 'program' ? 'active' : ''}`} onClick={() => actions.setActiveTab('program')}>📚 Program Belajar</button>}
+          {visibleTabs.includes('inventory') && <button className={`tab ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => actions.setActiveTab('inventory')}>📦 Inventaris</button>}
+          {visibleTabs.includes('permissions') && <button className={`tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => actions.setActiveTab('permissions')}>🛡️ Hak Akses</button>}
+          {visibleTabs.includes('maintenance') && <button className={`tab ${activeTab === 'maintenance' ? 'active' : ''}`} onClick={() => actions.setActiveTab('maintenance')}>🛠️ Maintenance</button>}
+          {visibleTabs.includes('download') && <button className={`tab ${activeTab === 'download' ? 'active' : ''}`} onClick={() => actions.setActiveTab('download')}>⬇️ Download Data</button>}
+
         </div>
 
         <div className="btn-row column sidebar-actions">
