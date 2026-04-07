@@ -122,35 +122,22 @@ export function AbsensiSiswaTab({
               </tr>
             </thead>
             <tbody>
-              {paginatedSiswa.map(s => {
-                // KUNCI PERUBAHAN: Cek per individu siswa
-                const sesiLewat = isSudahLewatSesi(s.jam_mulai, currentTime);
-
-                return (
-                  <tr key={s.id}>
-                    <td><b>{s.nama}</b><div style={{fontSize:'10px', color:'#94a3b8'}}>{s.branches?.nama}</div></td>
-                    <td>{s.users?.nama || '-'}</td>
-                    <td style={{whiteSpace:'nowrap'}}>{s.jam_mulai} - {getJamSelesai(s.jam_mulai)}</td>
-                    <td>
-                      <span style={{ 
-                        fontWeight: 'bold', padding: '4px 8px', borderRadius: '6px', fontSize: '11px',
-                        background: sesiLewat ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                        color: sesiLewat ? '#ef4444' : '#f59e0b'
-                      }}>
-                        {sesiLewat ? 'BELUM HADIR' : 'MENUNGGU'}
-                      </span>
+              <td>
+                      {s.isSudahHadir ? (
+                        <span style={{ fontWeight: 'bold', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                          ✅ SUDAH HADIR
+                        </span>
+                      ) : (
+                        <span style={{ fontWeight: 'bold', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', background: sesiLewat ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: sesiLewat ? '#ef4444' : '#f59e0b' }}>
+                          {sesiLewat ? 'BELUM HADIR' : 'MENUNGGU'}
+                        </span>
+                      )}
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      {sesiLewat ? (
-                        <button 
-                          className="btn btn-primary btn-small" 
-                          onClick={() => handleSendWA(s)}
-                          style={{ background: '#10b981', borderColor: '#10b981' }}
-                        >
-                          💬 Tanya Kabar
-                        </button>
+                      {(!s.isSudahHadir && sesiLewat) ? (
+                        <button className="btn btn-primary btn-small" onClick={() => handleSendWA(s)} style={{ background: '#10b981', borderColor: '#10b981' }}>💬 Tanya Kabar</button>
                       ) : (
-                        <span style={{fontSize:'11px', color:'#94a3b8'}}>Belum Mulai</span>
+                        <span style={{fontSize:'11px', color:'#94a3b8'}}>{s.isSudahHadir ? 'Selesai' : 'Belum Mulai'}</span>
                       )}
                     </td>
                   </tr>
