@@ -203,6 +203,7 @@ export function Dashboard({ state, actions }) {
             setEditTransaksiForm={actions.setEditTransaksiForm} onSubmitEditTransaksi={actions.submitEditTransaksi} 
             onStartEditTransaksi={actions.startEditTransaksi} pengeluaran={state.pengeluaranTampil}
             onSendWA={actions.sendHistoryTransactionWA}
+            canSeeStats={canSeeStats} /* <--- INI KUNCI YANG KETINGGALAN */
           />
         )}
 
