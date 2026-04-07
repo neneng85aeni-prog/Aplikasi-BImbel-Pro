@@ -566,7 +566,42 @@ export function useBimbelApp() {
   }
   
   async function submitStudentAttendance(event) { event.preventDefault(); try { const payload = validateStudentAttendanceForm(studentAttendanceForm); const res = await saveStudentAttendance({ p_siswa_id: payload.siswa_id, p_guru_handle_id: payload.guru_handle_id, p_tanggal: payload.tanggal, p_mode: payload.mode, p_status: payload.status, p_catatan: payload.catatan, p_sumber: 'manual' }); if (res.error) throw res.error; setStudentAttendanceForm(INITIAL_STUDENT_ATTENDANCE_FORM); setMessage('Absensi siswa disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  async function submitEmployeeManualAttendance(event) { event.preventDefault(); try { const payload = validateEmployeeManualForm(employeeManualForm); const res = await saveEmployeeManualAttendance({ p_user_id: payload.user_id, p_tanggal: payload.tanggal, p_status: payload.status, p_jam_datang: payload.jam_datang || null, p_jam_pulang: payload.jam_pulang || null, p_catatan: payload.catatan }); if (res.error) throw res.error; setEmployeeManualForm(INITIAL_EMPLOYEE_MANUAL_FORM); setMessage('Absensi manual disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
+  async function submitEmployeeManualAttendance(event) { 
+    event.preventDefault(); 
+    try { 
+      const payload = validateEmployeeManualForm(employeeManualForm); 
+      const tgl = payload.tanggal || new Date().toISOString().split('T')[0];
+
+      // PENGAMAN 1: Gabungkan Tanggal + Jam Datang
+      let finalJamDatang = payload.jam_datang;
+      if (finalJamDatang && !finalJamDatang.includes('T')) {
+        finalJamDatang = new Date(`${tgl}T${finalJamDatang.substring(0, 5)}:00`).toISOString();
+      }
+
+      // PENGAMAN 2: Gabungkan Tanggal + Jam Pulang
+      let finalJamPulang = payload.jam_pulang;
+      if (finalJamPulang && !finalJamPulang.includes('T')) {
+        finalJamPulang = new Date(`${tgl}T${finalJamPulang.substring(0, 5)}:00`).toISOString();
+      }
+
+      const res = await saveEmployeeManualAttendance({ 
+        p_user_id: payload.user_id, 
+        p_tanggal: payload.tanggal, 
+        p_status: payload.status, 
+        p_jam_datang: finalJamDatang || null, 
+        p_jam_pulang: finalJamPulang || null, 
+        p_catatan: payload.catatan 
+      }); 
+
+      if (res.error) throw res.error; 
+      
+      setEmployeeManualForm(INITIAL_EMPLOYEE_MANUAL_FORM); 
+      setMessage('Absensi manual disimpan.'); 
+      await loadAllData();
+    } catch (error) { 
+      setErrorMsg(error.message);
+    } 
+  }
   
   function buildReceiptHtml(data, withAutoPrint = true) { 
     const cartHtml = (data.cart || []).map(c => `<div class="row"><span>${c.nama} (${c.qty}x)</span><span>${formatRupiah(c.harga * c.qty)}</span></div>`).join('');
