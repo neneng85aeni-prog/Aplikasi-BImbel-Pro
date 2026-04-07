@@ -214,7 +214,17 @@ export function KasirTab({
         <div className="grid grid-2" style={{ gap: '15px', marginBottom: '20px' }}>
           <div>
             <label style={{ fontSize: '12px', color: '#94a3b8' }}>Nominal Dibayar (Tunai)</label>
-            <input type="number" value={kasirForm.nominal_bayar} onChange={(e) => setKasirForm({ ...kasirForm, nominal_bayar: e.target.value })} placeholder="Cth: 100000" style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px' }} />
+            <input 
+              type="text" 
+              placeholder="Rp 0"
+              value={kasirForm.nominal_bayar ? 'Rp ' + Number(kasirForm.nominal_bayar).toLocaleString('id-ID') : ''} 
+              onChange={(e) => {
+                // Hanya ambil angka (0-9), buang huruf 'Rp' dan titiknya sebelum disimpan
+                const rawValue = e.target.value.replace(/[^0-9]/g, '');
+                setKasirForm({ ...kasirForm, nominal_bayar: rawValue });
+              }} 
+              style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', width: '100%', boxSizing: 'border-box' }} 
+            />
           </div>
           <div>
             <label style={{ fontSize: '12px', color: '#94a3b8' }}>Kembalian</label>
