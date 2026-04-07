@@ -41,26 +41,39 @@ export function AbsensiSiswaTab({
     return () => clearInterval(timer)
   }, [])
 
-  const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-  const todayName = hariMap[currentTime.getDay()]
-  const todayStr = currentTime.toISOString().slice(0, 10)
+  // === 1. PASTIKAN WAKTU WIB & TANGGAL AKURAT ===
+  const wibTime = new Date(currentTime.getTime() + (7 * 60 * 60 * 1000));
+  const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const todayName = hariMap[wibTime.getUTCDay()]; 
+  const todayStr = wibTime.toISOString().slice(0, 10);
 
-  // 1. CARI: Siswa yang jadwal harinya hari ini
-  const siswaJadwalHariIni = (siswaTampil || []).filter(s => s.hari?.includes(todayName))
-
-  // 2. FILTER & SORTING: Siswa yang belum diinput perkembangannya hari ini
-  const siswaBelumHadir = siswaJadwalHariIni.filter(s => {
-    // Buang siswa yang statusnya sudah nonaktif agar tidak ditagih absen
+  // === 2. FILTER SISWA JADWAL HARI INI (ANTI HURUF KECIL/BESAR) ===
+  const siswaTampilHariIni = (siswaTampil || []).filter(s => {
+    // Buang siswa yang statusnya sudah nonaktif
     if (s.status === 'nonaktif' || s.status === 'Nonaktif') return false;
-
-    const sudahHadir = (perkembanganTampil || []).some(p => p.siswa_id === s.id && p.tanggal.startsWith(todayStr))
-    return !sudahHadir
+    
+    let matchDay = false;
+    if (Array.isArray(s.hari)) {
+      matchDay = s.hari.some(h => h?.toLowerCase() === todayName.toLowerCase());
+    } else if (typeof s.hari === 'string') {
+      matchDay = s.hari.toLowerCase().includes(todayName.toLowerCase());
+    }
+    return matchDay;
+  }).map(s => {
+    // === 3. CEK STATUS HADIR (TANPA MENGHAPUS DATA) ===
+    const isSudahHadir = (perkembanganTampil || []).some(p => p.siswa_id === s.id && p.tanggal.startsWith(todayStr));
+    return { ...s, isSudahHadir };
   }).sort((a, b) => {
-    // Urutkan dari jam sesi paling pagi (terkecil) ke sore
+    // Urutkan: Yang belum hadir di atas, yang sudah hadir di bawah. Lalu urutkan jam.
+    if (a.isSudahHadir !== b.isSudahHadir) return a.isSudahHadir ? 1 : -1;
     const jamA = a.jam_mulai || '99:99';
     const jamB = b.jam_mulai || '99:99';
     return jamA.localeCompare(jamB);
   });
+
+  // Karena variabelnya kita ubah namanya, kita sesuaikan paginasinya
+  const totalPages = Math.ceil(siswaTampilHariIni.length / ITEMS_PER_PAGE);
+  const paginatedSiswa = siswaTampilHariIni.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   // 3. PAGINATION
   const totalPages = Math.ceil(siswaBelumHadir.length / ITEMS_PER_PAGE);
