@@ -141,7 +141,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
       )}
 
       {/* BARIS 2: KPI, QR & PIE (UBAH MENJADI GRID 3) */}
-      <div className="grid grid-3" style={{ gap: '20px', gridTemplateColumns: '1.2fr 1fr 1.5fr' }}>
+      <div className="grid grid-3" style={{ gap: '20px', gridTemplateColumns: '1fr 0.9fr 1.8fr' }}>
          
          {/* KARTU 1: KPI KEHADIRAN (BARU) */}
          <div className="glass-card">
@@ -161,35 +161,69 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
             </div>
          </div>
 
-         {/* KARTU 2: QR ABSENSI (MODIFIKASI UKURAN) */}
+         {/* KARTU 2: QR ABSENSI */}
          <div className="glass-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '10px' }}>
-               <div style={{ background: '#fff', padding: '5px', borderRadius: '8px' }}>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${employeeBarcodeIn}`} width="60" />
+            <h2 className="section-title" style={{ fontSize: '14px', marginBottom: '15px' }}>QR Absensi</h2>
+            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+               
+               {/* QR MASUK */}
+               <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', width: '45%' }}>
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeIn}`} width="100%" />
+                  <div style={{ color: '#000', fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>MASUK</div>
+                  <button 
+                     className="btn btn-primary btn-small" 
+                     onClick={() => printQRCode('Masuk', employeeBarcodeIn, selectedBranch?.nama)}
+                     style={{ marginTop: '10px', width: '100%', fontSize: '10px', padding: '5px' }}
+                  >
+                     🖨️ Cetak
+                  </button>
                </div>
-               <div style={{ background: '#fff', padding: '5px', borderRadius: '8px' }}>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${employeeBarcodeOut}`} width="60" />
+
+               {/* QR PULANG */}
+               <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', width: '45%' }}>
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeOut}`} width="100%" />
+                  <div style={{ color: '#000', fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>PULANG</div>
+                  <button 
+                     className="btn btn-secondary btn-small" 
+                     onClick={() => printQRCode('Pulang', employeeBarcodeOut, selectedBranch?.nama)}
+                     style={{ marginTop: '10px', width: '100%', fontSize: '10px', padding: '5px', background: '#ef4444', color: 'white', border: 'none' }}
+                  >
+                     🖨️ Cetak
+                  </button>
                </div>
+
             </div>
-            <button className="btn btn-primary btn-small" onClick={() => printQRCode('Absensi', employeeBarcodeIn, selectedBranch?.nama)}>🖨️ Cetak</button>
          </div>
 
          {/* KARTU 3: PIE CHART PROGRAM */}
          <div className="glass-card">
            <h2 className="section-title" style={{ fontSize: '14px' }}>Komposisi Program</h2>
-           <div style={{ width: '100%', height: '200px' }}>
+           <div style={{ width: '100%', height: '240px' }}>
              <ResponsiveContainer width="100%" height="100%">
                <PieChart>
-                 <Pie data={overview?.studentDistribution || []} innerRadius={45} outerRadius={60} paddingAngle={2} dataKey="value">
+                 <Pie 
+                    data={overview?.studentDistribution || []} 
+                    cx="30%" 
+                    cy="50%" 
+                    innerRadius={65} 
+                    outerRadius={85} 
+                    paddingAngle={2} 
+                    dataKey="value"
+                 >
                    {(overview?.studentDistribution || []).map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="rgba(0,0,0,0.2)" />)}
                  </Pie>
                  <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
-                 <Legend layout="vertical" align="right" verticalAlign="middle" formatter={renderCustomLegend} wrapperStyle={{ paddingLeft: '10px', maxHeight: '180px', overflowY: 'auto' }} />
+                 <Legend 
+                    layout="vertical" 
+                    align="right" 
+                    verticalAlign="middle" 
+                    formatter={renderCustomLegend} 
+                    wrapperStyle={{ width: '60%', paddingLeft: '10px', maxHeight: '220px', overflowY: 'auto' }} 
+                 />
                </PieChart>
              </ResponsiveContainer>
            </div>
          </div>
-      </div>
 
       {/* GRAFIK HARIAN */}
       <div className="glass-card">
