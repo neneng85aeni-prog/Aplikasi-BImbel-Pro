@@ -95,6 +95,7 @@ export function Dashboard({ state, actions }) {
           {visibleTabs.includes('absensi_siswa') && <button className={`tab ${activeTab === 'absensi_siswa' ? 'active' : ''}`} onClick={() => actions.setActiveTab('absensi_siswa')}>⏳ Monitor Absen</button>}
           {visibleTabs.includes('laporan_guru') && <button className={`tab ${activeTab === 'laporan_guru' ? 'active' : ''}`} onClick={() => actions.setActiveTab('laporan_guru')}>👨‍🏫 Laporan Guru</button>}
           {visibleTabs.includes('review') && <button className={`tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => actions.setActiveTab('review')}>⭐ Penilaian Guru</button>}
+        
 
           {/* === KATEGORI KEUANGAN === */}
           <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '10px' }}>Keuangan</div>
