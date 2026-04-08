@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import html2canvas from 'html2canvas'
 
 export function JadwalTab({ siswa = [], users = [], branches = [] }) {
   const [selectedDay, setSelectedDay] = useState('Senin')
@@ -11,6 +12,26 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
   ]
 
   const guruList = (users || []).filter(u => u.akses?.toLowerCase() === 'guru')
+  const handleDownloadImage = () => {
+    const element = document.getElementById('poster-jadwal-matrix');
+    const originalMaxHeight = element.style.maxHeight;
+    const originalOverflowX = element.style.overflowX;
+
+    // Buka scroll agar jadwal dari pagi sampai sore tidak terpotong
+    element.style.maxHeight = 'none';
+    element.style.overflowX = 'visible';
+
+    html2canvas(element, { scale: 2, backgroundColor: null }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `Jadwal_Matrix_${selectedDay}.png`; // Nama file otomatis sesuai hari
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      // Kembalikan scroll seperti semula
+      element.style.maxHeight = originalMaxHeight;
+      element.style.overflowX = originalOverflowX;
+    });
+  };
 
   return (
     <div className="flex flex-col gap-md" style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -18,7 +39,12 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
         
         {/* HEADER & PEMILIH HARI (Dibuat lebih rapat) */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-          <h2 className="section-title" style={{ margin: 0, fontSize: '18px' }}>📅 Monitoring Jadwal</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <h2 className="section-title" style={{ margin: 0, fontSize: '18px' }}>📅 Monitoring Jadwal</h2>
+            <button className="btn btn-primary btn-small" onClick={handleDownloadImage} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '6px 10px' }}>
+              📸 Export
+            </button>
+          </div>
           
           <div style={{ display: 'flex', gap: '3px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '8px', overflowX: 'auto' }}>
             {days.map(d => (
@@ -40,7 +66,7 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
         </div>
 
         {/* MATRIX TABLE (Optimasi lebar kolom) */}
-        <div className="table-wrap" style={{ 
+        <div id="poster-jadwal-matrix" className="table-wrap" style={{
           overflowX: 'auto', 
           maxHeight: '65vh', // Agar tidak terlalu panjang ke bawah
           border: '1px solid rgba(255,255,255,0.05)',
