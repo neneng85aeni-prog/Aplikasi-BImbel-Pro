@@ -211,42 +211,53 @@ export function PerkembanganTab({
 
               <div className="form-row">
                 <label>Belajar tentang apa hari ini?</label>
-                <input type="text" id="t_materi" placeholder="Cth: Mengaji Iqro Jilid 2 halaman 15..." />
+                <input type="text" id="t_materi" placeholder="Cth: Mengaji Iqro Jilid 2 halaman 15" />
               </div>
 
               <div className="grid grid-2" style={{ gap: '10px', marginBottom: '14px' }}>
                 <div>
-                  <label>Daya Tangkap</label>
+                  <label>Pemahaman Materi</label>
                   <select id="t_paham">
-                    <option value="bisa mengikuti dng baik">Bisa mengikuti dng baik</option>
-                    <option value="masih harus diulang">Masih harus diulang</option>
+                    <option value="Alhamdulillah, ananda bisa mengikuti materi dengan baik">✅ Bisa mengikuti dengan baik</option>
+                    <option value="Hari ini ananda masih butuh pengulangan materi">🔄 Masih butuh pengulangan</option>
                   </select>
                 </div>
                 <div>
-                  <label>Kelancaran</label>
+                  <label>Kelancaran Praktik</label>
                   <select id="t_lancar">
-                    <option value="Dengan lancar">Dengan lancar</option>
-                    <option value="Belum sepenuhnya lancar">Belum sepenuhnya lancar</option>
+                    <option value="terlihat sudah lancar">✅ Sudah lancar</option>
+                    <option value="masih belum sepenuhnya lancar">⚠️ Belum sepenuhnya lancar</option>
                   </select>
                 </div>
               </div>
 
-              <div className="form-row">
-                <label>Namun karena ananda...</label>
-                <input type="text" id="t_kendala" placeholder="Cth: kurang fokus / asyik bermain..." />
+              <div className="grid grid-2" style={{ gap: '10px', marginBottom: '14px' }}>
+                <div className="form-row" style={{ marginBottom: 0 }}>
+                  <label>Kendala (Opsional)</label>
+                  <input type="text" id="t_kendala" placeholder="Cth: ngobrol dengan teman" />
+                </div>
+                <div className="form-row" style={{ marginBottom: 0 }}>
+                  <label>Pencapaian (Opsional)</label>
+                  <input type="text" id="t_hasil" placeholder="Cth: 2 halaman" />
+                </div>
               </div>
 
               <div className="form-row">
-                <label>Hari ini dapatnya... karena...</label>
-                <input type="text" id="t_hasil" placeholder="Cth: 2 halaman saja karena ngantuk..." />
+                <label>Pesan untuk di rumah</label>
+                <select id="t_tindaklanjut">
+                  <option value="Materi hari ini sudah tuntas, insya Allah pertemuan berikutnya bisa lanjut materi baru.">✅ Tuntas (Lanjut materi baru besok)</option>
+                  <option value="Mohon dibantu mengulang (muraja'ah) kembali materi ini di rumah agar besok lebih lancar ya.">🔄 Harus diulang (Muraja'ah di rumah)</option>
+                  <option value="Ada sedikit tugas/PR, mohon bantuannya untuk mendampingi ananda mengerjakan di rumah ya Ayah/Bunda.">✍️ Ada PR / Tugas tertulis</option>
+                  <option value="Tidak ada pesan khusus, ananda luar biasa hari ini! Berikan pujian untuk ananda di rumah ya.">🌟 Tidak ada PR (Ananda luar biasa)</option>
+                </select>
               </div>
 
               <div className="form-row">
                 <label>Nilai Bintang</label>
                 <select id="t_bintang">
-                  <option value="⭐⭐⭐ = sangat baik">⭐⭐⭐ = Sangat Baik</option>
+                  <option value="⭐⭐⭐ = Sangat Baik">⭐⭐⭐ = Sangat Baik</option>
                   <option value="⭐⭐ = Baik">⭐⭐ = Baik</option>
-                  <option value="⭐ = cukup baik">⭐ = Cukup Baik</option>
+                  <option value="⭐ = Cukup Baik">⭐ = Cukup Baik</option>
                 </select>
               </div>
 
@@ -256,14 +267,29 @@ export function PerkembanganTab({
                 style={{ marginTop: '10px', padding: '12px', color: '#fff' }}
                 onClick={() => {
                   const nama = selectedProgressStudent?.nama || '(Nama Siswa)';
-                  const m = document.getElementById('t_materi').value || '.......';
+                  const m = document.getElementById('t_materi').value || '...';
                   const p = document.getElementById('t_paham').value;
                   const l = document.getElementById('t_lancar').value;
-                  const k = document.getElementById('t_kendala').value || '.......';
-                  const h = document.getElementById('t_hasil').value || '.......';
+                  const k = document.getElementById('t_kendala').value;
+                  const h = document.getElementById('t_hasil').value;
+                  const tl = document.getElementById('t_tindaklanjut').value;
                   const b = document.getElementById('t_bintang').value;
                   
-                  const teks = `Assalamu'alaikum ayah bunda Hari ini ananda *${nama}*\nBelajar tentang ${m}\nAlhamdulillah ${p} \n${l}\nNamun karena ananda ${k}\nHari ini dapat nya ${h} karena ${k}\nTetap semangat y.. 💪🏻💪🏻\n\n${b}`;
+                  // 1. Gabung Pemahaman + Kelancaran jadi kalimat utuh
+                  const progressTeks = `${p}. Untuk kelancarannya, ananda ${l}.`;
+                  
+                  // 2. Logika Pintar untuk Kendala & Hasil (Bahasanya diubah seperti obrolan chat)
+                  let kendalaTeks = '';
+                  if (k && h) {
+                    kendalaTeks = `Namun karena hari ini ananda ${k}, jadinya baru mendapatkan ${h}.\n`;
+                  } else if (k) {
+                    kendalaTeks = `Hari ini ada sedikit kendala karena ananda ${k}.\n`;
+                  } else if (h) {
+                    kendalaTeks = `Alhamdulillah hari ini ananda berhasil menyelesaikan ${h}.\n`;
+                  }
+                  
+                  // 3. Rangkaian Akhir
+                  const teks = `Assalamu'alaikum Ayah/Bunda. Hari ini ananda *${nama}* belajar tentang: ${m}\n\n${progressTeks}\n${kendalaTeks}\n*Pesan untuk di rumah:*\n${tl}\n\nTetap semangat ya.. 💪🏻💪🏻\n\n${b}`;
                   
                   setPerkembanganForm({ ...perkembanganForm, catatan: teks });
                 }}
