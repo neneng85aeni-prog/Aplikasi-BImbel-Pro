@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react')
 import { Banner } from './ui/Banner'
 import { StatCard } from './ui/StatCard'
 import { TAB_LABELS } from '../lib/constants'
@@ -23,9 +23,11 @@ import { LaporanGuruTab } from './tabs/LaporanGuruTab'
 import { InventoryTab } from './tabs/InventoryTab'
 import { MaintenanceTab } from './tabs/MaintenanceTab'
 
+
 export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
-
+// === STATE UNTUK TEMA GELAP/TERANG ===
+  const [isLightMode, setIsLightMode] = useState(false);
   // === FITUR AUTO-REDIRECT TAB ===
   useEffect(() => {
     if (visibleTabs && visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
@@ -39,7 +41,7 @@ export function Dashboard({ state, actions }) {
   const canSeeStats = visibleTabs.includes('overview');
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${isLightMode ? 'light-theme' : ''}`}>
       <style>{`
         @media (max-width: 768px) {
           .app-shell { display: flex !important; flex-direction: column !important; height: 100vh; overflow: hidden; }
@@ -125,12 +127,28 @@ export function Dashboard({ state, actions }) {
       </aside>
 
       <section className="content-area">
-        <div className="glass-card topbar">
+        <div className="glass-card topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
           <div>
             <div className="eyebrow">{user.akses}</div>
             <h1 className="hero-title">Operasional premium {state.selectedBranch?.nama ? `• ${state.selectedBranch.nama}` : '• Semua cabang'}</h1>
             <p className="text-muted">Dashboard modern untuk cabang, kasir, absensi, inventory, payroll, dan laporan keuangan.</p>
           </div>
+          
+          {/* === TOMBOL SAKLAR TEMA === */}
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => setIsLightMode(!isLightMode)}
+            style={{ 
+              borderRadius: '50px', 
+              padding: '10px 16px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              border: isLightMode ? '1px solid #cbd5e1' : '1px solid rgba(255,255,255,0.2)'
+            }}
+          >
+            {isLightMode ? '🌙 Mode Gelap' : '☀️ Mode Terang'}
+          </button>
         </div>
         
         {canSeeStats && (
