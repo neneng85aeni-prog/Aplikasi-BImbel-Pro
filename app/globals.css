@@ -317,4 +317,65 @@ option {
   color: #334155;
   font-weight: bold;
 }
+/* =========================================
+   FIX TULISAN HILANG DI LIGHT MODE
+   ========================================= */
 
+/* 1. Paksa Background Utama Penuh Menjadi Terang */
+body:has(.light-theme),
+.light-theme.app-shell {
+  background: #f1f5f9 !important;
+}
+
+/* 2. Semua Kartu, Judul, & Label Dipaksa Gelap */
+.light-theme .glass-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+.light-theme h1, 
+.light-theme h2, 
+.light-theme h3, 
+.light-theme label,
+.light-theme .section-title,
+.light-theme td {
+  color: #0f172a !important;
+}
+
+/* 3. Teks Bantuan & Sub-judul */
+.light-theme .text-muted,
+.light-theme span[style*="color: #94a3b8"],
+.light-theme div[style*="color: #94a3b8"],
+.light-theme div[style*="color:'#94a3b8'"] {
+  color: #475569 !important;
+}
+
+/* 4. Fix Kotak Input, Tanggal, Dropdown, & Textarea */
+.light-theme input, 
+.light-theme select, 
+.light-theme textarea {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* Fix teks bayangan (Placeholder) di kotak isian */
+.light-theme input::placeholder, 
+.light-theme textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+/* 5. Fix Tombol Centang "Penilaian Cepat" */
+.light-theme div[style*="rgba(255,255,255,0.05)"],
+.light-theme div[style*="rgba(255, 255, 255, 0.05)"] {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* 6. Pastikan Tombol Utama Teksnya Tetap Putih */
+.light-theme .btn-primary,
+.light-theme .btn-danger,
+.light-theme .btn-success {
+  color: #ffffff !important;
+}
