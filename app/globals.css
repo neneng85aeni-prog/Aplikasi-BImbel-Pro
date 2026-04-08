@@ -289,3 +289,32 @@ option {
     overflow-x: auto;
   }
 }
+
+/* === KELAS TEMA TERANG (LIGHT MODE) === */
+/* Kelas ini hanya akan aktif jika tombolnya ditekan */
+.light-theme {
+  --bg: #f8fafc;
+  --bg-soft: #f1f5f9;
+  --panel: rgba(255, 255, 255, 0.85);
+  --line: rgba(148, 163, 184, 0.3);
+  --text: #0f172a;
+  --muted: #475569;
+  --primary: #3b82f6;
+  --primary-strong: #2563eb;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Memastikan input form dan tabel menyesuaikan saat mode terang */
+.light-theme input,
+.light-theme select,
+.light-theme textarea {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid #cbd5e1;
+}
+
+.light-theme th {
+  color: #334155;
+  font-weight: bold;
+}
+
