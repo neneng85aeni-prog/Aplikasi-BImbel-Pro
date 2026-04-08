@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import html2canvas from 'html2canvas'
 
 export function JadwalGuruTab({ users, jadwalGuru, onSubmitJadwal, onDeleteJadwal }) {
   const [form, setForm] = useState({ user_id: '', hari: 'Senin', jam_mulai: '15:00', jam_selesai: '17:00' })
@@ -19,7 +20,32 @@ export function JadwalGuruTab({ users, jadwalGuru, onSubmitJadwal, onDeleteJadwa
     j.users?.nama?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     j.hari.toLowerCase().includes(searchQuery.toLowerCase())
   )
+const handleDownloadImage = () => {
+    const element = document.getElementById('poster-jadwal-guru');
+    const originalMaxHeight = element.style.maxHeight;
+    const originalOverflow = element.style.overflowY;
 
+    // Buka scroll agar tabel tidak terpotong saat difoto
+    element.style.maxHeight = 'none';
+    element.style.overflowY = 'visible';
+
+    // Sembunyikan kolom "Aksi" (Tombol Hapus)
+    const aksiCells = element.querySelectorAll('.kolom-aksi');
+    aksiCells.forEach(cell => cell.style.display = 'none');
+
+    html2canvas(element, { scale: 2, backgroundColor: null }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `Jadwal_Guru_Bimbel.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      // Kembalikan seperti semula
+      element.style.maxHeight = originalMaxHeight;
+      element.style.overflowY = originalOverflow;
+      aksiCells.forEach(cell => cell.style.display = '');
+    });
+  };
+  
   return (
     <div className="grid grid-2 gap-lg">
       {/* FORM INPUT JADWAL */}
@@ -59,23 +85,27 @@ export function JadwalGuruTab({ users, jadwalGuru, onSubmitJadwal, onDeleteJadwa
 
       {/* DAFTAR JADWAL TERINPUT */}
       <div className="glass-card">
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px'}}>
           <h2 className="section-title" style={{margin:0}}>List Jadwal Aktif</h2>
-          <input 
-            type="text" placeholder="🔍 Cari guru/hari..." 
-            value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            style={{padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '13px'}}
-          />
+          <div style={{display: 'flex', gap: '10px'}}>
+            <input 
+              type="text" placeholder="🔍 Cari guru/hari..." 
+              value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              style={{padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'inherit', fontSize: '13px'}}
+            />
+            <button type="button" className="btn btn-primary btn-small" onClick={handleDownloadImage} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              📸 Export
+            </button>
+          </div>
         </div>
 
-        <div className="table-wrap" style={{maxHeight: '400px', overflowY: 'auto'}}>
-          <table>
+        <div id="poster-jadwal-guru" className="table-wrap" style={{maxHeight: '400px', overflowY: 'auto', padding: '10px', background: 'var(--panel)', borderRadius: '12px'}}>          <table>
             <thead>
               <tr>
                 <th>Guru</th>
                 <th>Hari</th>
                 <th>Jam</th>
-                <th>Aksi</th>
+                <th className="kolom-aksi">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -84,7 +114,7 @@ export function JadwalGuruTab({ users, jadwalGuru, onSubmitJadwal, onDeleteJadwa
                   <td><b>{j.users?.nama}</b></td>
                   <td>{j.hari}</td>
                   <td><span className="badge-info">{j.jam_mulai.slice(0,5)} - {j.jam_selesai.slice(0,5)}</span></td>
-                  <td>
+                  <td className="kolom-aksi">
                     <button className="btn btn-danger btn-small" onClick={() => onDeleteJadwal(j.id)}>Hapus</button>
                   </td>
                 </tr>
