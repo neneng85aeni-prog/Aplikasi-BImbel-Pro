@@ -132,10 +132,10 @@ export function PerkembanganTab({
             </h2>
             {!perkembanganForm.id && (
               <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '5px', borderRadius: '8px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '12px', color: 'inherit' }}>
                   <input type="radio" checked={progressInputMode === 'scan'} onChange={() => setProgressInputMode('scan')} /> Scan
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '12px', color: 'inherit' }}>
                   <input type="radio" checked={progressInputMode === 'manual'} onChange={() => setProgressInputMode('manual')} /> Manual
                 </label>
               </div>
@@ -171,7 +171,7 @@ export function PerkembanganTab({
                   style={{ 
                     padding: '12px', fontSize: '14px', borderRadius: '8px', 
                     border: '1px solid rgba(255,255,255,0.3)', 
-                    background: 'rgba(255,255,255,0.05)', color: '#fff', width: '100%' 
+                    background: 'rgba(255,255,255,0.05)', color: 'inherit', width: '100%' 
                   }}
                 />
                 <select value={perkembanganForm.siswa_id} onChange={(e) => onSelectProgressStudent(e.target.value, 'manual')} style={{ padding: '12px', fontSize: '15px', width: '100%' }}>
@@ -203,63 +203,89 @@ export function PerkembanganTab({
               </div>
             </div>
 
-            {/* === KOTAK INPUT CEPAT (KLIK CENTANG) === */}
-            <div className="form-row">
-              <label>Penilaian Cepat <span style={{fontSize: '11px', color: '#94a3b8'}}>(Klik untuk memilih, bisa lebih dari satu)</span></label>
-              
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
-                {[
-                  "Sangat Fokus 🌟", "Aktif Bertanya 🙋‍♂️", "Kurang Fokus 🤔", 
-                  "Pemahaman Baik ✅", "Butuh Pengulangan 🔄", "Mandiri Mengerjakan Tugas ✍️", 
-                  "Membaca Lancar 📖", "Berhitung Cepat 🧮", "Hafalan Lancar 🧠"
-                ].map(tag => {
-                  const currentCatatan = perkembanganForm.catatan || '';
-                  const tagsArray = currentCatatan.split(', ').filter(t => t.trim() !== '');
-                  const isSelected = tagsArray.includes(tag);
-
-                  return (
-                    <div 
-                      key={tag}
-                      onClick={() => {
-                        let newTags = [...tagsArray];
-                        if (isSelected) {
-                          newTags = newTags.filter(t => t !== tag); // Hapus jika sudah ada
-                        } else {
-                          newTags.push(tag); // Tambah jika belum ada
-                        }
-                        setPerkembanganForm({ ...perkembanganForm, catatan: newTags.join(', ') });
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        background: isSelected ? '#3b82f6' : 'rgba(255,255,255,0.05)',
-                        color: isSelected ? '#fff' : '#cbd5e1',
-                        border: `1px solid ${isSelected ? '#3b82f6' : 'rgba(255,255,255,0.2)'}`,
-                        transition: 'all 0.2s ease',
-                        userSelect: 'none'
-                      }}
-                    >
-                      {isSelected ? '✓ ' : '+ '} {tag}
-                    </div>
-                  )
-                })}
+            {/* === FORM TEMPLATE LAPORAN WA === */}
+            <div style={{ background: 'rgba(59, 130, 246, 0.05)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '15px' }}>
+              <div style={{ marginBottom: '15px', fontWeight: 'bold', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                📝 Isi Form Laporan (Template WA)
               </div>
 
-              {/* Kotak teks ini tetap ada untuk melihat hasil centang / menambah teks manual */}
+              <div className="form-row">
+                <label>Belajar tentang apa hari ini?</label>
+                <input type="text" id="t_materi" placeholder="Cth: Mengaji Iqro Jilid 2 halaman 15..." />
+              </div>
+
+              <div className="grid grid-2" style={{ gap: '10px', marginBottom: '14px' }}>
+                <div>
+                  <label>Daya Tangkap</label>
+                  <select id="t_paham">
+                    <option value="bisa mengikuti dng baik">Bisa mengikuti dng baik</option>
+                    <option value="masih harus diulang">Masih harus diulang</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Kelancaran</label>
+                  <select id="t_lancar">
+                    <option value="Dengan lancar">Dengan lancar</option>
+                    <option value="Belum sepenuhnya lancar">Belum sepenuhnya lancar</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <label>Namun karena ananda...</label>
+                <input type="text" id="t_kendala" placeholder="Cth: kurang fokus / asyik bermain..." />
+              </div>
+
+              <div className="form-row">
+                <label>Hari ini dapatnya... karena...</label>
+                <input type="text" id="t_hasil" placeholder="Cth: 2 halaman saja karena ngantuk..." />
+              </div>
+
+              <div className="form-row">
+                <label>Nilai Bintang</label>
+                <select id="t_bintang">
+                  <option value="⭐⭐⭐ = sangat baik">⭐⭐⭐ = Sangat Baik</option>
+                  <option value="⭐⭐ = Baik">⭐⭐ = Baik</option>
+                  <option value="⭐ = cukup baik">⭐ = Cukup Baik</option>
+                </select>
+              </div>
+
+              <button 
+                type="button" 
+                className="btn btn-primary btn-block" 
+                style={{ marginTop: '10px', padding: '12px', color: '#fff' }}
+                onClick={() => {
+                  const nama = selectedProgressStudent?.nama || '(Nama Siswa)';
+                  const m = document.getElementById('t_materi').value || '.......';
+                  const p = document.getElementById('t_paham').value;
+                  const l = document.getElementById('t_lancar').value;
+                  const k = document.getElementById('t_kendala').value || '.......';
+                  const h = document.getElementById('t_hasil').value || '.......';
+                  const b = document.getElementById('t_bintang').value;
+                  
+                  const teks = `Assalamu'alaikum ayah bunda Hari ini ananda *${nama}*\nBelajar tentang ${m}\nAlhamdulillah ${p} \n${l}\nNamun karena ananda ${k}\nHari ini dapat nya ${h} karena ${k}\nTetap semangat y.. 💪🏻💪🏻\n\n${b}`;
+                  
+                  setPerkembanganForm({ ...perkembanganForm, catatan: teks });
+                }}
+              >
+                ⬇️ Gabungkan Jadi Teks Laporan
+              </button>
+            </div>
+
+            <div className="form-row">
+              <label>Hasil Teks Laporan <span style={{fontSize:'11px', fontWeight:'normal'}}>(Bisa diedit manual sebelum disimpan)</span></label>
               <textarea 
                 value={perkembanganForm.catatan} 
                 onChange={(e) => setPerkembanganForm({ ...perkembanganForm, catatan: e.target.value })} 
-                placeholder="Hasil centang akan muncul di sini. Bisa diedit manual..." 
-                rows="2" 
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '13px' }}
+                placeholder="Isi form di atas lalu klik 'Gabungkan Jadi Teks Laporan'..." 
+                rows="9" 
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'inherit', fontSize: '13px' }}
                 required 
               />
             </div>
             
             <div className="btn-row" style={{ marginTop: '20px' }}>
-              <button className="btn btn-primary" type="submit" disabled={!perkembanganForm.siswa_id} style={{ flex: 2 }}>
+              <button className="btn btn-primary" type="submit" disabled={!perkembanganForm.siswa_id} style={{ flex: 2, color: '#fff' }}>
                 {perkembanganForm.id ? '💾 Update Laporan' : '💾 Simpan Laporan'}
               </button>
               <button className="btn btn-secondary" type="button" onClick={resetForm} style={{ flex: 1 }}>Batal</button>
@@ -278,7 +304,7 @@ export function PerkembanganTab({
                 <span style={{ fontSize: '11px' }}>s/d</span>
                 <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} style={{ fontSize: '12px', background: 'transparent', border: 'none', color: 'inherit', outline: 'none' }} />
               </div>
-              <button className="btn btn-primary btn-small" onClick={handleDownload} style={{ background: '#10b981' }}>⬇️ Download Excel</button>
+              <button className="btn btn-primary btn-small" onClick={handleDownload} style={{ background: '#10b981', color: '#fff' }}>⬇️ Download Excel</button>
             </div>
             
             <input 
@@ -331,7 +357,7 @@ export function PerkembanganTab({
                         {item.siswa?.programs?.nama || item.siswa?.program?.nama || '-'}
                       </span>
                     </td>
-                    <td style={{ fontSize: '13px', lineHeight: '1.5' }}>{item.catatan}</td>
+                    <td style={{ fontSize: '13px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{item.catatan}</td>
                     <td>
                       <div className="btn-row" style={{ gap: '6px', justifyContent: 'center' }}>
                         <button className="btn btn-secondary btn-small" onClick={() => startEdit(item)}>Edit</button>
@@ -342,10 +368,10 @@ export function PerkembanganTab({
                           } else {
                             alert("Kabel Hapus di dashboard.js belum terpasang!");
                           }
-                        }}>Hapus</button>
+                        }} style={{ color: '#fff' }}>Hapus</button>
 
                         {canAccessSiswaMenu && (
-                          <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981', border: 'none' }}>WA</button>
+                          <button className="btn btn-primary btn-small" onClick={() => onSendPerkembanganWA(item)} style={{ background: '#10b981', border: 'none', color: '#fff' }}>WA</button>
                         )}
                       </div>
                     </td>
