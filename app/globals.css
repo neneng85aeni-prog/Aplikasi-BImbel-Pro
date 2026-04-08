@@ -379,3 +379,43 @@ body:has(.light-theme),
 .light-theme .btn-success {
   color: #ffffff !important;
 }
+/* =========================================
+   FIX TULISAN HILANG DI LIGHT MODE (PART 2)
+   ========================================= */
+
+/* 1. Fix Angka Besar di Kotak Statistik (180, 10, Rp...) */
+.light-theme .stat-value,
+.light-theme b,
+.light-theme strong {
+  color: #0f172a !important; /* Hitam gelap */
+}
+.light-theme .stat-label {
+  color: #475569 !important; /* Abu-abu gelap */
+}
+
+/* 2. Fix Tombol Saklar dan Tombol "Secondary" Lainnya */
+.light-theme .btn-secondary,
+.light-theme .btn {
+  color: #0f172a !important; /* Teks tombol jadi gelap */
+}
+
+/* (Pengecualian) Pastikan tombol merah/biru tetap putih teksnya */
+.light-theme .btn-primary,
+.light-theme .btn-danger,
+.light-theme .btn-success {
+  color: #ffffff !important; 
+}
+
+/* 3. Fix Banner Notifikasi (Tulisan "Login berhasil...") */
+.light-theme .banner,
+.light-theme div[style*="rgba(57, 217, 138, 0.12)"] {
+  color: #065f46 !important; /* Hijau sangat pekat */
+  background-color: #d1fae5 !important; /* Background hijau pastel */
+  border: 1px solid #a7f3d0 !important;
+}
+
+/* 4. Fix Teks Pilihan Label (Scan / Manual) */
+.light-theme label,
+.light-theme .radio-label {
+  color: #334155 !important;
+}
