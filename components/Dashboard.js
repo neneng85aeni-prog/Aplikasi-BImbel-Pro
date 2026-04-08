@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react')
+import { useEffect, useState } from 'react'
 import { Banner } from './ui/Banner'
 import { StatCard } from './ui/StatCard'
 import { TAB_LABELS } from '../lib/constants'
