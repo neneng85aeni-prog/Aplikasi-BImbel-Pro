@@ -246,6 +246,7 @@ export function PerkembanganTab({
                 <label>Pesan untuk di rumah</label>
                 <select id="t_tindaklanjut">
                   <option value="Materi hari ini sudah tuntas, insya Allah pertemuan berikutnya bisa lanjut materi baru.">✅ Tuntas (Lanjut materi baru besok)</option>
+                  <option value="Besok mengulang (muraja'ah) kembali materi ini ya.">🔄 Besok Harus diulang</option>
                   <option value="Mohon dibantu mengulang (muraja'ah) kembali materi ini di rumah agar besok lebih lancar ya.">🔄 Harus diulang (Muraja'ah di rumah)</option>
                   <option value="Ada sedikit tugas/PR, mohon bantuannya untuk mendampingi ananda mengerjakan di rumah ya Ayah/Bunda.">✍️ Ada PR / Tugas tertulis</option>
                   <option value="Tidak ada pesan khusus, ananda luar biasa hari ini! Berikan pujian untuk ananda di rumah ya.">🌟 Tidak ada PR (Ananda luar biasa)</option>
