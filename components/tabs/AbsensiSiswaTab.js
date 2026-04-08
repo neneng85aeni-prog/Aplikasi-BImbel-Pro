@@ -71,13 +71,9 @@ export function AbsensiSiswaTab({
     return jamA.localeCompare(jamB);
   });
 
-  // Karena variabelnya kita ubah namanya, kita sesuaikan paginasinya
+  // 3. PAGINATION
   const totalPages = Math.ceil(siswaTampilHariIni.length / ITEMS_PER_PAGE);
   const paginatedSiswa = siswaTampilHariIni.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  // 3. PAGINATION
-  const totalPages = Math.ceil(siswaBelumHadir.length / ITEMS_PER_PAGE);
-  const paginatedSiswa = siswaBelumHadir.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const goToPage = (page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
 
@@ -122,7 +118,15 @@ export function AbsensiSiswaTab({
               </tr>
             </thead>
             <tbody>
-              <td>
+              {paginatedSiswa.map(s => {
+                const sesiLewat = isSudahLewatSesi(s.jam_mulai, currentTime);
+
+                return (
+                  <tr key={s.id}>
+                    <td><b>{s.nama}</b><div style={{fontSize:'10px', color:'#94a3b8'}}>{s.branches?.nama}</div></td>
+                    <td>{s.users?.nama || '-'}</td>
+                    <td style={{whiteSpace:'nowrap'}}>{s.jam_mulai} - {getJamSelesai(s.jam_mulai)}</td>
+                    <td>
                       {s.isSudahHadir ? (
                         <span style={{ fontWeight: 'bold', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
                           ✅ SUDAH HADIR
@@ -143,6 +147,11 @@ export function AbsensiSiswaTab({
                   </tr>
                 )
               })}
+              {paginatedSiswa.length === 0 && (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>Tidak ada jadwal siswa aktif hari ini.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
