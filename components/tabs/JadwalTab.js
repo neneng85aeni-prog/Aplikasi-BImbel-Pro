@@ -21,7 +21,7 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
     element.style.maxHeight = 'none';
     element.style.overflowX = 'visible';
 
-    html2canvas(element, { scale: 2, backgroundColor: null }).then(canvas => {
+    html2canvas(element, { scale: 2, backgroundColor: '#f8fafc' }).then(canvas => {
       const link = document.createElement('a');
       link.download = `Jadwal_Matrix_${selectedDay}.png`; // Nama file otomatis sesuai hari
       link.href = canvas.toDataURL('image/png');
@@ -136,18 +136,19 @@ export function JadwalTab({ siswa = [], users = [], branches = [] }) {
                         {matchSiswa.length > 0 ? (
                           matchSiswa.map(s => (
                             <div key={s.id} style={{ 
-                              background: 'rgba(59, 130, 246, 0.15)', 
-                              borderLeft: '2px solid #3b82f6',
+                              background: '#e0f2fe', /* Warna biru muda solid agar kamera tidak bingung */
+                              borderLeft: '3px solid #0284c7',
                               padding: '4px 6px', 
                               borderRadius: '4px', 
                               marginBottom: '2px',
                               fontSize: '10px',
-                              lineHeight: '1.2'
+                              lineHeight: '1.2',
+                              color: '#0f172a' /* PAKSA TEKS JADI HITAM PEKAT */
                             }}>
                               <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {s.nama?.split(' ')[0]}
                               </div>
-                              <div style={{ fontSize: '9px', opacity: 0.7 }}>{s.jam_mulai}</div>
+                              <div style={{ fontSize: '9px', color: '#475569' }}>{s.jam_mulai}</div>
                             </div>
                           ))
                         ) : null}
