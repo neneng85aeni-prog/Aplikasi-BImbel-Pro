@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { supabase } from '../lib/supabase' // Sesuaikan dengan lokasi file supabase Mas (bisa jadi '../lib/supabaseClient')
 import { Html5QrcodeScanner } from 'html5-qrcode'
 import {
   EMPLOYEE_GLOBAL_IN, EMPLOYEE_GLOBAL_OUT, INITIAL_BONUS_FORM, INITIAL_BRANCH_FORM,
@@ -410,11 +411,11 @@ export function useBimbelApp() {
       const payload = validatePerkembanganForm(perkembanganForm); 
       const matched = siswaTampil.find((item) => item.id === payload.siswa_id); 
       if (!matched) throw new Error('Siswa tidak ditemukan.'); 
-     
 
-      // Pisahkan 'guru_handle_id' agar tidak ikut terkirim ke database
-      const { guru_handle_id, ...cleanPayload } = payload;
+      // Pisahkan 'guru_handle_id' agar tidak ikut terkirim ke database utama
+      const { guru_handle_id, ...cleanPayload } = payload; 
       
+      // 1. SIMPAN KE TABEL UTAMA (Database Lama)
       const res = await savePerkembangan({ 
         ...cleanPayload, 
         guru_id: user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || null) 
@@ -422,6 +423,26 @@ export function useBimbelApp() {
       
       if (res.error) throw res.error; 
       
+      // ==========================================
+      // 2. FITUR BARU: INJEKSI KE ANTREAN WA
+      // ==========================================
+      // Kita hanya kirim WA otomatis jika ini data BARU (bukan sekadar ngedit data lama)
+      if (!perkembanganForm.id) {
+          const nomorWAOrtu = matched.no_hp; // Ambil nomor HP siswa
+
+          if (nomorWAOrtu) {
+              const { error: errorWa } = await supabase
+                  .from('wa_queue')
+                  .insert([{ 
+                      no_wa: nomorWAOrtu, 
+                      pesan: perkembanganForm.catatan // Teks hasil gabungan dari form UI
+                  }]);
+                  
+              if (errorWa) console.error("Gagal masuk antrean WA:", errorWa);
+          }
+      }
+      // ==========================================
+
       setPerkembanganForm((prev) => ({ 
         ...INITIAL_PERKEMBANGAN_FORM, 
         siswa_id: matched.id, 
@@ -429,7 +450,7 @@ export function useBimbelApp() {
         tanggal: TODAY() 
       })); 
       
-      setMessage('Perkembangan & kehadiran disimpan.'); 
+      setMessage('Laporan disimpan & masuk antrean WA!'); 
       await loadAllData();
     } catch (error) { 
       setErrorMsg(error.message);
