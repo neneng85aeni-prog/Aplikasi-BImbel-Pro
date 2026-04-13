@@ -328,7 +328,7 @@ export function useBimbelApp() {
         const targetBranch = branches.find((b) => b.id === siswaForm.branch_id);
         const LINK_GRUP_WA = targetBranch?.link_grup || "https://chat.whatsapp.com/GrupBelumDiatur";
 
-        const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat bergabung ya! ✨\n\n` +
+        const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat datang dan selamat bergabung di Bimbel TopCourse Pangkalan ya! ✨\n\n` +
           `Biar kita bisa komunikasi lebih enak dan Ayah/Bunda nggak ketinggalan info seru seputar jadwal serta kegiatan belajar mengajar, yuk langsung gabung ke Grup WhatsApp kita!\n\n` +
           `Tinggal klik link ini aja ya:\n` +
           `🔗 ${LINK_GRUP_WA}\n\n` +
