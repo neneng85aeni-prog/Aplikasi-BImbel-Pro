@@ -324,10 +324,32 @@ export function useBimbelApp() {
       const res = await upsertSiswa(validateSiswaForm(enriched), siswaForm.id); 
       if (res.error) throw res.error; 
       
-      // === 5. FITUR KIRIM WA OTOMATIS (KHUSUS SISWA BARU) ===
+     // === 5. FITUR KIRIM WA OTOMATIS (AMBIL LINK DARI CABANG) ===
       if (isSiswaBaru && cleanedHp) {
-          // Setting Link Grup (Ganti dengan link asli nanti)
-          const LINK_GRUP_WA = "https://chat.whatsapp.com/GantiDenganLinkAsli";
+          // 1. Cari data cabang yang sesuai dengan pilihan form siswa
+          const targetBranch = branches.find((b) => b.id === siswaForm.branch_id);
+          
+          // 2. Ambil link_grup dari data cabang. Kalau kosong, pakai link cadangan.
+          const LINK_GRUP_WA = targetBranch?.link_grup || "https://chat.whatsapp.com/GrupBelumDiatur";
+
+          // Template Bahasa Global (Pilihan 3)
+          const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat bergabung ya! ✨\n\n` +
+            `Biar kita bisa komunikasi lebih enak dan Ayah/Bunda nggak ketinggalan info seru seputar jadwal serta kegiatan belajar mengajar, yuk langsung gabung ke Grup WhatsApp kita!\n\n` +
+            `Tinggal klik link ini aja ya:\n` +
+            `🔗 ${LINK_GRUP_WA}\n\n` +
+            `Admin tunggu di dalam ya! Terima kasih 🥰`;
+
+          // Injeksi ke Robot WA Mas (Supabase wa_queue)
+          const { error: errorWa } = await supabase.from('wa_queue').insert([
+              {
+                  no_wa: cleanedHp,
+                  pesan: pesanWelcome,
+                  status: 'pending'
+              }
+          ]);
+          
+          if (errorWa) console.error("Gagal masuk antrean WA:", errorWa);
+      }
 
           // Template Bahasa Global (Pilihan 3)
           const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat bergabung ya! ✨\n\n` +
