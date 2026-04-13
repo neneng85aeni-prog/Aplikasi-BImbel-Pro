@@ -296,14 +296,13 @@ export function useBimbelApp() {
   function generateStudentBarcodeAction() { const branchCode = branches.find((item) => item.id === siswaForm.branch_id)?.kode || selectedBranch?.kode || 'PUSAT'; setSiswaForm((prev) => ({ ...prev, kode_qr: generateStudentBarcode({ nama: prev.nama, kelas: prev.kelas, branchCode }) })) }
   // KODE BARU (SUDAH ADA PEMBERSIH NOMOR HP)
 // KODE BARU (SUDAH ADA PEMBERSIH NOMOR HP, TANPA ALERT GANGGUAN)
-  async function submitSiswa(event) { 
-    event.preventDefault(); 
-    try { 
-      // === 1. DETEKSI SISWA BARU ===
-      // Jika siswaForm.id kosong, berarti ini pendaftaran baru (bukan edit)
+  async function submitSiswa(event) {
+    event.preventDefault();
+    try {
+      // 1. Cek apakah ini pendaftaran siswa baru
       const isSiswaBaru = !siswaForm.id;
 
-      // 2. Bersihkan nomor HP dulu
+      // 2. Bersihkan format nomor HP
       let cleanedHp = String(siswaForm.no_hp || '').replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '');
       if (cleanedHp.startsWith('0')) {
         cleanedHp = '+62' + cleanedHp.slice(1);
@@ -311,76 +310,43 @@ export function useBimbelApp() {
         cleanedHp = '+' + cleanedHp;
       }
 
-      // 3. Terapkan nomor HP yang bersih dan urus Barcode
+      // 3. Siapkan data siswa untuk disimpan
       const enriched = {
         ...siswaForm,
         no_hp: cleanedHp,
         hari: siswaForm.hari,
         jam_mulai: siswaForm.jam_mulai,
         kode_qr: siswaForm.kode_qr ? siswaForm.kode_qr : generateStudentBarcode({ nama: siswaForm.nama, kelas: siswaForm.kelas, branchCode: branches.find((item) => item.id === siswaForm.branch_id)?.kode })
-      }; 
+      };
       
-      // 4. Simpan ke Supabase (Tabel Siswa)
-      const res = await upsertSiswa(validateSiswaForm(enriched), siswaForm.id); 
-      if (res.error) throw res.error; 
-      
-     // === 5. FITUR KIRIM WA OTOMATIS (AMBIL LINK DARI CABANG) ===
+      // 4. Simpan ke database Supabase
+      const res = await upsertSiswa(validateSiswaForm(enriched), siswaForm.id);
+      if (res.error) throw res.error;
+
+      // 5. KIRIM WA OTOMATIS KE SISWA BARU
       if (isSiswaBaru && cleanedHp) {
-          // 1. Cari data cabang yang sesuai dengan pilihan form siswa
-          const targetBranch = branches.find((b) => b.id === siswaForm.branch_id);
-          
-          // 2. Ambil link_grup dari data cabang. Kalau kosong, pakai link cadangan.
-          const LINK_GRUP_WA = targetBranch?.link_grup || "https://chat.whatsapp.com/GrupBelumDiatur";
+        const targetBranch = branches.find((b) => b.id === siswaForm.branch_id);
+        const LINK_GRUP_WA = targetBranch?.link_grup || "https://chat.whatsapp.com/GrupBelumDiatur";
 
-          // Template Bahasa Global (Pilihan 3)
-          const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat bergabung ya! ✨\n\n` +
-            `Biar kita bisa komunikasi lebih enak dan Ayah/Bunda nggak ketinggalan info seru seputar jadwal serta kegiatan belajar mengajar, yuk langsung gabung ke Grup WhatsApp kita!\n\n` +
-            `Tinggal klik link ini aja ya:\n` +
-            `🔗 ${LINK_GRUP_WA}\n\n` +
-            `Admin tunggu di dalam ya! Terima kasih 🥰`;
+        const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat bergabung ya! ✨\n\n` +
+          `Biar kita bisa komunikasi lebih enak dan Ayah/Bunda nggak ketinggalan info seru seputar jadwal serta kegiatan belajar mengajar, yuk langsung gabung ke Grup WhatsApp kita!\n\n` +
+          `Tinggal klik link ini aja ya:\n` +
+          `🔗 ${LINK_GRUP_WA}\n\n` +
+          `Admin tunggu di dalam ya! Terima kasih 🥰`;
 
-          // Injeksi ke Robot WA Mas (Supabase wa_queue)
-          const { error: errorWa } = await supabase.from('wa_queue').insert([
-              {
-                  no_wa: cleanedHp,
-                  pesan: pesanWelcome,
-                  status: 'pending'
-              }
-          ]);
-          
-          if (errorWa) console.error("Gagal masuk antrean WA:", errorWa);
+        await supabase.from('wa_queue').insert([
+          { no_wa: cleanedHp, pesan: pesanWelcome, status: 'pending' }
+        ]);
       }
 
-          // Template Bahasa Global (Pilihan 3)
-          const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat bergabung ya! ✨\n\n` +
-            `Biar kita bisa komunikasi lebih enak dan Ayah/Bunda nggak ketinggalan info seru seputar jadwal serta kegiatan belajar mengajar, yuk langsung gabung ke Grup WhatsApp kita!\n\n` +
-            `Tinggal klik link ini aja ya:\n` +
-            `🔗 ${LINK_GRUP_WA}\n\n` +
-            `Admin tunggu di dalam ya! Terima kasih 🥰`;
-
-          // Injeksi ke Robot WA Mas (Supabase wa_queue)
-          const { error: errorWa } = await supabase.from('wa_queue').insert([
-              {
-                  no_wa: cleanedHp,
-                  pesan: pesanWelcome,
-                  status: 'pending'
-              }
-          ]);
-          
-          if (errorWa) console.error("Gagal masuk antrean WA:", errorWa);
-      }
-      // ======================================================
-
-      setSiswaForm(INITIAL_SISWA_FORM); 
-      
-      // Notifikasi Pintar: Beda teks saat tambah baru vs edit
-      setMessage(isSiswaBaru ? 'Siswa baru disimpan & Undangan grup dikirim! 🚀' : 'Data siswa berhasil diupdate. ✅'); 
-      
+      // 6. Reset form dan tampilkan notifikasi
+      setSiswaForm(INITIAL_SISWA_FORM);
+      setMessage(isSiswaBaru ? 'Siswa baru disimpan & Undangan grup dikirim! 🚀' : 'Data siswa berhasil diupdate. ✅');
       await loadAllData();
       
-    } catch (error) { 
+    } catch (error) {
       setErrorMsg(error.message);
-    } 
+    }
   }
   
   const deleteBranch = (id, label) => setDeleteConfirm({ show: true, table: 'branches', id, label })
