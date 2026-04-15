@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { formatRupiah } from '../../lib/format'
 import { 
   ComposedChart, 
-  BarChart, // <--- BARU (Tambahkan ini)
+  BarChart, 
   Bar, 
   Line, 
   XAxis, 
@@ -50,43 +50,70 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
     w?.document.write(html); w?.document.close();
   }
 
-  // === LOGIKA HITUNG KPI KEHADIRAN (VERSI SUPER AMAN) ===
-  // === LOGIKA HITUNG KPI KEHADIRAN ===
+  // === 2. FILTER TANGGAL GRAFIK KEHADIRAN (BARU) ===
+  const [periodeGrafik, setPeriodeGrafik] = useState(() => {
+    // Default 7 hari ke belakang dari waktu hari ini
+    const hariIni = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
+    const tujuhHariLalu = new Date(hariIni.getTime() - (6 * 24 * 60 * 60 * 1000));
+    return {
+      mulai: tujuhHariLalu.toISOString().slice(0, 10),
+      selesai: hariIni.toISOString().slice(0, 10)
+    };
+  });
+
+  // === 3. LOGIKA HITUNG KPI KEHADIRAN (VERSI PERIODE) ===
   const attendanceKPI = useMemo(() => {
-    const wibTime = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
-    const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const todayName = hariMap[wibTime.getUTCDay()]; 
-    const todayStr = wibTime.toISOString().slice(0, 10); 
+    const dataGrafik = [];
     const branchId = selectedBranch?.id;
+    const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
-    const targetSiswa = (siswa || []).filter(s => {
-      // 1. FILTER STATUS: Buang siswa yang nonaktif
-      if (s.status === 'nonaktif' || s.status === 'Nonaktif') return false;
+    const start = new Date(periodeGrafik.mulai);
+    const end = new Date(periodeGrafik.selesai);
+    
+    // Keamanan jika input tanggal tidak valid
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
 
-      // 2. Filter Cabang
-      const matchBranch = !branchId || s.branch_id === branchId;
-      
-      // 3. Filter Hari
-      let matchDay = false;
-      if (Array.isArray(s.hari)) {
-        matchDay = s.hari.some(h => h?.toLowerCase() === todayName.toLowerCase());
-      } else if (typeof s.hari === 'string') {
-        matchDay = s.hari.toLowerCase().includes(todayName.toLowerCase());
-      }
-      
-      return matchBranch && matchDay;
-    });
+    // Looping dari tanggal mulai ke tanggal selesai
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const currentDate = new Date(d);
+      const namaHariIni = hariMap[currentDate.getUTCDay()];
+      const tanggalStrIni = currentDate.toISOString().slice(0, 10);
+      const labelTgl = `${currentDate.getDate()}/${currentDate.getMonth() + 1}`;
 
-    const actualHadir = (perkembangan || []).filter(p => {
-      const isToday = p.tanggal && p.tanggal.startsWith(todayStr);
-      const isTargetBranch = !branchId || p.branch_id === branchId || p.siswa?.branch_id === branchId;
-      return isToday && isTargetBranch;
-    });
+      // Target Siswa
+      const targetSiswa = (siswa || []).filter(s => {
+        if (s.status === 'nonaktif' || s.status === 'Nonaktif') return false;
+        const matchBranch = !branchId || s.branch_id === branchId;
+        
+        let matchDay = false;
+        if (Array.isArray(s.hari)) {
+          matchDay = s.hari.some(h => h?.toLowerCase() === namaHariIni.toLowerCase());
+        } else if (typeof s.hari === 'string') {
+          matchDay = s.hari.toLowerCase().includes(namaHariIni.toLowerCase());
+        }
+        
+        return matchBranch && matchDay;
+      });
 
-    return [{ name: todayName, Target: targetSiswa.length, Aktual: actualHadir.length }];
-  }, [siswa, perkembangan, selectedBranch]);
+      // Aktual Hadir
+      const actualHadir = (perkembangan || []).filter(p => {
+        const isTanggalCocok = p.tanggal && p.tanggal.startsWith(tanggalStrIni);
+        const isTargetBranch = !branchId || p.branch_id === branchId || p.siswa?.branch_id === branchId;
+        return isTanggalCocok && isTargetBranch;
+      });
 
-  // === 3. DATA KEUANGAN HARIAN ===
+      dataGrafik.push({
+        name: labelTgl,
+        hari: namaHariIni,
+        Target: targetSiswa.length, 
+        Aktual: actualHadir.length 
+      });
+    }
+
+    return dataGrafik;
+  }, [siswa, perkembangan, selectedBranch, periodeGrafik]);
+
+  // === 4. DATA KEUANGAN HARIAN ===
   const dailyData = useMemo(() => {
     const today = new Date();
     const currentMonthPrefix = today.toISOString().slice(0, 7);
@@ -133,13 +160,34 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
         </div>
       )}
 
-      {/* BARIS 2: KPI, QR & PIE (UBAH MENJADI GRID 3) */}
+      {/* BARIS 2: KPI, QR & PIE (GRID 3) */}
       <div className="grid grid-3" style={{ gap: '20px', gridTemplateColumns: '1fr 0.9fr 1.8fr' }}>
          
-         {/* KARTU 1: KPI KEHADIRAN (BARU) */}
+         {/* KARTU 1: KPI KEHADIRAN (DENGAN FILTER KALENDER) */}
          <div className="glass-card">
-            <h2 className="section-title" style={{ fontSize: '14px' }}>KPI Kehadiran Siswa</h2>
-            <p className="text-muted" style={{ fontSize: '11px', marginBottom: '15px' }}>Target Jadwal vs Aktual Datang</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h2 className="section-title" style={{ fontSize: '14px', margin: 0 }}>KPI Kehadiran Siswa</h2>
+                <p className="text-muted" style={{ fontSize: '11px', margin: '5px 0 15px 0' }}>Target Jadwal vs Aktual Datang</p>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
+                <input 
+                  type="date" 
+                  value={periodeGrafik.mulai} 
+                  onChange={e => setPeriodeGrafik({...periodeGrafik, mulai: e.target.value})}
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '2px 5px', fontSize: '11px' }}
+                />
+                <span style={{ color: '#94a3b8', fontSize: '11px', alignSelf: 'center' }}>-</span>
+                <input 
+                  type="date" 
+                  value={periodeGrafik.selesai} 
+                  onChange={e => setPeriodeGrafik({...periodeGrafik, selesai: e.target.value})}
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '2px 5px', fontSize: '11px' }}
+                />
+              </div>
+            </div>
+
             <div style={{ width: '100%', height: '180px' }}>
                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={attendanceKPI} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -147,8 +195,8 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
                      <YAxis axisLine={false} tickLine={false} fontSize={12} stroke="#94a3b8" />
                      <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px' }} />
                      <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
-                     <Bar dataKey="Target" fill="rgba(59, 130, 246, 0.3)" radius={[4, 4, 0, 0]} barSize={40} />
-                     <Bar dataKey="Aktual" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+                     <Bar dataKey="Target" fill="rgba(59, 130, 246, 0.3)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                     <Bar dataKey="Aktual" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
                   </BarChart>
                </ResponsiveContainer>
             </div>
@@ -161,7 +209,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
                
                {/* QR MASUK */}
                <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', width: '45%' }}>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeIn}`} width="100%" />
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeIn}`} width="100%" alt="QR Masuk" />
                   <div style={{ color: '#000', fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>MASUK</div>
                   <button 
                      className="btn btn-primary btn-small" 
@@ -174,7 +222,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
 
                {/* QR PULANG */}
                <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', width: '45%' }}>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeOut}`} width="100%" />
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeOut}`} width="100%" alt="QR Pulang" />
                   <div style={{ color: '#000', fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>PULANG</div>
                   <button 
                      className="btn btn-secondary btn-small" 
