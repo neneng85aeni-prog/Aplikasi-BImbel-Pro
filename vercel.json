@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/pengingat",
+      "schedule": "0 23 * * *"
+    }
+  ]
+}
