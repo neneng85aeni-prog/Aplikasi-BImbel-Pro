@@ -12,12 +12,11 @@ export async function GET() {
     // 1. Dapatkan hari ini dalam format bahasa Indonesia (Senin, Selasa, dst)
     const hariIni = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date());
 
-    // 2. Ambil data siswa yang jadwalnya hari ini
-    // CATATAN: Pastikan nama tabel 'siswa' dan nama kolom sesuai dengan database kamu
+    // 2. Ambil data siswa berdasarkan kolom asli di database Supabase
     const { data: daftarSiswa, error: errSiswa } = await supabase
       .from('siswa') 
-      .select('nama_siswa, nomor_wa, mata_pelajaran, jam_belajar')
-      .eq('hari_kursus', hariIni);
+      .select('nama, no_hp, kelas, jam_mulai')
+      .eq('hari', hariIni);
 
     if (errSiswa) throw errSiswa;
 
@@ -27,8 +26,8 @@ export async function GET() {
 
     // 3. Susun pesan menggunakan Template Opsi 2 (Bimbel TOP)
     const antreanPesan = daftarSiswa.map((siswa) => ({
-      no_wa: siswa.nomor_wa,
-      pesan: `*INFO JADWAL BIMBEL TOP* 📍\n\nHalo *${siswa.nama_siswa}*, jangan lupa jadwal bimbingan hari ini:\n\n📖 *${siswa.mata_pelajaran}*\n🕙 *${siswa.jam_belajar} WIB*\n\nSampai jumpa di kelas! 🚀`,
+      no_wa: siswa.no_hp,
+      pesan: `*INFO JADWAL BIMBEL TOP* 📍\n\nHalo *${siswa.nama}*, jangan lupa jadwal bimbingan hari ini:\n\n📖 *Kelas: ${siswa.kelas}*\n🕙 *${siswa.jam_mulai} WIB*\n\nSampai jumpa di kelas! 🚀`,
       status: 'pending'
     }));
 
