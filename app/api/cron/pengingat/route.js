@@ -1,0 +1,50 @@
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+// Inisiasi Supabase menggunakan Environment Variables di Vercel
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY 
+);
+
+export async function GET() {
+  try {
+    // 1. Dapatkan hari ini dalam format bahasa Indonesia (Senin, Selasa, dst)
+    const hariIni = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date());
+
+    // 2. Ambil data siswa yang jadwalnya hari ini
+    // CATATAN: Pastikan nama tabel 'siswa' dan nama kolom sesuai dengan database kamu
+    const { data: daftarSiswa, error: errSiswa } = await supabase
+      .from('siswa') 
+      .select('nama_siswa, nomor_wa, mata_pelajaran, jam_belajar')
+      .eq('hari_kursus', hariIni);
+
+    if (errSiswa) throw errSiswa;
+
+    if (!daftarSiswa || daftarSiswa.length === 0) {
+      return NextResponse.json({ message: 'Tidak ada jadwal untuk hari ini.' }, { status: 200 });
+    }
+
+    // 3. Susun pesan menggunakan Template Opsi 2 (Bimbel TOP)
+    const antreanPesan = daftarSiswa.map((siswa) => ({
+      no_wa: siswa.nomor_wa,
+      pesan: `*INFO JADWAL BIMBEL TOP* 📍\n\nHalo *${siswa.nama_siswa}*, jangan lupa jadwal bimbingan hari ini:\n\n📖 *${siswa.mata_pelajaran}*\n🕙 *${siswa.jam_belajar} WIB*\n\nSampai jumpa di kelas! 🚀`,
+      status: 'pending'
+    }));
+
+    // 4. Masukkan ke tabel wa_queue
+    const { error: errQueue } = await supabase
+      .from('wa_queue')
+      .insert(antreanPesan);
+
+    if (errQueue) throw errQueue;
+
+    return NextResponse.json({ 
+      success: true, 
+      message: `${antreanPesan.length} pesan berhasil masuk antrean robot.` 
+    }, { status: 200 });
+
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
