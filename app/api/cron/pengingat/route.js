@@ -23,10 +23,10 @@ export async function GET() {
         jam_mulai, 
         program:program_id (nama)
       `) 
-      // .eq('hari', hariIni) // Matikan sementara untuk tes
+      .eq('hari', hariIni) // Matikan sementara untuk tes
       .not('no_hp', 'is', null) // FILTER 1: Jangan ambil yang Null
       .neq('no_hp', '')         // FILTER 2: Jangan ambil yang kosong/blank
-      .limit(1); 
+      // .limit(1); 
 
     if (errSiswa) throw errSiswa;
 
