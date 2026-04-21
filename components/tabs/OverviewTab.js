@@ -98,11 +98,17 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
         return isTanggalCocok && isTargetBranch;
       });
 
+      // Hitung persentase sejak awal di sini
+      const targetCount = targetSiswa.length;
+      const aktualCount = actualHadir.length;
+      const persenHitung = targetCount > 0 ? Math.round((aktualCount / targetCount) * 100) : 0;
+
       dataGrafik.push({
         name: labelTgl,
         hari: namaHariIni,
-        Target: targetSiswa.length, 
-        Aktual: actualHadir.length 
+        Target: targetCount, 
+        Aktual: aktualCount,
+        Persen: persenHitung // <--- Data persen dimasukkan di sini
       });
     }
 
