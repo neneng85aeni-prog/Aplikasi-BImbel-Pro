@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
+// 1. TAMBAHAN WAJIB: Memaksa Vercel agar tidak melakukan cache pada file ini
+export const dynamic = 'force-dynamic'; 
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY 
@@ -8,9 +11,12 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    const hariIni = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date());
+    // 2. PERBAIKAN WAKTU: Memaksa sistem menggunakan zona waktu Jakarta (WIB)
+    const hariIni = new Intl.DateTimeFormat('id-ID', { 
+      weekday: 'long',
+      timeZone: 'Asia/Jakarta' 
+    }).format(new Date());
 
-    // LOGIKA JOIN: Kita mengambil data siswa DAN kolom 'nama' dari tabel 'program'
     const { data: daftarSiswa, error: errSiswa } = await supabase
       .from('siswa') 
       .select(`
@@ -18,18 +24,16 @@ export async function GET() {
         no_hp, 
         jam_mulai, 
         program:program_id (nama)
-      `) // Mengambil 'nama' dari tabel yang dirujuk oleh program_id
+      `) 
       .eq('hari', hariIni);
 
     if (errSiswa) throw errSiswa;
 
     if (!daftarSiswa || daftarSiswa.length === 0) {
-      return NextResponse.json({ message: 'Tidak ada jadwal untuk hari ini.' }, { status: 200 });
+      return NextResponse.json({ message: `Tidak ada jadwal untuk hari ${hariIni}.` }, { status: 200 });
     }
 
-    // 3. Susun pesan menggunakan data dari tabel program
     const antreanPesan = daftarSiswa.map((siswa) => {
-      // Mengambil nama program, jika tidak ada gunakan teks default
       const namaProgram = siswa.program?.nama || 'Mata Pelajaran';
 
       return {
@@ -47,7 +51,7 @@ export async function GET() {
 
     return NextResponse.json({ 
       success: true, 
-      message: `${antreanPesan.length} pesan berhasil dijadwalkan.` 
+      message: `${antreanPesan.length} pesan berhasil dijadwalkan untuk hari ${hariIni}.` 
     }, { status: 200 });
 
   } catch (error) {
