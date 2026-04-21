@@ -15,7 +15,6 @@ export async function GET() {
       timeZone: 'Asia/Jakarta' 
     }).format(new Date());
 
-    // LOGIKA TES PAKSA: Ambil 1 data apa pun tanpa peduli hari
     const { data: daftarSiswa, error: errSiswa } = await supabase
       .from('siswa') 
       .select(`
@@ -24,13 +23,17 @@ export async function GET() {
         jam_mulai, 
         program:program_id (nama)
       `) 
-      // .eq('hari', hariIni)  <-- SYARAT HARI KITA MATIKAN SEMENTARA (ditandai dengan //)
-      .limit(1); // <-- Batasi ambil 1 data saja agar robot tidak nyepam ke siswa lain
+      // .eq('hari', hariIni) // Matikan sementara untuk tes
+      .not('no_hp', 'is', null) // FILTER 1: Jangan ambil yang Null
+      .neq('no_hp', '')         // FILTER 2: Jangan ambil yang kosong/blank
+      .limit(1); 
 
     if (errSiswa) throw errSiswa;
 
     if (!daftarSiswa || daftarSiswa.length === 0) {
-      return NextResponse.json({ message: 'Tabel siswa kamu benar-benar kosong atau tidak terbaca.' }, { status: 200 });
+      return NextResponse.json({ 
+        message: 'Tidak ditemukan siswa dengan nomor HP yang valid di database.' 
+      }, { status: 200 });
     }
 
     const antreanPesan = daftarSiswa.map((siswa) => {
@@ -49,12 +52,10 @@ export async function GET() {
 
     if (errQueue) throw errQueue;
 
-    // Menampilkan hasil detail di browser agar kita bisa investigasi
     return NextResponse.json({ 
       success: true, 
-      message: `TES BERHASIL! 1 pesan telah masuk ke database antrean.`,
-      debug_hari_terdeteksi: hariIni,
-      data_uji_coba: daftarSiswa
+      message: `TES BERHASIL! Pesan untuk ${daftarSiswa[0].nama} telah masuk ke antrean.`,
+      nomor_tujuan: daftarSiswa[0].no_hp
     }, { status: 200 });
 
   } catch (error) {
