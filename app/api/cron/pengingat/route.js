@@ -41,7 +41,7 @@ export async function GET() {
 
       return {
         no_wa: siswa.no_hp,
-        pesan: `*INFO JADWAL BIMBEL TOP* 📍\n\nHalo *${siswa.nama}*, ini adalah PESAN TES sistem:\n\n📖 *Program: ${namaProgram}*\n🕙 *${siswa.jam_mulai} WIB*\n\nSampai jumpa di kelas! 🚀`,
+        pesan: `*INFO JADWAL BIMBEL TOP* 📍\n\nHalo Assalamu'alaikum *${siswa.nama}*, Hari ini ananda ada Jawal Belajar ya Ayah/Bunda :\n\n📖 *Program: ${namaProgram}*\n🕙 *${siswa.jam_mulai} WIB*\n\nSampai jumpa di kelas! 🚀`,
         status: 'pending'
       };
     });
