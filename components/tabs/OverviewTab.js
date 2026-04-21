@@ -150,18 +150,14 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
   );
   // === FUNGSI RENDER PERSENTASE KEHADIRAN ===
   const renderPersentase = (props) => {
-    const { x, y, width, value, payload } = props;
+    const { x, y, width, value } = props; 
     
-    // Hitung persentase: (Aktual / Target) * 100
-    // Gunakan payload.Target karena di datamu key-nya huruf besar "Target"
-    const persentase = payload.Target > 0 ? Math.round((value / payload.Target) * 100) : 0;
-
-    // Jika aktualnya 0, lebih baik sembunyikan saja labelnya agar grafik tetap bersih
-    if (value === 0) return null;
+    // Jika persentase 0 atau kosong, sembunyikan angkanya
+    if (!value || value === 0) return null;
 
     return (
       <text x={x + width / 2} y={y - 8} fill="#10b981" textAnchor="middle" fontSize={11} fontWeight="bold">
-        {persentase}%
+        {value}%
       </text>
     );
   };
@@ -218,8 +214,8 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
                      <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
                      <Bar dataKey="Target" fill="rgba(59, 130, 246, 0.3)" radius={[4, 4, 0, 0]} maxBarSize={40} />
                      <Bar dataKey="Aktual" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                      <LabelList dataKey="Aktual" content={renderPersentase} />
-                        </Bar>
+    <LabelList dataKey="Persen" content={renderPersentase} />
+</Bar>
                   </BarChart>
                </ResponsiveContainer>
             </div>
