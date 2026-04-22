@@ -26,7 +26,7 @@ export async function GET() {
       .eq('hari', hariIni) // Matikan sementara untuk tes
       .not('no_hp', 'is', null) // FILTER 1: Jangan ambil yang Null
       .neq('no_hp', '')         // FILTER 2: Jangan ambil yang kosong/blank
-      // .limit(1); 
+     
 
     if (errSiswa) throw errSiswa;
 
