@@ -107,34 +107,39 @@ export function SiswaTab({
   );
 
   // Deteksi Jatuh Tempo (Sistem Kuota Terhubung Kasir & Bulanan)
+  // Deteksi Jatuh Tempo (Sistem Kuota Terhubung Kasir & Bulanan)
   const getStatusBayar = (siswa) => {
     const programNama = siswa.programs?.nama || "";
     const programDeskripsi = siswa.programs?.deskripsi || "";
     
-    // 1. Cek Sesi (Sistem Kuota Kasir)
+    // 1. CEK SESI (Rumus Sisa Quota Otomatis)
     const matchSesi = programNama.match(/(\d+)x/i);
     if (matchSesi) {
-      const sesiPerPaket = parseInt(matchSesi[1]);
+      const sesiPerPaket = parseInt(matchSesi[1]); // Misal: 16
       
-      // Ambil Sisa Kuota Lama (Cut-off)
-      const sesiAwal = Number(siswa.sesi_awal || 0);
+      // A. Hitung Total Sesi yang Sudah Diikuti
+      const riwayatHadirLama = Number(siswa.sesi_awal || 0); // Input dari admin
+      const hadirAplikasi = perkembanganTampil.filter(p => p.siswa_id === siswa.id).length;
+      const totalDiikuti = riwayatHadirLama + hadirAplikasi;
       
-      // Hitung tambahan sesi dari pembayaran di Kasir
-      const totalBayarKasir = transaksiTampil.filter(t => t.siswa_id === siswa.id && t.program_id === siswa.program_id).length;
-      const tambahanSesi = totalBayarKasir * sesiPerPaket;
+      // B. Hitung Total Kuota Belajar
+      // Sistem cerdas: Jika riwayat lama 15, berarti siswa punya modal dasar 1 paket manual (16)
+      const kuotaBawaanLama = riwayatHadirLama === 0 ? 0 : Math.ceil(riwayatHadirLama / sesiPerPaket) * sesiPerPaket;
+      // Hitung tambahan dari Kasir
+      const paketDibeliKasir = transaksiTampil.filter(t => t.siswa_id === siswa.id && t.program_id === siswa.program_id).length;
+      const kuotaKasir = paketDibeliKasir * sesiPerPaket;
       
-      // Hitung Total Kehadiran di Aplikasi
-      const totalHadirAplikasi = perkembanganTampil.filter(p => p.siswa_id === siswa.id).length;
+      const totalSesiBelajar = kuotaBawaanLama + kuotaKasir;
       
-      // RUMUS SISA KUOTA
-      const sisaSesi = (sesiAwal + tambahanSesi) - totalHadirAplikasi;
+      // C. Hitung Sisa
+      const sisaSesi = totalSesiBelajar - totalDiikuti;
       
       if (sisaSesi <= 1) {
         return { tipe: 'SESI', info: sisaSesi <= 0 ? 'Kuota Habis!' : 'Sisa 1 Sesi lagi' };
       }
     }
 
-    // 2. Cek Bulanan
+    // 2. CEK BULANAN
     const isBulanan = programDeskripsi.toLowerCase().includes('bulanan');
     if (isBulanan && siswa.created_at) {
       const tglDaftar = new Date(siswa.created_at).getDate();
@@ -145,7 +150,6 @@ export function SiswaTab({
     }
     return null;
   };
-  
   const handleManualWA = (siswa, jenis, infoBayar = null) => {
     if(onSendManualReminder) onSendManualReminder(siswa, jenis, infoBayar);
     const uniqueKey = siswa.id + jenis;
@@ -275,10 +279,19 @@ export function SiswaTab({
                   <input value={siswaForm.kelas || ''} onChange={(e) => setSiswaForm({ ...siswaForm, kelas: e.target.value })} placeholder="Cth: 1 SD" />
                 </div>
                 
-                {/* KOTAK BARU: Sisa Kuota Lama */}
+                {/* KOTAK BARU: Riwayat Kehadiran Lama */}
                 <div className="form-row">
-                  <label>Sisa Kuota Lama</label>
-                  <input type="number" min="0" value={siswaForm.sesi_awal === 0 ? '' : siswaForm.sesi_awal} onChange={(e) => setSiswaForm({ ...siswaForm, sesi_awal: parseInt(e.target.value) || 0 })} placeholder="Cth: 3" />
+                  <label>Riwayat Hadir Manual</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    value={siswaForm.sesi_awal === 0 ? '' : siswaForm.sesi_awal} 
+                    onChange={(e) => setSiswaForm({ ...siswaForm, sesi_awal: parseInt(e.target.value) || 0 })} 
+                    placeholder="Cth: 15" 
+                  />
+                  <small style={{ color: '#94a3b8', fontSize: '10px', marginTop: '4px', display: 'block' }}>
+                    *Isi berapa kali siswa sudah masuk sebelum pakai aplikasi.
+                  </small>
                 </div>
 
                 <div className="form-row">
