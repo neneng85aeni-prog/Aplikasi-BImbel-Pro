@@ -78,7 +78,7 @@ export function SiswaTab({
   onGenerateBarcode, onSubmit, onReset, onEdit, onDelete, onPrintBarcode, 
   searchSiswa, setSearchSiswa,
   // === PROPS BARU PENGINGAT ===
-  onSendManualReminder, perkembanganTampil = []
+  onSendManualReminder, perkembanganTampil = [], transaksiTampil = []
 }) {
   
   // STATE LOKAL UNTUK PAGINASI & MODE PENGINGAT
@@ -106,18 +106,32 @@ export function SiswaTab({
     s.hari && String(s.hari).toLowerCase().includes(namaHariIni.toLowerCase())
   );
 
-  // Deteksi Jatuh Tempo (Sesi & Bulanan)
+  // Deteksi Jatuh Tempo (Sistem Kuota Terhubung Kasir & Bulanan)
   const getStatusBayar = (siswa) => {
     const programNama = siswa.programs?.nama || "";
     const programDeskripsi = siswa.programs?.deskripsi || "";
     
-    // 1. Cek Sesi (Calistung 8x)
+    // 1. Cek Sesi (Sistem Kuota Kasir)
     const matchSesi = programNama.match(/(\d+)x/i);
     if (matchSesi) {
-      const limitSesi = parseInt(matchSesi[1]);
-      const totalHadir = perkembanganTampil.filter(p => p.siswa_id === siswa.id).length;
-      if (totalHadir > 0 && totalHadir % limitSesi === 0) return { tipe: 'SESI', info: `Sesi ke-${totalHadir} (Limit ${limitSesi}x)` };
-      if ((totalHadir + 1) % limitSesi === 0) return { tipe: 'SESI', info: `Sisa 1 sesi lagi` };
+      const sesiPerPaket = parseInt(matchSesi[1]);
+      
+      // Ambil Sisa Kuota Lama (Cut-off)
+      const sesiAwal = Number(siswa.sesi_awal || 0);
+      
+      // Hitung tambahan sesi dari pembayaran di Kasir
+      const totalBayarKasir = transaksiTampil.filter(t => t.siswa_id === siswa.id && t.program_id === siswa.program_id).length;
+      const tambahanSesi = totalBayarKasir * sesiPerPaket;
+      
+      // Hitung Total Kehadiran di Aplikasi
+      const totalHadirAplikasi = perkembanganTampil.filter(p => p.siswa_id === siswa.id).length;
+      
+      // RUMUS SISA KUOTA
+      const sisaSesi = (sesiAwal + tambahanSesi) - totalHadirAplikasi;
+      
+      if (sisaSesi <= 1) {
+        return { tipe: 'SESI', info: sisaSesi <= 0 ? 'Kuota Habis!' : 'Sisa 1 Sesi lagi' };
+      }
     }
 
     // 2. Cek Bulanan
@@ -131,7 +145,7 @@ export function SiswaTab({
     }
     return null;
   };
-
+  
   const handleManualWA = (siswa, jenis, infoBayar = null) => {
     if(onSendManualReminder) onSendManualReminder(siswa, jenis, infoBayar);
     const uniqueKey = siswa.id + jenis;
