@@ -706,7 +706,20 @@ export function useBimbelApp() {
   }
   function setQuickExportRange(mode) { const today = TODAY(); if (mode === 'today') { setExportDateFrom(today); setExportDateTo(today); return } if (mode === 'week') { const now = new Date(); const day = now.getDay() || 7; now.setDate(now.getDate() - (day - 1)); setExportDateFrom(now.toISOString().slice(0, 10)); setExportDateTo(today); return } if (mode === 'month') { const now = new Date(); now.setDate(1); setExportDateFrom(now.toISOString().slice(0, 10)); setExportDateTo(today); return } setExportDateFrom(''); setExportDateTo('') }
   function handleDownload() { const rows = exportRows({ exportType, branches, siswa: siswaTampil, users: usersTampil, programs, pembayaran: pembayaranTampil, absensiSiswa: absensiSiswaTampil, absensiKaryawan: absensiKaryawanTampil, perkembangan: perkembanganTampil, payrollRows, dateFrom: exportDateFrom, dateTo: exportDateTo }); if (!rows.length) return setErrorMsg('Tidak ada data.'); downloadCsv(exportType, rows); setMessage(`Data ${exportType} didownload.`) }
+// === FUNGSI KIRIM PENGINGAT MANUAL (JADWAL & TAGIHAN) ===
+  function sendManualReminderWA(item, jenis, infoBayar = null) {
+    if (!item.no_hp) return alert('Maaf, nomor HP siswa belum tersimpan.');
 
+    let text = "";
+    if (jenis === 'TAGIHAN') {
+      text = `*PENGINGAT PEMBAYARAN BIMBEL PRO* 💳\n\nHalo Ayah/Bunda,\nMengingatkan untuk administrasi ananda *${item.nama}* program *${item.programs?.nama}* sudah memasuki masa pembayaran (${infoBayar.info}).\n\nNominal: *${formatRupiah(item.programs?.nominal || 0)}*\n\nMohon kerjasamanya untuk kelancaran kegiatan belajar mengajar. Terima kasih! 🙏`;
+    } else {
+      const jamTarget = item.jam_mulai || '-';
+      const programTarget = item.programs?.nama || '-';
+      text = `*PENGINGAT JADWAL BIMBEL PRO* 📚\n\nHalo Ayah/Bunda,\nMengingatkan jadwal ananda *${item.nama}* hari ini jam *${jamTarget}*.\n\nProgram: *${programTarget}*\n\nSampai jumpa di kelas! 🙏`;
+    }
+    openSmartWA(item.no_hp, text);
+  }
   // === 1. FUNGSI WA DITARUH DI SINI (SEBELUM RETURN) ===
   const sendHistoryTransactionWA = (item) => {
     if (!item.siswa?.no_hp) {
@@ -737,6 +750,7 @@ export function useBimbelApp() {
       user, email, password, loginError, loadingLogin, activeTab, message, errorMsg, loadingData, branches, programs, users, siswa, pembayaran, absensiSiswa, perkembangan, absensiKaryawan, bonusManual, reviews, pengeluaranTampil, inventoryTampil, branchForm, programForm, userForm, siswaForm, perkembanganForm, kasirForm, bonusForm, employeeManualForm, studentAttendanceForm, reviewForm, pengeluaranForm, inventoryForm, permissionUserId, permissionDraft, scanStudentActive, scanEmployeeActive, employeeMode, studentScanText, employeeScanText, studentScanInfo, employeeScanInfo, selectedStudent, selectedProgressStudent, exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode, guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats, searchSiswa, searchTransaksi, payrollMonth, payrollYear, showReceiptPopup, editTransaksiForm, deleteConfirm, archiveState
     },
     actions: {
+      sendManualReminderWA, // <--- TAMBAHKAN INI DI SINI
       sendHistoryTransactionWA, // <--- NAMA FUNGSI SUDAH DIDAFTARKAN DI SINI DENGAN BENAR
       setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId, setBranchForm, setProgramForm, setUserForm, setSiswaForm, setPerkembanganForm, setKasirForm, setBonusForm, setEmployeeManualForm, setStudentAttendanceForm, setReviewForm, setPengeluaranForm, setInventoryForm, setPermissionUserId, setPermissionDraft, setScanStudentActive, setScanEmployeeActive, setEmployeeMode, setExportType, setExportDateFrom, setExportDateTo, setProgressInputMode, setPayrollMonth, setPayrollYear, setShowReceiptPopup, setEditTransaksiForm, submitEditTransaksi, login, logout, loadAllData, setDeleteConfirm, confirmDelete, submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa, submitPengeluaran, deletePengeluaran, submitInventory, deleteInventory,
       deleteBonus: (id, label) => setDeleteConfirm({ show: true, table: 'employee_bonus', id, label }),
