@@ -380,7 +380,7 @@ export function SiswaTab({
 
               <div className="btn-row">
                 <button className="btn btn-primary" type="submit">{siswaForm.id ? '💾 Update siswa' : '💾 Simpan siswa'}</button>
-                <button className="btn btn-secondary" type="button" onClick={() => onReset(INITIAL_SISWA_FORM)}>Reset</button>
+                <button className="btn btn-secondary" type="button" onClick={() => onReset({ ...INITIAL_SISWA_FORM, sesi_awal: 0 })}>Reset</button>
               </div>
             </form>
           </div>
