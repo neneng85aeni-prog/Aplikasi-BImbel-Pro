@@ -220,6 +220,7 @@ export function Dashboard({ state, actions }) {
             handleDownload={actions.handleDownload}
             onSendManualReminder={actions.sendManualReminderWA}
             perkembanganTampil={state.perkembanganTampil}
+            transaksiTampil={state.transaksiTampil} // <--- TAMBAHKAN BARIS INI
           />
         )}
         
