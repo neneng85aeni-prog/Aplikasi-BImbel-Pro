@@ -320,7 +320,10 @@ export function useBimbelApp() {
       };
       
       // 4. Simpan ke database Supabase
-      const res = await upsertSiswa(validateSiswaForm(enriched), siswaForm.id);
+      const res = await upsertSiswa({ 
+        ...validateSiswaForm(enriched), 
+        sesi_awal: Number(siswaForm.sesi_awal || 0) 
+      }, siswaForm.id);
       if (res.error) throw res.error;
 
       // 5. KIRIM WA OTOMATIS KE SISWA BARU
@@ -699,7 +702,8 @@ export function useBimbelApp() {
       guru_id: item.guru_id || '',
       // TAMBAHKAN 2 BARIS INI:
       hari: item.hari || '',
-      jam_mulai: item.jam_mulai || '14:00'
+      jam_mulai: item.jam_mulai || '14:00',
+      sesi_awal: item.sesi_awal || 0 // <--- TAMBAHKAN INI
     }); 
     setActiveTab('siswa');
     window.scrollTo({ top: 0, behavior: 'smooth' }); // Opsional: Scroll ke atas agar form terlihat
