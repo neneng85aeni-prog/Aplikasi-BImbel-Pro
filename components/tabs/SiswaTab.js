@@ -262,7 +262,7 @@ export function SiswaTab({
                 </div>
               </div>
 
-              <div className="grid grid-3" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+             <div className="grid grid-4" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px' }}>
                 <div className="form-row">
                   <label>Program Belajar</label>
                   <select value={siswaForm.program_id || ''} onChange={(e) => setSiswaForm({ ...siswaForm, program_id: e.target.value })} required>
@@ -274,6 +274,13 @@ export function SiswaTab({
                   <label>Kelas</label>
                   <input value={siswaForm.kelas || ''} onChange={(e) => setSiswaForm({ ...siswaForm, kelas: e.target.value })} placeholder="Cth: 1 SD" />
                 </div>
+                
+                {/* KOTAK BARU: Sisa Kuota Lama */}
+                <div className="form-row">
+                  <label>Sisa Kuota Lama</label>
+                  <input type="number" min="0" value={siswaForm.sesi_awal === 0 ? '' : siswaForm.sesi_awal} onChange={(e) => setSiswaForm({ ...siswaForm, sesi_awal: parseInt(e.target.value) || 0 })} placeholder="Cth: 3" />
+                </div>
+
                 <div className="form-row">
                   <label>Status Siswa</label>
                   <select value={siswaForm.status || 'aktif'} onChange={(e) => setSiswaForm({ ...siswaForm, status: e.target.value })} style={{ border: siswaForm.status === 'nonaktif' ? '1px solid #ef4444' : '' }}>
