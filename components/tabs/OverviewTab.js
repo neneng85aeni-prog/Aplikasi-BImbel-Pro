@@ -21,104 +21,66 @@ import {
 
 export function OverviewTab({ stats, overview, financeSummary, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, pembayaran = [], pengeluaran = [], siswa = [], perkembangan = [] }) {
   
-  // === 1. URUTKAN DATA PROGRAM (TERBESAR DI ATAS) ===
+  // === 1. URUTKAN DATA: TERBESAR PALING ATAS ===
   const sortedDistribution = useMemo(() => {
+    // Kita ambil data, lalu urutkan berdasarkan 'value' dari besar ke kecil
     return [...(overview?.studentDistribution || [])].sort((a, b) => b.value - a.value);
   }, [overview?.studentDistribution]);
 
-  // === 2. FUNGSI PRINT QR ===
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
+
+  // === 2. CUSTOM LEGEND UNTUK TAMPILAN DETAIL DI BAWAH ===
+  const renderCustomLegend = (value, entry) => (
+    <span style={{ color: '#94a3b8', fontSize: '11px', marginLeft: '5px' }}>
+      {value} <b style={{ color: '#fff' }}>( {entry.payload.value} )</b>
+    </span>
+  );
+
+  // --- Fungsi Cetak QR & Logika KPI (Tetap Sama) ---
   function printQRCode(title, qrData, branchName) {
-    const html = `
-      <!doctype html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Cetak QR ${title}</title>
-        <style>
-          body { font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
-          .container { border: 2px dashed #ccc; padding: 50px; border-radius: 20px; }
-          h1 { font-size: 54px; margin-bottom: 10px; color: #1e293b; }
-          h2 { font-size: 32px; color: #64748b; margin-bottom: 40px; }
-          img { width: 500px; height: 500px; border: 5px solid #000; padding: 20px; border-radius: 20px; }
-          .code-text { font-size: 24px; margin-top: 30px; font-weight: bold; color: #1e293b; }
-          @media print { @page { size: A4; margin: 0; } body { height: 95vh; } }
-        </style>
-      </head>
-      <body onload="window.print()">
-        <div class="container">
-          <h1>ABSENSI ${title.toUpperCase()}</h1>
-          <h2>${branchName || 'BIMBEL PRO PUSAT'}</h2>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${qrData}" />
-          <div class="code-text">KODE: ${qrData}</div>
-        </div>
-      </body>
-      </html>
-    `
-    const w = window.open('', '_blank');
-    w?.document.write(html); w?.document.close();
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Cetak QR ${title}</title><style>body { font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }.container { border: 2px dashed #ccc; padding: 50px; border-radius: 20px; }h1 { font-size: 54px; margin-bottom: 10px; color: #1e293b; }h2 { font-size: 32px; color: #64748b; margin-bottom: 40px; }img { width: 500px; height: 500px; border: 5px solid #000; padding: 20px; border-radius: 20px; }.code-text { font-size: 24px; margin-top: 30px; font-weight: bold; color: #1e293b; }@media print { @page { size: A4; margin: 0; } body { height: 95vh; } }</style></head><body onload="window.print()"><div class="container"><h1>ABSENSI ${title.toUpperCase()}</h1><h2>${branchName || 'BIMBEL PRO PUSAT'}</h2><img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${qrData}" /><div class="code-text">KODE: ${qrData}</div></div></body></html>`;
+    const w = window.open('', '_blank'); w?.document.write(html); w?.document.close();
   }
 
-  // === 3. FILTER TANGGAL GRAFIK KEHADIRAN ===
   const [periodeGrafik, setPeriodeGrafik] = useState(() => {
     const hariIni = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
     const tujuhHariLalu = new Date(hariIni.getTime() - (6 * 24 * 60 * 60 * 1000));
-    return {
-      mulai: tujuhHariLalu.toISOString().slice(0, 10),
-      selesai: hariIni.toISOString().slice(0, 10)
-    };
+    return { mulai: tujuhHariLalu.toISOString().slice(0, 10), selesai: hariIni.toISOString().slice(0, 10) };
   });
 
-  // === 4. LOGIKA HITUNG KPI KEHADIRAN ===
   const attendanceKPI = useMemo(() => {
     const dataGrafik = [];
     const branchId = selectedBranch?.id;
     const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-
     const start = new Date(periodeGrafik.mulai);
     const end = new Date(periodeGrafik.selesai);
-    
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
-
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const currentDate = new Date(d);
       const namaHariIni = hariMap[currentDate.getUTCDay()];
       const tanggalStrIni = currentDate.toISOString().slice(0, 10);
       const labelTgl = `${currentDate.getDate()}/${currentDate.getMonth() + 1}`;
-
       const targetSiswa = (siswa || []).filter(s => {
         if (s.status === 'nonaktif' || s.status === 'Nonaktif') return false;
         const matchBranch = !branchId || s.branch_id === branchId;
         let matchDay = false;
-        if (Array.isArray(s.hari)) {
-          matchDay = s.hari.some(h => h?.toLowerCase() === namaHariIni.toLowerCase());
-        } else if (typeof s.hari === 'string') {
-          matchDay = s.hari.toLowerCase().includes(namaHariIni.toLowerCase());
-        }
+        if (Array.isArray(s.hari)) { matchDay = s.hari.some(h => h?.toLowerCase() === namaHariIni.toLowerCase()); } 
+        else if (typeof s.hari === 'string') { matchDay = s.hari.toLowerCase().includes(namaHariIni.toLowerCase()); }
         return matchBranch && matchDay;
       });
-
       const actualHadir = (perkembangan || []).filter(p => {
         const isTanggalCocok = p.tanggal && p.tanggal.startsWith(tanggalStrIni);
         const isTargetBranch = !branchId || p.branch_id === branchId || p.siswa?.branch_id === branchId;
         return isTanggalCocok && isTargetBranch;
       });
-
       const targetCount = targetSiswa.length;
       const aktualCount = actualHadir.length;
       const persenHitung = targetCount > 0 ? Math.round((aktualCount / targetCount) * 100) : 0;
-
-      dataGrafik.push({
-        name: labelTgl,
-        hari: namaHariIni,
-        Target: targetCount, 
-        Aktual: aktualCount,
-        Persen: persenHitung
-      });
+      dataGrafik.push({ name: labelTgl, hari: namaHariIni, Target: targetCount, Aktual: aktualCount, Persen: persenHitung });
     }
     return dataGrafik;
   }, [siswa, perkembangan, selectedBranch, periodeGrafik]);
 
-  // === 5. DATA KEUANGAN HARIAN ===
   const dailyData = useMemo(() => {
     const today = new Date();
     const currentMonthPrefix = today.toISOString().slice(0, 7);
@@ -144,22 +106,10 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
     return daysArray;
   }, [pembayaran, pengeluaran, selectedBranch]);
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
-  
-  const renderCustomLegend = (value, entry) => (
-    <span style={{ color: '#94a3b8', fontSize: '11px', marginLeft: '5px' }}>
-      {value} <b style={{ color: '#fff' }}>( {entry.payload.value} )</b>
-    </span>
-  );
-
   const renderPersentase = (props) => {
     const { x, y, width, value } = props; 
     if (!value || value === 0) return null;
-    return (
-      <text x={x + width / 2} y={y - 8} fill="#10b981" textAnchor="middle" fontSize={11} fontWeight="bold">
-        {value}%
-      </text>
-    );
+    return <text x={x + width / 2} y={y - 8} fill="#10b981" textAnchor="middle" fontSize={11} fontWeight="bold">{value}%</text>;
   };
 
   return (
@@ -175,9 +125,10 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
         </div>
       )}
 
+      {/* BARIS 2 */}
       <div className="grid grid-3" style={{ gap: '20px', gridTemplateColumns: '2.2fr 0.8fr 1fr' }}>
          
-         {/* KARTU 1: KPI KEHADIRAN */}
+         {/* KARTU 1: KPI */}
          <div className="glass-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
               <div>
@@ -206,7 +157,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
             </div>
          </div>
 
-         {/* KARTU 2: QR ABSENSI */}
+         {/* KARTU 2: QR */}
          <div className="glass-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <h2 className="section-title" style={{ fontSize: '14px', marginBottom: '15px' }}>QR Absensi</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
@@ -223,35 +174,39 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
             </div>
          </div>
 
-         {/* KARTU 3: PIE CHART PROGRAM (SUDAH DIPERBAIKI) */}
-         <div className="glass-card" style={{ position: 'relative' }}>
+         {/* KARTU 3: PIE CHART PROGRAM (DIPERBAIKI) */}
+         <div className="glass-card">
            <h2 className="section-title" style={{ fontSize: '14px' }}>Komposisi Program</h2>
-           <div style={{ width: '100%', height: '300px' }}>
+           
+           <div style={{ width: '100%', height: '320px' }}>
              <ResponsiveContainer width="100%" height="100%">
                <PieChart>
                  <Pie 
                     data={sortedDistribution} 
                     cx="50%" 
-                    cy="40%"        /* Turun sedikit agar visual pas di tengah */
-                    innerRadius={0}   /* Diubah ke 0 agar jadi BELAH KUE (Solid) */
-                    outerRadius={80}  /* Dikecilkan sedikit agar tidak terpotong (Safe zone) */
-                    paddingAngle={0} 
+                    cy="38%"         /* Dinaikkan agar ruang Legend di bawah lebih luas */
+                    innerRadius={0}    /* Ubah ke 0 agar jadi BULAT BELAH KUE (Solid) */
+                    outerRadius={65}   /* Diperkecil agar tidak menabrak batas kartu (Safe zone) */
                     dataKey="value"
-                    stroke="rgba(255,255,255,0.1)" /* Border tipis antar kue agar elegan */
+                    stroke="rgba(0,0,0,0.3)" /* Garis pemisah antar kue */
                  >
-                   {sortedDistribution.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                   {sortedDistribution.map((e, i) => (
+                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                   ))}
                  </Pie>
                  <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
+                 
+                 {/* Legend di bawah, urutan sudah otomatis mengikuti data yang di-sort */}
                  <Legend 
                     layout="vertical" 
-                    align="left" 
+                    align="center" 
                     verticalAlign="bottom" 
                     formatter={renderCustomLegend} 
                     wrapperStyle={{ 
                        width: '100%', 
-                       paddingLeft: '0', 
-                       maxHeight: '110px', 
-                       overflowY: 'auto',  /* Scroll aktif jika data banyak */
+                       maxHeight: '120px', 
+                       overflowY: 'auto', 
+                       paddingTop: '10px',
                        bottom: '0px'
                     }} 
                  />
