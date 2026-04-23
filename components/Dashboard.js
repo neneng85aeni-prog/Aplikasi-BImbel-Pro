@@ -218,6 +218,8 @@ export function Dashboard({ state, actions }) {
             exportDateTo={state.exportDateTo}
             setExportDateTo={actions.setExportDateTo}
             handleDownload={actions.handleDownload}
+            onSendManualReminder={actions.sendManualReminderWA}
+            perkembanganTampil={state.perkembanganTampil}
           />
         )}
         
