@@ -289,9 +289,6 @@ export function SiswaTab({
                     onChange={(e) => setSiswaForm({ ...siswaForm, sesi_awal: parseInt(e.target.value) || 0 })} 
                     placeholder="Cth: 15" 
                   />
-                  <small style={{ color: '#94a3b8', fontSize: '10px', marginTop: '4px', display: 'block' }}>
-                    *Isi berapa kali siswa sudah masuk sebelum pakai aplikasi.
-                  </small>
                 </div>
 
                 <div className="form-row">
