@@ -77,14 +77,17 @@ export function SiswaTab({
   user, siswaForm, setSiswaForm, siswaTampil, programs, guruOptions, branches, 
   onGenerateBarcode, onSubmit, onReset, onEdit, onDelete, onPrintBarcode, 
   searchSiswa, setSearchSiswa,
+  // === PROPS BARU PENGINGAT ===
   onSendManualReminder, perkembanganTampil = [], transaksiTampil = []
 }) {
   
+  // STATE LOKAL UNTUK PAGINASI & MODE PENGINGAT
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
   const [isReminderMode, setIsReminderMode] = useState(false);
-  const [sentList, setSentList] = useState([]);
+  const [sentList, setSentList] = useState([]); // Menyimpan ID pesan yang sudah dikirim
 
+  // LOGIKA PENCARIAN & PAGINASI
   const handleSearch = (e) => {
     if (setSearchSiswa) setSearchSiswa(e.target.value);
     setCurrentPage(1); 
@@ -95,26 +98,40 @@ export function SiswaTab({
   const paginatedData = siswaAktifTampil.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   const goToPage = (page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
 
+  // === LOGIKA MODE FOKUS PENGINGAT ===
   const namaHariIni = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(new Date());
 
+  // Filter siswa yang HANYA masuk hari ini
   const siswaHariIni = siswaAktifTampil.filter(s => 
     s.hari && String(s.hari).toLowerCase().includes(namaHariIni.toLowerCase())
   );
 
+  // Deteksi Jatuh Tempo (Sistem Kuota Terhubung Kasir & Bulanan)
+  // Deteksi Jatuh Tempo (Sistem Kuota Terhubung Kasir & Bulanan)
   const getStatusBayar = (siswa) => {
     const programNama = siswa.programs?.nama || "";
     const programDeskripsi = siswa.programs?.deskripsi || "";
     
+    // 1. CEK SESI (Rumus Sisa Quota Otomatis)
     const matchSesi = programNama.match(/(\d+)x/i);
     if (matchSesi) {
-      const sesiPerPaket = parseInt(matchSesi[1]);
-      const riwayatHadirLama = Number(siswa.sesi_awal || 0);
+      const sesiPerPaket = parseInt(matchSesi[1]); // Misal: 16
+      
+      // A. Hitung Total Sesi yang Sudah Diikuti
+      const riwayatHadirLama = Number(siswa.sesi_awal || 0); // Input dari admin
       const hadirAplikasi = perkembanganTampil.filter(p => p.siswa_id === siswa.id).length;
       const totalDiikuti = riwayatHadirLama + hadirAplikasi;
+      
+      // B. Hitung Total Kuota Belajar
+      // Sistem cerdas: Jika riwayat lama 15, berarti siswa punya modal dasar 1 paket manual (16)
       const kuotaBawaanLama = riwayatHadirLama === 0 ? 0 : Math.ceil(riwayatHadirLama / sesiPerPaket) * sesiPerPaket;
+      // Hitung tambahan dari Kasir
       const paketDibeliKasir = transaksiTampil.filter(t => t.siswa_id === siswa.id && t.program_id === siswa.program_id).length;
       const kuotaKasir = paketDibeliKasir * sesiPerPaket;
+      
       const totalSesiBelajar = kuotaBawaanLama + kuotaKasir;
+      
+      // C. Hitung Sisa
       const sisaSesi = totalSesiBelajar - totalDiikuti;
       
       if (sisaSesi <= 1) {
@@ -122,6 +139,7 @@ export function SiswaTab({
       }
     }
 
+    // 2. CEK BULANAN
     const isBulanan = programDeskripsi.toLowerCase().includes('bulanan');
     if (isBulanan && siswa.created_at) {
       const tglDaftar = new Date(siswa.created_at).getDate();
@@ -132,7 +150,6 @@ export function SiswaTab({
     }
     return null;
   };
-
   const handleManualWA = (siswa, jenis, infoBayar = null) => {
     if(onSendManualReminder) onSendManualReminder(siswa, jenis, infoBayar);
     const uniqueKey = siswa.id + jenis;
@@ -144,22 +161,26 @@ export function SiswaTab({
   return (
     <div className="flex flex-col gap-lg">
       
+      {/* === TOMBOL SAKLAR MODE FOKUS PENGINGAT === */}
       <div style={{ marginBottom: '5px' }}>
         <button 
           className={`btn ${isReminderMode ? 'btn-secondary' : 'btn-primary'}`}
           onClick={() => setIsReminderMode(!isReminderMode)}
-          style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 'bold' }}
+          style={{ width: '100%', padding: '14px', fontSize: '15px', fontWeight: 'bold', border: isReminderMode ? '1px solid #10b981' : 'none' }}
         >
-          {isReminderMode ? '⬅️ Kembali ke Mode Pendaftaran' : `🔔 Buka Pengingat Hari ${namaHariIni}`}
+          {isReminderMode ? '⬅️ Kembali ke Mode Pendaftaran & Daftar Siswa' : `🔔 Buka Mode Pengingat Jadwal & Tagihan (Hari ${namaHariIni})`}
         </button>
       </div>
 
       {isReminderMode ? (
         
+        /* ========================================================= */
+        /* MODE FOKUS PENGINGAT                    */
+        /* ========================================================= */
         <div className="glass-card" style={{ animation: 'fadeIn 0.3s ease-in-out', borderTop: '4px solid #10b981' }}>
           <div style={{ marginBottom: '25px', textAlign: 'center' }}>
-            <h2 className="section-title" style={{ fontSize: '20px' }}>Daftar Masuk Hari {namaHariIni}</h2>
-            <p className="text-muted">Fokus tugas hari ini: Ada {siswaHariIni.length} siswa.</p>
+            <h2 className="section-title" style={{ fontSize: '20px' }}>Daftar Siswa Masuk Hari {namaHariIni}</h2>
+            <p className="text-muted">Fokus tugas hari ini: Ada {siswaHariIni.length} siswa yang dijadwalkan hadir.</p>
           </div>
 
           <div className="grid gap-md">
@@ -177,8 +198,7 @@ export function SiswaTab({
                     border: (isJadwalSent || (statusBayar && isTagihanSent)) ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.1)'
                   }}>
                     <div>
-                      {/* PERBAIKAN WARNA NAMA: color: 'inherit' agar terbaca di mode terang */}
-                      <div style={{ fontWeight: 'bold', fontSize: '17px', color: 'inherit' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#fff' }}>
                         {item.nama} {((!statusBayar && isJadwalSent) || (statusBayar && isJadwalSent && isTagihanSent)) && '✅'}
                       </div>
                       <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
@@ -224,10 +244,14 @@ export function SiswaTab({
 
       ) : (
 
+        /* ========================================================= */
+        /* MODE NORMAL (FORM PENDAFTARAN & DAFTAR SISWA)     */
+        /* ========================================================= */
         <>
           <div className="glass-card">
             <h2 className="section-title">Pendaftaran siswa</h2>
             <form onSubmit={onSubmit}>
+              {/* --- BAGIAN 1: DATA DIRI SISWA --- */}
               <div className="grid grid-2">
                 <div className="form-row">
                   <label>Nama siswa</label>
@@ -242,7 +266,7 @@ export function SiswaTab({
                 </div>
               </div>
 
-              <div className="grid grid-4" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px' }}>
+             <div className="grid grid-4" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px' }}>
                 <div className="form-row">
                   <label>Program Belajar</label>
                   <select value={siswaForm.program_id || ''} onChange={(e) => setSiswaForm({ ...siswaForm, program_id: e.target.value })} required>
@@ -255,6 +279,7 @@ export function SiswaTab({
                   <input value={siswaForm.kelas || ''} onChange={(e) => setSiswaForm({ ...siswaForm, kelas: e.target.value })} placeholder="Cth: 1 SD" />
                 </div>
                 
+                {/* KOTAK BARU: Riwayat Kehadiran Lama */}
                 <div className="form-row">
                   <label>Riwayat Hadir Manual</label>
                   <input 
@@ -275,6 +300,7 @@ export function SiswaTab({
                 </div>
               </div>
 
+              {/* --- BAGIAN 2: JADWAL & GURU (KOTAK BIRU) --- */}
               <div style={{ marginTop: '10px', marginBottom: '20px', padding: '15px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
                 <div className="form-row" style={{ marginBottom: '15px' }}>
                   <label>Hari Masuk <span style={{fontSize: '11px', color: '#94a3b8'}}>(Bisa pilih lebih dari satu)</span></label>
@@ -294,8 +320,9 @@ export function SiswaTab({
                               currentDays.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
                               setSiswaForm({ ...siswaForm, hari: currentDays.join(', ') });
                             }}
+                            style={{ cursor: 'pointer', accentColor: '#3b82f6', width: '16px', height: '16px' }}
                           />
-                          <span style={{ fontSize: '13px', fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? '#60a5fa' : 'inherit' }}>{day}</span>
+                          <span style={{ fontSize: '13px', fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? '#60a5fa' : 'white' }}>{day}</span>
                         </label>
                       )
                     })}
@@ -308,10 +335,18 @@ export function SiswaTab({
                     <input type="time" value={siswaForm.jam_mulai || '14:00'} onChange={(e) => setSiswaForm({ ...siswaForm, jam_mulai: e.target.value })} required />
                   </div>
                   <div className="form-row">
-                    <label>Guru Pengampu</label>
-                    <select value={siswaForm.guru_id || ''} onChange={(e) => setSiswaForm({ ...siswaForm, guru_id: e.target.value })} required>
-                      <option value="">-- Pilih Guru --</option>
-                      {guruOptions.map(g => <option key={g.id} value={g.id}>{g.nama}</option>)}
+                    <label>Guru Pengampu (Filter Otomatis)</label>
+                    <select value={siswaForm.guru_id || ''} onChange={(e) => setSiswaForm({ ...siswaForm, guru_id: e.target.value })} required disabled={!siswaForm.hari || !siswaForm.program_id}>
+                      <option value="">{!siswaForm.hari ? '-- Pilih Hari & Program Dulu --' : '-- Pilih Guru Tersedia --'}</option>
+                      {(guruOptions || []).filter(guru => {
+                        const bisaProgram = guru.programs_can_handle?.includes(siswaForm.program_id);
+                        const selectedDays = siswaForm.hari ? siswaForm.hari.split(',').map(d => d.trim()).filter(d => d) : [];
+                        const bisaJadwal = selectedDays.length > 0 && selectedDays.every(day => {
+                          const jadwalHari = guru.availability?.find(a => a.hari === day && a.aktif);
+                          return jadwalHari && siswaForm.jam_mulai >= jadwalHari.jam_masuk && siswaForm.jam_mulai <= jadwalHari.jam_pulang;
+                        });
+                        return bisaProgram && bisaJadwal;
+                      }).map(guru => <option key={guru.id} value={guru.id}>{guru.nama}</option>)}
                     </select>
                   </div>
                 </div>
@@ -319,21 +354,32 @@ export function SiswaTab({
               
               <div className="grid grid-2">
                 <div className="form-row"><label>Nama orang tua</label><input value={siswaForm.nama_ortu} onChange={(e) => setSiswaForm({ ...siswaForm, nama_ortu: e.target.value })} /></div>
-                <div className="form-row"><label>No HP (WA)</label><input value={siswaForm.no_hp} onChange={(e) => setSiswaForm({ ...siswaForm, no_hp: e.target.value })} /></div>
+                <div className="form-row"><label>No HP (WA)</label><input value={siswaForm.no_hp} onChange={(e) => setSiswaForm({ ...siswaForm, no_hp: e.target.value })} placeholder="Cth: 0812..." /></div>
               </div>
 
               <div className="form-row"><label>Alamat Lengkap</label><input value={siswaForm.alamat} onChange={(e) => setSiswaForm({ ...siswaForm, alamat: e.target.value })} /></div>
 
+              {/* --- BAGIAN 3: BARCODE --- */}
               <div className="form-row">
-                <label>Barcode siswa</label>
+                <label>Barcode siswa otomatis</label>
                 <div className="btn-row">
-                  <input value={siswaForm.kode_qr} readOnly />
+                  <input value={siswaForm.kode_qr} onChange={(e) => setSiswaForm({ ...siswaForm, kode_qr: e.target.value })} placeholder="Klik generate" />
                   <button className="btn btn-secondary" type="button" onClick={onGenerateBarcode}>Generate</button>
                 </div>
               </div>
 
+              {siswaForm.kode_qr && (
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+                  <BarcodePreview value={siswaForm.kode_qr} title="Preview barcode siswa" compact />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button className="btn btn-secondary" type="button" onClick={() => printBarcodeCard({ title: `Barcode ${siswaForm.nama || 'Siswa'}`, subtitle: siswaForm.kelas || '', value: siswaForm.kode_qr })}>Print Desktop</button>
+                    <button className="btn btn-primary" type="button" onClick={() => openAndroidQrSharePage({ nama: siswaForm.nama || 'Siswa', kelas: siswaForm.kelas || '', kode_qr: siswaForm.kode_qr, branches: { nama: branches.find((item) => item.id === siswaForm.branch_id)?.nama || '-' } })}>Print Android</button>
+                  </div>
+                </div>
+              )}
+
               <div className="btn-row">
-                <button className="btn btn-primary" type="submit">{siswaForm.id ? '💾 Update' : '💾 Simpan'}</button>
+                <button className="btn btn-primary" type="submit">{siswaForm.id ? '💾 Update siswa' : '💾 Simpan siswa'}</button>
                 <button className="btn btn-secondary" type="button" onClick={() => onReset({ ...INITIAL_SISWA_FORM, sesi_awal: 0 })}>Reset</button>
               </div>
             </form>
@@ -342,39 +388,58 @@ export function SiswaTab({
           <div className="glass-card">
             <h2 className="section-title">Daftar siswa</h2>
             <div style={{ marginBottom: '16px' }}>
-              <input type="text" placeholder="🔍 Cari siswa..." value={searchSiswa || ''} onChange={handleSearch} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'inherit' }} />
+              <input type="text" placeholder="🔍 Cari nama atau nomor HP siswa..." value={searchSiswa || ''} onChange={handleSearch} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'inherit', fontSize: '14px' }} />
             </div>
 
             <div className="table-wrap">
               <table style={{ minWidth: '800px' }}>
                 <thead>
                   <tr>
-                    <th>Nama</th>
-                    <th>Cabang</th>
-                    <th>Program</th>
-                    <th>Aksi</th>
+                    <th style={{ width: '25%' }}>Nama</th>
+                    <th style={{ width: '15%' }}>Cabang</th>
+                    <th style={{ width: '15%' }}>Program</th>
+                    <th style={{ width: '20%' }}>Alamat</th>
+                    <th style={{ width: '25%' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedData.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <b style={{ color: 'inherit' }}>{item.nama}</b>
-                        <div className="text-muted" style={{ fontSize: '11px' }}>{item.kelas || '-'}</div>
+                        <b style={{ whiteSpace: 'nowrap' }}>{item.nama}</b>
+                        <div className="text-muted" style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>
+                          {item.kelas || '-'} • Guru: {item.users?.nama?.split(' ')[0] || '-'}
+                        </div>
                       </td>
-                      <td>{item.branches?.nama || '-'}</td>
-                      <td>{item.programs?.nama || '-'}</td>
+                      <td><span style={{ whiteSpace: 'nowrap' }}>{item.branches?.nama || '-'}</span></td>
+                      <td><span style={{ whiteSpace: 'nowrap' }}>{item.programs?.nama?.split(' ')[0] || '-'}</span></td>
+                      <td><div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{item.alamat || '-'}</div></td>
                       <td>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>Edit</button>
-                          <button className="btn btn-danger btn-small" onClick={() => onDelete(item.id, item.nama)}>Hapus</button>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: '4px' }}>
+                          <button className="btn btn-secondary btn-small" type="button" onClick={() => onEdit(item)}>Edit</button>
+                          <button className="btn btn-secondary btn-small" type="button" onClick={() => onPrintBarcode(item)}>Print</button>
+                          <button className="btn btn-danger btn-small" type="button" onClick={() => onDelete(item.id, item.nama)}>Hapus</button>
                         </div>
                       </td>
                     </tr>
                   ))}
+                  {paginatedData.length === 0 && (
+                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>{searchSiswa ? 'Siswa tidak ditemukan.' : 'Belum ada data siswa.'}</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
+
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', gap: '15px' }}>
+                <span style={{ fontSize: '13px', color: '#94a3b8' }}>Menampilkan {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, siswaAktifTampil.length)} dari {siswaAktifTampil.length} siswa aktif</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className="btn btn-secondary btn-small" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>◀ Prev</button>
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '14px', fontWeight: 'bold' }}>{currentPage} / {totalPages}</div>
+                  <button className="btn btn-secondary btn-small" disabled={currentPage === totalPages} onClick={() => goToPage(currentPage + 1)}>Next ▶</button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
