@@ -184,9 +184,9 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
                  <Pie 
                     data={sortedDistribution} 
                     cx="50%" 
-                    cy="38%"         /* Dinaikkan agar ruang Legend di bawah lebih luas */
-                    innerRadius={0}    /* Ubah ke 0 agar jadi BULAT BELAH KUE (Solid) */
-                    outerRadius={65}   /* Diperkecil agar tidak menabrak batas kartu (Safe zone) */
+                    cy="38%"         /* Posisi vertikal agar tidak mepet atas/bawah */
+                    innerRadius={0}    /* Set ke 0 agar jadi BULAT SOLID (Belah Kue) */
+                    outerRadius={60}   /* Diperkecil sedikit agar tidak terpotong di layar mana pun */
                     dataKey="value"
                     stroke="rgba(0,0,0,0.3)" /* Garis pemisah antar kue */
                  >
@@ -194,9 +194,19 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
                    ))}
                  </Pie>
-                 <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
                  
-                 {/* Legend di bawah, urutan sudah otomatis mengikuti data yang di-sort */}
+                 {/* PERBAIKAN TOOLTIP: Ditambahkan itemStyle agar teks menjadi putih */}
+                 <Tooltip 
+                    contentStyle={{ 
+                      background: '#1e293b', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      fontSize: '11px',
+                      color: '#fff' 
+                    }} 
+                    itemStyle={{ color: '#fff' }} /* Memaksa teks di dalam tooltip berwarna putih */
+                 />
+                 
                  <Legend 
                     layout="vertical" 
                     align="center" 
