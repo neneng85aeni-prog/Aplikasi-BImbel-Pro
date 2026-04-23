@@ -343,9 +343,8 @@ export function useBimbelApp() {
       }
 
       // 6. Reset form dan tampilkan notifikasi
-      setSiswaForm(INITIAL_SISWA_FORM);
+      setSiswaForm({ ...INITIAL_SISWA_FORM, sesi_awal: 0 }); // <--- UBAH BARIS INI
       setMessage(isSiswaBaru ? 'Siswa baru disimpan & Undangan grup dikirim! 🚀' : 'Data siswa berhasil diupdate. ✅');
-      await loadAllData();
       
     } catch (error) {
       setErrorMsg(error.message);
