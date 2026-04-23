@@ -1,3 +1,5 @@
+'use client'
+
 import { useMemo, useState } from 'react'
 import { formatRupiah } from '../../lib/format'
 import { 
@@ -19,7 +21,12 @@ import {
 
 export function OverviewTab({ stats, overview, financeSummary, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, pembayaran = [], pengeluaran = [], siswa = [], perkembangan = [] }) {
   
-  // === 1. FUNGSI PRINT / SAVE PDF ===
+  // === 1. URUTKAN DATA PROGRAM (TERBESAR DI ATAS) ===
+  const sortedDistribution = useMemo(() => {
+    return [...(overview?.studentDistribution || [])].sort((a, b) => b.value - a.value);
+  }, [overview?.studentDistribution]);
+
+  // === 2. FUNGSI PRINT QR ===
   function printQRCode(title, qrData, branchName) {
     const html = `
       <!doctype html>
@@ -51,7 +58,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
     w?.document.write(html); w?.document.close();
   }
 
-  // === 2. FILTER TANGGAL GRAFIK KEHADIRAN ===
+  // === 3. FILTER TANGGAL GRAFIK KEHADIRAN ===
   const [periodeGrafik, setPeriodeGrafik] = useState(() => {
     const hariIni = new Date(new Date().getTime() + (7 * 60 * 60 * 1000));
     const tujuhHariLalu = new Date(hariIni.getTime() - (6 * 24 * 60 * 60 * 1000));
@@ -61,7 +68,7 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
     };
   });
 
-  // === 3. LOGIKA HITUNG KPI KEHADIRAN ===
+  // === 4. LOGIKA HITUNG KPI KEHADIRAN ===
   const attendanceKPI = useMemo(() => {
     const dataGrafik = [];
     const branchId = selectedBranch?.id;
@@ -81,14 +88,12 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
       const targetSiswa = (siswa || []).filter(s => {
         if (s.status === 'nonaktif' || s.status === 'Nonaktif') return false;
         const matchBranch = !branchId || s.branch_id === branchId;
-        
         let matchDay = false;
         if (Array.isArray(s.hari)) {
           matchDay = s.hari.some(h => h?.toLowerCase() === namaHariIni.toLowerCase());
         } else if (typeof s.hari === 'string') {
           matchDay = s.hari.toLowerCase().includes(namaHariIni.toLowerCase());
         }
-        
         return matchBranch && matchDay;
       });
 
@@ -98,7 +103,6 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
         return isTanggalCocok && isTargetBranch;
       });
 
-      // Hitung persentase sejak awal di sini
       const targetCount = targetSiswa.length;
       const aktualCount = actualHadir.length;
       const persenHitung = targetCount > 0 ? Math.round((aktualCount / targetCount) * 100) : 0;
@@ -108,14 +112,13 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
         hari: namaHariIni,
         Target: targetCount, 
         Aktual: aktualCount,
-        Persen: persenHitung // <--- Data persen dimasukkan di sini
+        Persen: persenHitung
       });
     }
-
     return dataGrafik;
   }, [siswa, perkembangan, selectedBranch, periodeGrafik]);
 
-  // === 4. DATA KEUANGAN HARIAN ===
+  // === 5. DATA KEUANGAN HARIAN ===
   const dailyData = useMemo(() => {
     const today = new Date();
     const currentMonthPrefix = today.toISOString().slice(0, 7);
@@ -148,13 +151,10 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
       {value} <b style={{ color: '#fff' }}>( {entry.payload.value} )</b>
     </span>
   );
-  // === FUNGSI RENDER PERSENTASE KEHADIRAN ===
+
   const renderPersentase = (props) => {
     const { x, y, width, value } = props; 
-    
-    // Jika persentase 0 atau kosong, sembunyikan angkanya
     if (!value || value === 0) return null;
-
     return (
       <text x={x + width / 2} y={y - 8} fill="#10b981" textAnchor="middle" fontSize={11} fontWeight="bold">
         {value}%
@@ -175,8 +175,6 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
         </div>
       )}
 
-      {/* BARIS 2: KPI, QR & PIE (GRID SUDAH DISESUAIKAN) */}
-      {/* Proporsi diperlebar untuk Grafik KPI (2.2fr), Pie Chart dikecilkan (1fr) */}
       <div className="grid grid-3" style={{ gap: '20px', gridTemplateColumns: '2.2fr 0.8fr 1fr' }}>
          
          {/* KARTU 1: KPI KEHADIRAN */}
@@ -186,25 +184,12 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
                 <h2 className="section-title" style={{ fontSize: '14px', margin: 0 }}>KPI Kehadiran Siswa</h2>
                 <p className="text-muted" style={{ fontSize: '11px', margin: '5px 0 15px 0' }}>Target Jadwal vs Aktual Datang</p>
               </div>
-              
               <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
-                <input 
-                  type="date" 
-                  value={periodeGrafik.mulai} 
-                  onChange={e => setPeriodeGrafik({...periodeGrafik, mulai: e.target.value})}
-                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '2px 5px', fontSize: '11px' }}
-                />
+                <input type="date" value={periodeGrafik.mulai} onChange={e => setPeriodeGrafik({...periodeGrafik, mulai: e.target.value})} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '2px 5px', fontSize: '11px' }} />
                 <span style={{ color: '#94a3b8', fontSize: '11px', alignSelf: 'center' }}>-</span>
-                <input 
-                  type="date" 
-                  value={periodeGrafik.selesai} 
-                  onChange={e => setPeriodeGrafik({...periodeGrafik, selesai: e.target.value})}
-                  style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '2px 5px', fontSize: '11px' }}
-                />
+                <input type="date" value={periodeGrafik.selesai} onChange={e => setPeriodeGrafik({...periodeGrafik, selesai: e.target.value})} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '2px 5px', fontSize: '11px' }} />
               </div>
             </div>
-
-            {/* Tinggi Chart diperbesar dari 180px ke 240px agar lebih nyaman dibaca */}
             <div style={{ width: '100%', height: '240px' }}>
                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={attendanceKPI} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -214,8 +199,8 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
                      <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
                      <Bar dataKey="Target" fill="rgba(59, 130, 246, 0.3)" radius={[4, 4, 0, 0]} maxBarSize={40} />
                      <Bar dataKey="Aktual" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40}>
-    <LabelList dataKey="Persen" content={renderPersentase} />
-</Bar>
+                        <LabelList dataKey="Persen" content={renderPersentase} />
+                     </Bar>
                   </BarChart>
                </ResponsiveContainer>
             </div>
@@ -225,58 +210,38 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
          <div className="glass-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <h2 className="section-title" style={{ fontSize: '14px', marginBottom: '15px' }}>QR Absensi</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
-               
-               {/* QR MASUK */}
                <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', width: '80%', maxWidth: '140px' }}>
                   <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeIn}`} width="100%" alt="QR Masuk" />
                   <div style={{ color: '#000', fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>MASUK</div>
-                  <button 
-                     className="btn btn-primary btn-small" 
-                     onClick={() => printQRCode('Masuk', employeeBarcodeIn, selectedBranch?.nama)}
-                     style={{ marginTop: '10px', width: '100%', fontSize: '10px', padding: '5px' }}
-                  >
-                     🖨️ Cetak
-                  </button>
+                  <button className="btn btn-primary btn-small" onClick={() => printQRCode('Masuk', employeeBarcodeIn, selectedBranch?.nama)} style={{ marginTop: '10px', width: '100%', fontSize: '10px', padding: '5px' }}>🖨️ Cetak</button>
                </div>
-
-               {/* QR PULANG */}
                <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', width: '80%', maxWidth: '140px' }}>
                   <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${employeeBarcodeOut}`} width="100%" alt="QR Pulang" />
                   <div style={{ color: '#000', fontSize: '10px', fontWeight: 'bold', marginTop: '5px' }}>PULANG</div>
-                  <button 
-                     className="btn btn-secondary btn-small" 
-                     onClick={() => printQRCode('Pulang', employeeBarcodeOut, selectedBranch?.nama)}
-                     style={{ marginTop: '10px', width: '100%', fontSize: '10px', padding: '5px', background: '#ef4444', color: 'white', border: 'none' }}
-                  >
-                     🖨️ Cetak
-                  </button>
+                  <button className="btn btn-secondary btn-small" onClick={() => printQRCode('Pulang', employeeBarcodeOut, selectedBranch?.nama)} style={{ marginTop: '10px', width: '100%', fontSize: '10px', padding: '5px', background: '#ef4444', color: 'white', border: 'none' }}>🖨️ Cetak</button>
                </div>
-
             </div>
          </div>
 
-         {/* KARTU 3: PIE CHART PROGRAM */}
+         {/* KARTU 3: PIE CHART PROGRAM (SUDAH DIPERBAIKI) */}
          <div className="glass-card" style={{ position: 'relative' }}>
            <h2 className="section-title" style={{ fontSize: '14px' }}>Komposisi Program</h2>
-           
-           {/* Tinggi Container dibuat 300px agar cukup untuk bulatan & daftar scroll di bawahnya */}
            <div style={{ width: '100%', height: '300px' }}>
              <ResponsiveContainer width="100%" height="100%">
                <PieChart>
                  <Pie 
-                    data={overview?.studentDistribution || []} 
-                    cx="50%"         /* Dipindahkan pas di tengah horizontally */
-                    cy="35%"         /* Dinaikkan ke atas agar ada ruang kosong di bawah */
-                    innerRadius={55} /* Dikecilkan sedikit */
-                    outerRadius={75} 
-                    paddingAngle={2} 
+                    data={sortedDistribution} 
+                    cx="50%" 
+                    cy="40%"        /* Turun sedikit agar visual pas di tengah */
+                    innerRadius={0}   /* Diubah ke 0 agar jadi BELAH KUE (Solid) */
+                    outerRadius={80}  /* Dikecilkan sedikit agar tidak terpotong (Safe zone) */
+                    paddingAngle={0} 
                     dataKey="value"
+                    stroke="rgba(255,255,255,0.1)" /* Border tipis antar kue agar elegan */
                  >
-                   {(overview?.studentDistribution || []).map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="rgba(0,0,0,0.2)" />)}
+                   {sortedDistribution.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                  </Pie>
                  <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
-                 
-                 {/* KETERANGAN PINDAH KE BAWAH DENGAN FITUR SCROLL */}
                  <Legend 
                     layout="vertical" 
                     align="left" 
@@ -285,16 +250,16 @@ export function OverviewTab({ stats, overview, financeSummary, selectedBranch, e
                     wrapperStyle={{ 
                        width: '100%', 
                        paddingLeft: '0', 
-                       maxHeight: '110px',  /* Pembatasan tinggi agar bisa di-scroll */
-                       overflowY: 'auto',   /* Fitur scroll hidup jika data lebih dari batas */
-                       bottom: '10px'
+                       maxHeight: '110px', 
+                       overflowY: 'auto',  /* Scroll aktif jika data banyak */
+                       bottom: '0px'
                     }} 
                  />
                </PieChart>
              </ResponsiveContainer>
            </div>
          </div>
-        </div>
+      </div>
 
       {/* GRAFIK HARIAN */}
       <div className="glass-card">
