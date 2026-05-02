@@ -15,37 +15,26 @@ export function LaporanTab({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // === MENGHITUNG STATISTIK HARIAN, MINGGUAN, BULANAN ===
-  const stats = useMemo(() => {
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
-    const getMonday = (d) => {
-      const day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      return new Date(new Date(d).setDate(diff)).toISOString().slice(0, 10);
-    };
-    const mondayStr = getMonday(today);
-    const monthStr = todayStr.slice(0, 7); 
+ const stats = useMemo(() => {
+    let rekap = { masuk: 0, keluar: 0 };
 
-    let rekap = { harianMasuk: 0, harianKeluar: 0, mingguanMasuk: 0, mingguanKeluar: 0, bulananMasuk: 0, bulananKeluar: 0 };
-
-    pembayaran.forEach(p => {
-      const tgl = p.tanggal ? p.tanggal.slice(0, 10) : '';
-      const nominal = Number(p.nominal || p.jumlah_bayar || 0);
-      if (tgl === todayStr) rekap.harianMasuk += nominal;
-      if (tgl >= mondayStr) rekap.mingguanMasuk += nominal;
-      if (tgl.startsWith(monthStr)) rekap.bulananMasuk += nominal;
+    // Hitung pemasukan dari data yang sudah difilter periode & search
+    filteredData.forEach(p => {
+      rekap.masuk += Number(p.nominal || 0);
     });
 
-    pengeluaran.forEach(p => {
+    // Hitung pengeluaran dari data yang difilter periode
+    pengeluaran.filter(p => {
       const tgl = p.tanggal ? p.tanggal.slice(0, 10) : '';
-      const nominal = Number(p.nominal || p.jumlah || 0);
-      if (tgl === todayStr) rekap.harianKeluar += nominal;
-      if (tgl >= mondayStr) rekap.mingguanKeluar += nominal;
-      if (tgl.startsWith(monthStr)) rekap.bulananKeluar += nominal;
+      if (startDate && tgl < startDate) return false;
+      if (endDate && tgl > endDate) return false;
+      return true;
+    }).forEach(p => {
+      rekap.keluar += Number(p.nominal || p.jumlah || 0);
     });
 
     return rekap;
-  }, [pembayaran, pengeluaran]);
+  }, [filteredData, pengeluaran, startDate, endDate]);
 
   // === FILTER TRANSAKSI BERDASARKAN PERIODE ===
   const filteredData = useMemo(() => {
