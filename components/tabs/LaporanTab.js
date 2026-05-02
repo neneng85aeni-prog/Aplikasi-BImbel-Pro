@@ -66,9 +66,14 @@ export function LaporanTab({
       rekap.periodeMasuk += Number(p.nominal || 0);
     });
 
-    // Hitung Keluar dari data Pengeluaran Terfilter (Periode Kalender)
+    // Hitung Keluar dari data Pengeluaran Terfilter (Periode Kalender & Bulan)
     (pengeluaran || []).filter(p => {
       const tgl = p.tanggal ? p.tanggal.slice(0, 10) : '';
+      
+      // === TAMBAHAN: Jika filter bulan dipilih ===
+      if (selectedMonth && !tgl.startsWith(selectedMonth)) return false;
+
+      // Filter tanggal manual
       if (startDate && tgl < startDate) return false;
       if (endDate && tgl > endDate) return false;
       return true;
@@ -77,7 +82,7 @@ export function LaporanTab({
     });
 
     return rekap;
-  }, [pembayaran, filteredData, pengeluaran, startDate, endDate]);
+  }, [pembayaran, filteredData, pengeluaran, startDate, endDate, selectedMonth]); // <--- PASTIKAN selectedMonth ADA DI SINI
 
   // === 3. PAGINATION ===
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
