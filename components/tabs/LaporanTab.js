@@ -15,15 +15,13 @@ export function LaporanTab({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // === 1. FILTER TRANSAKSI BERDASARKAN PERIODE & SEARCH (HARUS DI ATAS STATS) ===
+  // === 1. FILTER TRANSAKSI BERDASARKAN PERIODE & SEARCH ===
   const filteredData = useMemo(() => {
     return (pembayaran || []).filter(item => {
-      // Filter Tanggal
       const tgl = item.tanggal ? item.tanggal.slice(0, 10) : '';
       if (startDate && tgl < startDate) return false;
       if (endDate && tgl > endDate) return false;
 
-      // Filter Search (Nama Siswa atau Keterangan)
       const searchLower = (searchTransaksi || '').toLowerCase();
       const namaSiswa = (item.siswa?.nama || '').toLowerCase();
       const ket = (item.keterangan || item.programs?.nama || '').toLowerCase();
@@ -32,27 +30,48 @@ export function LaporanTab({
     });
   }, [pembayaran, startDate, endDate, searchTransaksi]);
 
-  // === 2. MENGHITUNG STATISTIK (DINAMIS MENGIKUTI FILTER) ===
+  // === 2. MENGHITUNG STATISTIK HARIAN, MINGGUAN, & TOTAL PERIODE ===
   const stats = useMemo(() => {
-    let rekap = { masuk: 0, keluar: 0 };
+    const today = new Date().toISOString().slice(0, 10);
+    
+    // Cari tanggal awal minggu ini (Senin)
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now.setDate(diff)).toISOString().slice(0, 10);
 
-    // Hitung Pemasukan dari data yang sudah terfilter
-    filteredData.forEach(p => {
-      rekap.masuk += Number(p.nominal || 0);
+    let rekap = { 
+      harianMasuk: 0, 
+      mingguanMasuk: 0, 
+      periodeMasuk: 0, 
+      periodeKeluar: 0 
+    };
+
+    // Hitung dari data Pembayaran (Asli) untuk Harian & Mingguan
+    (pembayaran || []).forEach(p => {
+      const tgl = p.tanggal ? p.tanggal.slice(0, 10) : '';
+      const nominal = Number(p.nominal || 0);
+      if (tgl === today) rekap.harianMasuk += nominal;
+      if (tgl >= monday) rekap.mingguanMasuk += nominal;
     });
 
-    // Hitung Pengeluaran yang sesuai periode
+    // Hitung Masuk dari data Terfilter (Periode Kalender)
+    filteredData.forEach(p => {
+      rekap.periodeMasuk += Number(p.nominal || 0);
+    });
+
+    // Hitung Keluar dari data Pengeluaran Terfilter (Periode Kalender)
     (pengeluaran || []).filter(p => {
       const tgl = p.tanggal ? p.tanggal.slice(0, 10) : '';
       if (startDate && tgl < startDate) return false;
       if (endDate && tgl > endDate) return false;
       return true;
     }).forEach(p => {
-      rekap.keluar += Number(p.nominal || p.jumlah || 0);
+      rekap.periodeKeluar += Number(p.nominal || p.jumlah || 0);
     });
 
     return rekap;
-  }, [filteredData, pengeluaran, startDate, endDate]);
+  }, [pembayaran, filteredData, pengeluaran, startDate, endDate]);
 
   // === 3. PAGINATION ===
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -79,44 +98,53 @@ export function LaporanTab({
   return (
     <div className="grid gap-lg">
       
-      {/* KOTAK STATISTIK DINAMIS */}
+      {/* KOTAK STATISTIK MULTI-DETAIL */}
       <div className="grid grid-3 compact-stats" style={{ marginTop: '-10px' }}>
+        
+        {/* KOTAK 1: HARIAN & MINGGUAN (PEMASUKAN RUTIN) */}
         <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #3b82f6' }}>
-          <p style={{ fontSize: '11px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>
-            {startDate || endDate ? 'TOTAL PERIODE' : 'TOTAL HARI INI'}
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{fontSize: '12px'}}>Masuk:</span> 
-            <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.masuk)}</b>
+          <p style={{ fontSize: '11px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>RINGKASAN MASUK</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <span style={{fontSize: '12px'}}>Hari Ini:</span> 
+            <b style={{fontSize: '12px', color: '#10b981'}}>{formatRupiah(stats.harianMasuk)}</b>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{fontSize: '12px'}}>Keluar:</span> 
-            <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.keluar)}</b>
+            <span style={{fontSize: '12px'}}>Minggu Ini:</span> 
+            <b style={{fontSize: '12px', color: '#8b5cf6'}}>{formatRupiah(stats.mingguanMasuk)}</b>
           </div>
         </div>
 
+        {/* KOTAK 2: TOTAL PERIODE (KALENDER) */}
+        <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #f59e0b' }}>
+          <p style={{ fontSize: '11px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>
+            {startDate || endDate ? 'TOTAL PERIODE TERPILIH' : 'TOTAL KESELURUHAN'}
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <span style={{fontSize: '12px'}}>Masuk:</span> 
+            <b style={{fontSize: '12px', color: '#10b981'}}>{formatRupiah(stats.periodeMasuk)}</b>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{fontSize: '12px'}}>Keluar:</span> 
+            <b style={{fontSize: '12px', color: '#ef4444'}}>{formatRupiah(stats.periodeKeluar)}</b>
+          </div>
+        </div>
+
+        {/* KOTAK 3: LABA BERSIH PERIODE */}
         {canSeeStats && (
-          <>
-            <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #8b5cf6' }}>
-              <p style={{ fontSize: '11px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>LABA BERSIH</p>
-              <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                <b style={{ fontSize: '15px', color: stats.masuk - stats.keluar >= 0 ? '#10b981' : '#ef4444' }}>
-                  {formatRupiah(stats.masuk - stats.keluar)}
-                </b>
-              </div>
-            </div>
-            
-            <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #f59e0b' }}>
-              <p style={{ fontSize: '11px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>TRANSAKSI</p>
-              <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                <b style={{ fontSize: '18px', color: '#60a5fa' }}>{filteredData.length}</b>
-              </div>
-            </div>
-          </>
+          <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #10b981', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <p style={{ fontSize: '11px', margin: '0 0 5px 0', fontWeight: 'bold', color: '#94a3b8' }}>LABA BERSIH (PERIODE)</p>
+            <b style={{ fontSize: '15px', color: stats.periodeMasuk - stats.periodeKeluar >= 0 ? '#10b981' : '#ef4444' }}>
+              {formatRupiah(stats.periodeMasuk - stats.periodeKeluar)}
+            </b>
+            <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
+              {filteredData.length} Transaksi terfilter
+            </span>
+          </div>
         )}
       </div>
 
       <div className="glass-card">
+        {/* ... (Sisa bagian Riwayat Transaksi, Table, dan Modal tetap sama seperti kode Mbak) ... */}
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Riwayat Transaksi</h2>
           <div className="btn-row">
