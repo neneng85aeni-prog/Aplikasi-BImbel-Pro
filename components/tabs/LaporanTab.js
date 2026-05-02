@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { formatRupiah, formatTanggal } from '../../lib/format'
 
 export function LaporanTab({ 
-  financeSummary, pembayaran, branches, selectedBranchId, setSelectedBranchId, 
+  financeSummary, pembayaran = [], branches = [], selectedBranchId, setSelectedBranchId, 
   searchTransaksi, setSearchTransaksi, onDeleteTransaksi,
   editTransaksiForm, setEditTransaksiForm, onSubmitEditTransaksi, onStartEditTransaksi,
   pengeluaran = [],
@@ -15,16 +15,34 @@ export function LaporanTab({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
- const stats = useMemo(() => {
+  // === 1. FILTER TRANSAKSI BERDASARKAN PERIODE & SEARCH (HARUS DI ATAS STATS) ===
+  const filteredData = useMemo(() => {
+    return (pembayaran || []).filter(item => {
+      // Filter Tanggal
+      const tgl = item.tanggal ? item.tanggal.slice(0, 10) : '';
+      if (startDate && tgl < startDate) return false;
+      if (endDate && tgl > endDate) return false;
+
+      // Filter Search (Nama Siswa atau Keterangan)
+      const searchLower = (searchTransaksi || '').toLowerCase();
+      const namaSiswa = (item.siswa?.nama || '').toLowerCase();
+      const ket = (item.keterangan || item.programs?.nama || '').toLowerCase();
+      
+      return namaSiswa.includes(searchLower) || ket.includes(searchLower);
+    });
+  }, [pembayaran, startDate, endDate, searchTransaksi]);
+
+  // === 2. MENGHITUNG STATISTIK (DINAMIS MENGIKUTI FILTER) ===
+  const stats = useMemo(() => {
     let rekap = { masuk: 0, keluar: 0 };
 
-    // Hitung pemasukan dari data yang sudah difilter periode & search
+    // Hitung Pemasukan dari data yang sudah terfilter
     filteredData.forEach(p => {
       rekap.masuk += Number(p.nominal || 0);
     });
 
-    // Hitung pengeluaran dari data yang difilter periode
-    pengeluaran.filter(p => {
+    // Hitung Pengeluaran yang sesuai periode
+    (pengeluaran || []).filter(p => {
       const tgl = p.tanggal ? p.tanggal.slice(0, 10) : '';
       if (startDate && tgl < startDate) return false;
       if (endDate && tgl > endDate) return false;
@@ -36,31 +54,20 @@ export function LaporanTab({
     return rekap;
   }, [filteredData, pengeluaran, startDate, endDate]);
 
-  // === FILTER TRANSAKSI BERDASARKAN PERIODE ===
-  const filteredData = useMemo(() => {
-    return pembayaran.filter(item => {
-      const tgl = item.tanggal ? item.tanggal.slice(0, 10) : '';
-      if (startDate && tgl < startDate) return false;
-      if (endDate && tgl > endDate) return false;
-      return true;
-    });
-  }, [pembayaran, startDate, endDate]);
-
-  // === PAGINATION ===
+  // === 3. PAGINATION ===
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // === FITUR DOWNLOAD ===
-  // === FITUR DOWNLOAD ===
+  // === 4. FITUR DOWNLOAD CSV ===
   const handleDownload = () => {
-    let csv = "Tanggal,Siswa,Kasir,Keterangan,Nominal\n"; // <-- Tambah Header Kasir
+    let csv = "Tanggal,Siswa,Kasir,Keterangan,Nominal\n";
     filteredData.forEach(t => {
       const tgl = formatTanggal(t.tanggal);
       const siswa = t.siswa?.nama || '-';
-      const kasir = t.users?.nama || '-'; // <-- Ambil Nama Kasir
+      const kasir = t.users?.nama || '-';
       const ket = (t.keterangan || t.programs?.nama || '').replace(/,/g, ' '); 
       const nom = t.nominal || 0;
-      csv += `"${tgl}","${siswa}","${kasir}","${ket}","${nom}"\n`; // <-- Masukkan ke baris
+      csv += `"${tgl}","${siswa}","${kasir}","${ket}","${nom}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -72,36 +79,43 @@ export function LaporanTab({
   return (
     <div className="grid gap-lg">
       
-      {/* KOTAK STATISTIK */}
+      {/* KOTAK STATISTIK DINAMIS */}
       <div className="grid grid-3 compact-stats" style={{ marginTop: '-10px' }}>
-        
-        {/* 1. HARIAN (SELALU MUNCUL UNTUK SEMUA KASIR/USER) */}
         <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #3b82f6' }}>
-          <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Hari Ini</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.harianMasuk)}</b></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.harianKeluar)}</b></div>
+          <p style={{ fontSize: '11px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>
+            {startDate || endDate ? 'TOTAL PERIODE' : 'TOTAL HARI INI'}
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{fontSize: '12px'}}>Masuk:</span> 
+            <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.masuk)}</b>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{fontSize: '12px'}}>Keluar:</span> 
+            <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.keluar)}</b>
+          </div>
         </div>
 
-        {/* 2 & 3. MINGGUAN & BULANAN (HANYA MUNCUL JIKA canSeeStats TRUE) */}
         {canSeeStats && (
           <>
             <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #8b5cf6' }}>
-              <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Minggu Ini</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.mingguanMasuk)}</b></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.mingguanKeluar)}</b></div>
+              <p style={{ fontSize: '11px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>LABA BERSIH</p>
+              <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+                <b style={{ fontSize: '15px', color: stats.masuk - stats.keluar >= 0 ? '#10b981' : '#ef4444' }}>
+                  {formatRupiah(stats.masuk - stats.keluar)}
+                </b>
+              </div>
             </div>
             
             <div className="glass-card" style={{ padding: '12px', borderLeft: '3px solid #f59e0b' }}>
-              <p style={{ fontSize: '12px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>Bulan Ini</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Masuk:</span> <b style={{fontSize: '13px', color: '#10b981'}}>{formatRupiah(stats.bulananMasuk)}</b></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{fontSize: '12px'}}>Keluar:</span> <b style={{fontSize: '13px', color: '#ef4444'}}>{formatRupiah(stats.bulananKeluar)}</b></div>
+              <p style={{ fontSize: '11px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#94a3b8' }}>TRANSAKSI</p>
+              <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+                <b style={{ fontSize: '18px', color: '#60a5fa' }}>{filteredData.length}</b>
+              </div>
             </div>
           </>
         )}
       </div>
 
-
-      {/* Bagian Riwayat Transaksi ke bawah tetap sama... */}
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Riwayat Transaksi</h2>
@@ -135,9 +149,7 @@ export function LaporanTab({
               <tr style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Tanggal</th>
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Siswa</th>
-                {/* === TAMBAHAN HEADER KASIR === */}
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Kasir</th>
-                {/* ============================= */}
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Keterangan</th>
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Nominal</th>
                 <th style={{ background: '#1e293b', borderBottom: '2px solid rgba(255,255,255,0.1)' }}>Aksi</th>
@@ -146,51 +158,28 @@ export function LaporanTab({
             <tbody>
               {paginatedData.map((item) => (
                 <tr key={item.id}>
-                  {/* KOLOM TANGGAL & JAM */}
-                  {/* KOLOM TANGGAL & JAM */}
                   <td>
                     <div style={{ fontWeight: '500' }}>{formatTanggal(item.tanggal)}</div>
                     <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 'bold', marginTop: '2px' }}>
-                      {/* KITA GUNAKAN created_at KHUSUS UNTUK JAM */}
                       🕒 {item.created_at ? new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </div>
                   </td>
-                  
-                  {/* KOLOM SISWA */}
                   <td><b>{item.siswa?.nama}</b></td>
-                  
-                  {/* KOLOM KASIR */}
                   <td><span style={{ fontSize: '11px', color: '#94a3b8' }}>{item.users?.nama || '-'}</span></td>
-                  
-                  {/* KOLOM KETERANGAN */}
                   <td>{item.keterangan || item.programs?.nama}</td>
-                  
-                  {/* KOLOM NOMINAL */}
                   <td><b style={{ color: '#10b981' }}>{formatRupiah(item.nominal)}</b></td>
-                  
-                  {/* KOLOM AKSI (TOMBOL WA, EDIT, HAPUS) */}
                   <td>
                     <div className="btn-row" style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap' }}>
-                      <button 
-                        className="btn btn-primary btn-small" 
-                        onClick={() => onSendWA(item)}
-                        style={{ background: '#25d366', borderColor: '#25d366', color: 'white' }}
-                      >
-                        WA
-                      </button>
+                      <button className="btn btn-primary btn-small" onClick={() => onSendWA(item)} style={{ background: '#25d366', borderColor: '#25d366', color: 'white' }}>WA</button>
                       <button className="btn btn-secondary btn-small" onClick={() => onStartEditTransaksi(item)}>Edit</button>
                       <button className="btn btn-danger btn-small" onClick={() => onDeleteTransaksi(item.id, item.keterangan || item.siswa?.nama || 'Transaksi ini')}>Hapus</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              
-              {/* JIKA DATA KOSONG */}
               {paginatedData.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }} className="text-muted">
-                    Tidak ada transaksi.
-                  </td>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }} className="text-muted">Tidak ada transaksi.</td>
                 </tr>
               )}
             </tbody>
