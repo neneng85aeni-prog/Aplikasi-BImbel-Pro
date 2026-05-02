@@ -12,23 +12,29 @@ export function LaporanTab({
   // === STATE UNTUK PERIODE & PAGINATION ===
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(''); // Format: YYYY-MM
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   // === 1. FILTER TRANSAKSI BERDASARKAN PERIODE & SEARCH ===
   const filteredData = useMemo(() => {
-    return (pembayaran || []).filter(item => {
-      const tgl = item.tanggal ? item.tanggal.slice(0, 10) : '';
-      if (startDate && tgl < startDate) return false;
-      if (endDate && tgl > endDate) return false;
+  return (pembayaran || []).filter(item => {
+    const tgl = item.tanggal ? item.tanggal.slice(0, 10) : '';
+    
+    // Jika filter bulan dipilih
+    if (selectedMonth && !tgl.startsWith(selectedMonth)) return false;
 
-      const searchLower = (searchTransaksi || '').toLowerCase();
-      const namaSiswa = (item.siswa?.nama || '').toLowerCase();
-      const ket = (item.keterangan || item.programs?.nama || '').toLowerCase();
-      
-      return namaSiswa.includes(searchLower) || ket.includes(searchLower);
-    });
-  }, [pembayaran, startDate, endDate, searchTransaksi]);
+    // Jika filter tanggal manual dipilih
+    if (startDate && tgl < startDate) return false;
+    if (endDate && tgl > endDate) return false;
+
+    const searchLower = (searchTransaksi || '').toLowerCase();
+    const namaSiswa = (item.siswa?.nama || '').toLowerCase();
+    const ket = (item.keterangan || item.programs?.nama || '').toLowerCase();
+    
+    return namaSiswa.includes(searchLower) || ket.includes(searchLower);
+  });
+}, [pembayaran, startDate, endDate, searchTransaksi, selectedMonth]);
 
   // === 2. MENGHITUNG STATISTIK HARIAN, MINGGUAN, & TOTAL PERIODE ===
   const stats = useMemo(() => {
@@ -157,15 +163,37 @@ export function LaporanTab({
         </div>
 
         <div className="btn-row" style={{ flexWrap: 'wrap', marginBottom: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+          
+          {/* === 1. TAMBAHAN FILTER BULAN DI SINI === */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '15px' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Bulan:</span>
+            <input 
+              type="month" 
+              value={selectedMonth} 
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setStartDate(''); // Reset tanggal manual
+                setEndDate('');
+                setCurrentPage(1);
+              }} 
+              style={{ padding: '6px', borderRadius: '4px', fontSize: '12px' }} 
+            />
+          </div>
+
+          {/* === 2. FILTER TANGGAL MANUAL (KODE ASLI) === */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Periode:</span>
-            <input type="date" value={startDate} onChange={(e) => {setStartDate(e.target.value); setCurrentPage(1);}} style={{ padding: '6px', borderRadius: '4px', fontSize: '12px' }} />
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Atau Tanggal:</span>
+            <input type="date" value={startDate} onChange={(e) => {setStartDate(e.target.value); setSelectedMonth(''); setCurrentPage(1);}} style={{ padding: '6px', borderRadius: '4px', fontSize: '12px' }} />
             <span style={{color: '#94a3b8'}}>-</span>
-            <input type="date" value={endDate} onChange={(e) => {setEndDate(e.target.value); setCurrentPage(1);}} style={{ padding: '6px', borderRadius: '4px', fontSize: '12px' }} />
-            {(startDate || endDate) && (
-              <button className="btn btn-secondary btn-small" onClick={() => {setStartDate(''); setEndDate(''); setCurrentPage(1);}}>Reset</button>
+            <input type="date" value={endDate} onChange={(e) => {setEndDate(e.target.value); setSelectedMonth(''); setCurrentPage(1);}} style={{ padding: '6px', borderRadius: '4px', fontSize: '12px' }} />
+            
+            {/* Tombol Reset muncul jika ada filter yang aktif */}
+            {(startDate || endDate || selectedMonth) && (
+              <button className="btn btn-secondary btn-small" onClick={() => {setStartDate(''); setEndDate(''); setSelectedMonth(''); setCurrentPage(1);}}>Reset</button>
             )}
           </div>
+          
+          {/* TOMBOL DOWNLOAD */}
           <button className="btn btn-primary btn-small" onClick={handleDownload} style={{ marginLeft: 'auto', background: '#10b981', borderColor: '#10b981', color: 'black' }}>
             ⬇️ Download CSV
           </button>
