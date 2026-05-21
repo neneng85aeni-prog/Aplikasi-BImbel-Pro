@@ -96,9 +96,9 @@ export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan 
               // =========================================================
               <tr>
                 {timeSlots.map(slot => {
-                  // Ambil semua siswa di jam tersebut, DARI GURU MANAPUN, lalu urutkan abjad A-Z
+                  // FILTER NONAKTIF DITAMBAHKAN DI SINI
                   const studentsInSlot = siswa
-                    .filter(s => s.hari?.includes(selectedDay) && s.jam_mulai?.startsWith(slot.substring(0,2)))
+                    .filter(s => s.status !== 'nonaktif' && s.hari?.includes(selectedDay) && s.jam_mulai?.startsWith(slot.substring(0,2)))
                     .sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
 
                   return (
@@ -128,7 +128,9 @@ export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan 
                   <td style={{ padding: '10px', borderBottom: '1px solid #334155', fontWeight: 'bold' }}>{guru.nama}</td>
                   {timeSlots.map(slot => (
                     <td key={slot} style={{ border: '1px solid #1e293b', verticalAlign: 'top', padding: '5px', minWidth: '100px' }}>
+                      {/* FILTER NONAKTIF DITAMBAHKAN DI SINI */}
                       {siswa.filter(s => 
+                        s.status !== 'nonaktif' &&
                         s.guru_id === guru.id && 
                         s.hari?.includes(selectedDay) && 
                         s.jam_mulai?.startsWith(slot.substring(0,2))
