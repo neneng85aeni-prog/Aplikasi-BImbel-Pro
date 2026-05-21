@@ -2,59 +2,44 @@ import { useState } from 'react'
 import html2canvas from 'html2canvas'
 
 export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan = [] }) {
-  // 1. Logika Tanggal & Hari Otomatis
   const [targetDate, setTargetDate] = useState(new Date().toISOString().slice(0, 10))
   const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
   
-  // Fungsi untuk mendapatkan nama hari dari tanggal
+  // Ambil nama hari dari tanggal terpilih
   const getDayName = (dateStr) => {
     const d = new Date(dateStr);
-    // 0=Minggu, 1=Senin, dst.
-    const dayIndex = (d.getDay() + 6) % 7; 
-    return days[dayIndex];
+    return days[(d.getDay() + 6) % 7];
   };
 
   const [selectedDay, setSelectedDay] = useState(getDayName(targetDate))
 
-  // Update hari otomatis saat tanggal berubah
   const handleDateChange = (e) => {
     const newDate = e.target.value;
     setTargetDate(newDate);
-    setSelectedDay(getDayName(newDate));
+    setSelectedDay(getDayName(newDate)); // HARI OTOMATIS BERUBAH
   };
 
   const timeSlots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00']
   const guruList = (users || []).filter(u => u.akses?.toLowerCase() === 'guru')
   
-  // Data dari tabel perkembangan
+  // Filter data perkembangan berdasarkan tanggal
   const dataHadir = (perkembangan || []).filter(p => String(p.tanggal) === targetDate);
-
-  const handleDownloadImage = () => {
-    const element = document.getElementById('matrix-jadwal');
-    html2canvas(element, { scale: 2, backgroundColor: '#0f172a' }).then(canvas => {
-      const link = document.createElement('a');
-      link.download = `Jadwal_${targetDate}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    });
-  };
 
   return (
     <div className="flex flex-col gap-md" style={{ maxWidth: '1200px', margin: '0 auto' }}>
       
-      <div className="glass-card" style={{ padding: '15px', display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '10px' }}>
-         <div>
-            <label style={{ fontSize: '11px', color: '#94a3b8' }}>Pilih Tanggal:</label>
-            <input type="date" value={targetDate} onChange={handleDateChange} style={{ padding: '8px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '4px' }} />
+      {/* FILTER & HARI */}
+      <div className="glass-card" style={{ padding: '15px', marginBottom: '10px' }}>
+         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <div>
+               <label style={{ fontSize: '11px', color: '#94a3b8' }}>Filter Tanggal:</label>
+               <input type="date" value={targetDate} onChange={handleDateChange} style={{ padding: '8px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '4px' }} />
+            </div>
+            {/* Indikator Hari yang sedang aktif */}
+            <div style={{ padding: '10px 20px', background: '#2563eb', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', color: '#fff' }}>
+                {selectedDay}
+            </div>
          </div>
-         
-         <div style={{ padding: '8px', background: '#2563eb', color: '#fff', borderRadius: '4px', fontWeight: 'bold' }}>
-            {selectedDay}
-         </div>
-
-         <button onClick={handleDownloadImage} style={{ marginLeft: 'auto', background: '#10b981', color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-           📸 Export Image
-         </button>
       </div>
 
       <div id="matrix-jadwal" className="glass-card" style={{ padding: '15px', overflowX: 'auto', background: '#0f172a' }}>
@@ -76,12 +61,13 @@ export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan 
                       s.hari?.includes(selectedDay) && 
                       s.jam_mulai?.startsWith(slot.substring(0,2))
                     ).map(s => {
+                      // CEK KEHADIRAN: ID Siswa di tabel perkembangan harus sama dengan ID Siswa di jadwal
                       const isHadir = dataHadir.some(p => String(p.siswa_id) === String(s.id));
                       return (
                         <div key={s.id} style={{ 
                             background: isHadir ? '#10b981' : '#334155', 
                             padding: '6px', borderRadius: '4px', marginBottom: '4px', color: '#fff',
-                            fontSize: '11px', fontWeight: '500'
+                            fontSize: '11px', fontWeight: '500', transition: '0.3s'
                         }}>
                           {isHadir ? '✅ ' : '👤 '} {s.nama}
                         </div>
