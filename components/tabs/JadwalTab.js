@@ -2,180 +2,69 @@ import { useState } from 'react'
 import html2canvas from 'html2canvas'
 
 export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa = [] }) {
-  
   const [targetDate, setTargetDate] = useState(new Date().toISOString().slice(0, 10))
   const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
-  
-  const hariAwal = new Date(targetDate).toLocaleDateString('id-ID', { weekday: 'long' });
-  const [selectedDay, setSelectedDay] = useState(days.includes(hariAwal) ? hariAwal : 'Senin')
-  
-  const handleDateChange = (e) => {
-    const newDate = e.target.value;
-    setTargetDate(newDate);
-    const dayName = new Date(newDate).toLocaleDateString('id-ID', { weekday: 'long' });
-    if (days.includes(dayName)) {
-      setSelectedDay(dayName);
-    }
-  };
+  const [selectedDay, setSelectedDay] = useState(days[new Date().getDay() - 1] || 'Senin')
 
-  const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00', '12:00', 
-    '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
-  ]
-
+  const timeSlots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
   const guruList = (users || []).filter(u => u.akses?.toLowerCase() === 'guru')
-  
-  const handleDownloadImage = () => {
-    const element = document.getElementById('poster-jadwal-matrix');
-    const originalMaxHeight = element.style.maxHeight;
-    const originalOverflowX = element.style.overflowX;
 
-    element.style.maxHeight = 'none';
-    element.style.overflowX = 'visible';
-
-    html2canvas(element, { scale: 2, backgroundColor: '#1e293b' }).then(canvas => {
-      const link = document.createElement('a');
-      link.download = `Jadwal_Matrix_${selectedDay}_${targetDate}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-
-      element.style.maxHeight = originalMaxHeight;
-      element.style.overflowX = originalOverflowX;
-    });
-  };
-
-  // =======================================================================
-  // MESIN PENDETEKSI ABSENSI AKURAT (HANYA MENGAMBIL ABSEN TANGGAL PILIHAN)
-  // =======================================================================
-  const [yyyy, mm, dd] = targetDate.split('-');
-  const formatSlash = `${dd}/${mm}/${yyyy}`; // contoh: 19/05/2026
-  const formatStrip = `${dd}-${mm}-${yyyy}`; // contoh: 19-05-2026
-
-  const absenHariIni = (absensiSiswa || []).filter(abs => {
-    const strTgl = String(abs.tanggal || abs.waktu_in || abs.waktu || abs.created_at || '');
-    // Membaca segala jenis format database Supabase
-    return strTgl.includes(targetDate) || strTgl.includes(formatSlash) || strTgl.includes(formatStrip);
+  // === DEBUG ABSENSI ===
+  // Kita coba deteksi apakah absensiSiswa memiliki data yang cocok dengan tanggal hari ini
+  const filterAbsen = (absensiSiswa || []).filter(a => {
+      const tglData = String(a.tanggal || '');
+      return tglData.includes(targetDate);
   });
-  // =======================================================================
 
   return (
     <div className="flex flex-col gap-md" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      
-      {/* KOTAK FILTER TANGGAL */}
-      <div className="glass-card" style={{ display: 'flex', gap: '20px', alignItems: 'center', padding: '15px 20px', flexWrap: 'wrap', marginBottom: '10px' }}>
-        <div>
-          <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>📅 Filter Tanggal Kehadiran:</label>
-          <input 
-            type="date" 
-            value={targetDate} 
-            onChange={handleDateChange} 
-            style={{ 
-              padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', 
-              background: 'rgba(0,0,0,0.2)', color: '#fff', fontWeight: 'bold', outline: 'none' 
-            }}
-          />
-        </div>
-        <div style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '20px' }}>
-          <div style={{ fontSize: '12px', color: '#94a3b8' }}>Hari dipantau:</div>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6' }}>✨ {selectedDay}</div>
-        </div>
-        
-        {/* RADAR INDIKATOR TANGGAL AKTIF (SUDAH DIPERBAIKI) */}
-        <div style={{ 
-          marginLeft: 'auto', textAlign: 'right', padding: '8px 12px', borderRadius: '8px',
-          background: absenHariIni.length > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-          border: absenHariIni.length > 0 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)' 
-        }}>
-           <div style={{ fontSize: '11px', color: absenHariIni.length > 0 ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>📡 Data Tgl {dd}/{mm}</div>
-           <div style={{ fontSize: '13px', color: '#fff', fontWeight: 'bold' }}>
-             {absenHariIni.length} Siswa Hadir
-           </div>
+      <div className="glass-card" style={{ padding: '15px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          <div>
+            <label style={{ fontSize: '12px', color: '#94a3b8' }}>Filter Tanggal:</label>
+            <input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} style={{ padding: '8px', borderRadius: '6px', background: '#0f172a', color: '#fff', border: '1px solid #334155' }} />
+          </div>
+          <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: '8px', border: '1px solid #10b981' }}>
+             <div style={{ fontSize: '11px', color: '#10b981' }}>Absen ditemukan tgl {targetDate}:</div>
+             <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{filterAbsen.length} Data</div>
+          </div>
         </div>
       </div>
 
       <div className="glass-card" style={{ padding: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <h2 className="section-title" style={{ margin: 0, fontSize: '18px' }}>📋 Matrix Jadwal</h2>
-            <button className="btn btn-primary btn-small" onClick={handleDownloadImage} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '6px 10px' }}>
-              📸 Export
-            </button>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '3px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '8px', overflowX: 'auto' }}>
-            {days.map(d => (
-              <button 
-                key={d}
-                onClick={() => setSelectedDay(d)}
-                className={`btn btn-small ${selectedDay === d ? 'btn-primary' : ''}`}
-                style={{ background: selectedDay === d ? '' : 'transparent', border: 'none', padding: '5px 10px', fontSize: '12px' }}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* MATRIX TABLE */}
-        <div id="poster-jadwal-matrix" className="table-wrap" style={{ overflowX: 'auto', maxHeight: '65vh', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', background: '#0f172a' }}>
-          <table style={{ borderCollapse: 'separate', borderSpacing: '0', width: '100%', fontSize: '13px' }}>
-            <thead>
-              <tr>
-                <th style={{ position: 'sticky', top: 0, left: 0, zIndex: 20, background: '#1e293b', minWidth: '100px', padding: '12px 8px', borderBottom: '2px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>GURU</th>
-                {timeSlots.map(time => (
-                  <th key={time} style={{ position: 'sticky', top: 0, zIndex: 10, textAlign: 'center', minWidth: '75px', padding: '12px 2px', background: '#1e293b', fontSize: '11px', borderBottom: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', color: '#94a3b8' }}>{time}</th>
+        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff' }}>
+          <thead>
+            <tr>
+              <th style={{ padding: '10px', borderBottom: '1px solid #334155', textAlign: 'left' }}>GURU</th>
+              {timeSlots.map(t => <th key={t} style={{ textAlign: 'center' }}>{t}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {guruList.map(guru => (
+              <tr key={guru.id}>
+                <td style={{ padding: '10px', borderBottom: '1px solid #334155' }}>{guru.nama}</td>
+                {timeSlots.map(slot => (
+                  <td key={slot} style={{ border: '1px solid #1e293b', verticalAlign: 'top', padding: '5px' }}>
+                    {siswa.filter(s => s.guru_id === guru.id && s.hari?.includes(selectedDay) && s.jam_mulai?.startsWith(slot.substring(0,2))).map(s => {
+                      
+                      // LOGIKA PALING KRUSIAL: Pencocokan ID Siswa
+                      const hadir = filterAbsen.some(a => String(a.siswa_id) === String(s.id));
+                      
+                      return (
+                        <div key={s.id} style={{ 
+                            background: hadir ? '#10b981' : '#334155', 
+                            padding: '4px', borderRadius: '4px', marginBottom: '4px', fontSize: '11px' 
+                        }}>
+                          {hadir ? '✅ ' : '👤 '}{s.nama}
+                        </div>
+                      )
+                    })}
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {guruList.map(guru => (
-                <tr key={guru.id}>
-                  <td style={{ position: 'sticky', left: 0, zIndex: 5, background: '#1e293b', padding: '12px 10px', borderRight: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#f8fafc' }}>{guru.nama?.split(' ')[0]}</div>
-                    <div style={{ fontSize: '10px', color: '#64748b' }}>📍 {branches.find(b => b.id === guru.branch_id)?.nama?.substring(0,10) || 'Pusat'}</div>
-                  </td>
-
-                  {timeSlots.map(slot => {
-                    const matchSiswa = (siswa || []).filter(s => 
-                      s.status !== 'nonaktif' && s.status !== 'Nonaktif' &&
-                      s.guru_id === guru.id && s.hari?.includes(selectedDay) &&
-                      s.jam_mulai && s.jam_mulai.startsWith(slot.substring(0, 2))
-                    )
-
-                    return (
-                      <td key={slot} style={{ verticalAlign: 'top', padding: '6px', borderRight: '1px solid rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        {matchSiswa.length > 0 ? (
-                          matchSiswa.map(s => {
-                            // Cek apakah siswa ini ada di kumpulan absenHariIni
-                            const isHadir = absenHariIni.some(abs => String(abs.siswa_id || abs.siswa?.id || abs.id_siswa) === String(s.id));
-
-                            return (
-                              <div key={s.id} style={{ 
-                                background: isHadir ? '#10b981' : '#e0f2fe', 
-                                borderLeft: `3px solid ${isHadir ? '#059669' : '#0284c7'}`,
-                                padding: '6px 8px', borderRadius: '4px', marginBottom: '4px', fontSize: '10px', lineHeight: '1.2',
-                                color: isHadir ? '#ffffff' : '#0f172a',
-                                boxShadow: isHadir ? '0 2px 6px rgba(16, 185, 129, 0.4)' : 'none',
-                                transition: 'all 0.3s ease'
-                              }}>
-                                <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {isHadir ? '✅ ' : ''}{s.nama?.split(' ')[0]}
-                                </div>
-                                <div style={{ fontSize: '9px', color: isHadir ? '#d1fae5' : '#475569', marginTop: '2px' }}>
-                                  {s.jam_mulai}
-                                </div>
-                              </div>
-                            )
-                          })
-                        ) : null}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
