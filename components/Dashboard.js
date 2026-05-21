@@ -44,7 +44,8 @@ export function Dashboard({ state, actions }) {
 
       for (const s of state.siswaTampil) {
         // Filter: Abaikan siswa nonaktif atau yang sudah dikonfirmasi berhenti
-        if (s.status === 'nonaktif' || s.status_bimbel === 'berhenti') continue;
+       // GANTI DENGAN INI (Hanya mengecek kolom 'status'):
+        if (s.status === 'nonaktif') continue;
         
         // Anti-Spam: Jangan kirim jika sudah ada antrean tipe ini dalam 7 hari terakhir
         const sudahPernahDitegur = waQueue.some(q => 
