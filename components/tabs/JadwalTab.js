@@ -27,13 +27,28 @@ export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan 
   const dataHadir = (perkembangan || []).filter(p => String(p.tanggal) === targetDate);
   const totalHadir = new Set(dataHadir.map(p => String(p.siswa_id))).size;
 
-  const handleDownloadImage = () => {
+  const handleDownloadImage = (tampilkanGuru) => {
     const element = document.getElementById('matrix-jadwal');
+    
+    // Ambil semua elemen kolom guru
+    const kolomGuru = document.querySelectorAll('.col-guru');
+    
+    // Jika user memilih "Tanpa Guru", kita sembunyikan kolomnya sesaat
+    if (!tampilkanGuru) {
+      kolomGuru.forEach(el => el.style.display = 'none');
+    }
+
     html2canvas(element, { scale: 2, backgroundColor: '#0f172a' }).then(canvas => {
       const link = document.createElement('a');
-      link.download = `Jadwal_${targetDate}.png`;
+      // Nama file otomatis menyesuaikan pilihan
+      link.download = `Jadwal_${selectedDay}_${targetDate}${tampilkanGuru ? '' : '_TanpaGuru'}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+
+      // Kembalikan kolom guru seperti semula setelah foto diambil
+      if (!tampilkanGuru) {
+        kolomGuru.forEach(el => el.style.display = '');
+      }
     });
   };
 
@@ -56,9 +71,14 @@ export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan 
             Total Hadir: {totalHadir} Siswa
          </div>
 
-         <button onClick={handleDownloadImage} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-           📸 Export
-         </button>
+         <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
+           <button onClick={() => handleDownloadImage(true)} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+             📸 Export (Ada Guru)
+           </button>
+           <button onClick={() => handleDownloadImage(false)} style={{ background: '#f59e0b', color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+             📸 Export (Tanpa Guru)
+           </button>
+         </div>
       </div>
 
       {/* MATRIX JADWAL */}
@@ -66,14 +86,14 @@ export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan 
         <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '12px' }}>
           <thead>
             <tr>
-              <th style={{ padding: '10px', borderBottom: '1px solid #334155', textAlign: 'left' }}>GURU</th>
+              <th className="col-guru" style={{ padding: '10px', borderBottom: '1px solid #334155', textAlign: 'left' }}>GURU</th>
               {timeSlots.map(t => <th key={t} style={{ textAlign: 'center', padding: '10px', borderBottom: '1px solid #334155' }}>{t}</th>)}
             </tr>
           </thead>
           <tbody>
             {guruList.map(guru => (
               <tr key={guru.id}>
-                <td style={{ padding: '10px', borderBottom: '1px solid #334155', fontWeight: 'bold' }}>{guru.nama}</td>
+                <td className="col-guru" style={{ padding: '10px', borderBottom: '1px solid #334155', fontWeight: 'bold' }}>{guru.nama}</td>
                 {timeSlots.map(slot => (
                   <td key={slot} style={{ border: '1px solid #1e293b', verticalAlign: 'top', padding: '5px', minWidth: '100px' }}>
                     {siswa.filter(s => 
