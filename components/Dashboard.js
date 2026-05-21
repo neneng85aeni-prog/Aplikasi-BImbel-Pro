@@ -185,7 +185,7 @@ export function Dashboard({ state, actions }) {
             users={state.usersTampil} 
             branches={state.branches} 
             absensiSiswa={state.absensiSiswaTampil}
-            siswaTampil={state.siswaTampil}
+            
           />
         )}
 
