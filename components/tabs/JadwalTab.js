@@ -4,7 +4,6 @@ import html2canvas from 'html2canvas'
 export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa = [] }) {
   
   const [targetDate, setTargetDate] = useState(new Date().toISOString().slice(0, 10))
-  
   const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
   
   const hariAwal = new Date(targetDate).toLocaleDateString('id-ID', { weekday: 'long' });
@@ -45,6 +44,20 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
     });
   };
 
+  // =======================================================================
+  // MESIN PENDETEKSI ABSENSI AKURAT (HANYA MENGAMBIL ABSEN TANGGAL PILIHAN)
+  // =======================================================================
+  const [yyyy, mm, dd] = targetDate.split('-');
+  const formatSlash = `${dd}/${mm}/${yyyy}`; // contoh: 19/05/2026
+  const formatStrip = `${dd}-${mm}-${yyyy}`; // contoh: 19-05-2026
+
+  const absenHariIni = (absensiSiswa || []).filter(abs => {
+    const strTgl = String(abs.tanggal || abs.waktu_in || abs.waktu || abs.created_at || '');
+    // Membaca segala jenis format database Supabase
+    return strTgl.includes(targetDate) || strTgl.includes(formatSlash) || strTgl.includes(formatStrip);
+  });
+  // =======================================================================
+
   return (
     <div className="flex flex-col gap-md" style={{ maxWidth: '1200px', margin: '0 auto' }}>
       
@@ -67,10 +80,16 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
           <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6' }}>✨ {selectedDay}</div>
         </div>
         
-        {/* RADAR INDIKATOR DATA - Agar kita tahu data absen masuk atau tidak */}
-        <div style={{ marginLeft: 'auto', textAlign: 'right', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '8px 12px', borderRadius: '8px' }}>
-           <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold' }}>📡 Radar Sistem</div>
-           <div style={{ fontSize: '13px', color: '#fff' }}>{absensiSiswa?.length || 0} Data Absen Masuk</div>
+        {/* RADAR INDIKATOR TANGGAL AKTIF (SUDAH DIPERBAIKI) */}
+        <div style={{ 
+          marginLeft: 'auto', textAlign: 'right', padding: '8px 12px', borderRadius: '8px',
+          background: absenHariIni.length > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+          border: absenHariIni.length > 0 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)' 
+        }}>
+           <div style={{ fontSize: '11px', color: absenHariIni.length > 0 ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>📡 Data Tgl {dd}/{mm}</div>
+           <div style={{ fontSize: '13px', color: '#fff', fontWeight: 'bold' }}>
+             {absenHariIni.length} Siswa Hadir
+           </div>
         </div>
       </div>
 
@@ -127,32 +146,8 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
                       <td key={slot} style={{ verticalAlign: 'top', padding: '6px', borderRight: '1px solid rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                         {matchSiswa.length > 0 ? (
                           matchSiswa.map(s => {
-                            // =====================================================================
-                            // LOGIKA SUPER PINTAR PENDETEKSI KEHADIRAN (DIJAMIN NYALA)
-                            // =====================================================================
-                            const isHadir = (absensiSiswa || []).some(abs => {
-                              // Cek ID (Kebal struktur data)
-                              const idSiswaAbsen = String(abs.siswa_id || abs.siswa?.id || abs.id_siswa);
-                              const isIdSama = idSiswaAbsen === String(s.id);
-                              
-                              // Cek Tanggal (Kebal Format Date & Timezone Supabase)
-                              const rawDate = abs.tanggal || abs.waktu_in || abs.waktu || abs.created_at || '';
-                              let isTanggalSama = false;
-                              if (rawDate) {
-                                try {
-                                  isTanggalSama = new Date(rawDate).toISOString().slice(0, 10) === targetDate;
-                                } catch(e) {
-                                  isTanggalSama = String(rawDate).includes(targetDate);
-                                }
-                              }
-                              
-                              // Cek Status
-                              const rawStatus = String(abs.status || abs.keterangan || abs.mode || '').toLowerCase();
-                              const isStatusMasuk = rawStatus === '' || rawStatus.includes('hadir') || rawStatus.includes('in');
-                                                    
-                              return isIdSama && isTanggalSama && isStatusMasuk;
-                            });
-                            // =====================================================================
+                            // Cek apakah siswa ini ada di kumpulan absenHariIni
+                            const isHadir = absenHariIni.some(abs => String(abs.siswa_id || abs.siswa?.id || abs.id_siswa) === String(s.id));
 
                             return (
                               <div key={s.id} style={{ 
