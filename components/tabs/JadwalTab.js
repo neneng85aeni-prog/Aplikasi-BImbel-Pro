@@ -16,32 +16,52 @@ export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan 
   const handleDateChange = (e) => {
     const newDate = e.target.value;
     setTargetDate(newDate);
-    setSelectedDay(getDayName(newDate)); // HARI OTOMATIS BERUBAH
+    setSelectedDay(getDayName(newDate));
   };
 
   const timeSlots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00']
   const guruList = (users || []).filter(u => u.akses?.toLowerCase() === 'guru')
   
-  // Filter data perkembangan berdasarkan tanggal
+  // === LOGIKA TOTAL HADIR ===
+  // Mengambil ID siswa unik yang ada di tabel perkembangan untuk tanggal tersebut
   const dataHadir = (perkembangan || []).filter(p => String(p.tanggal) === targetDate);
+  const totalHadir = new Set(dataHadir.map(p => String(p.siswa_id))).size;
+
+  const handleDownloadImage = () => {
+    const element = document.getElementById('matrix-jadwal');
+    html2canvas(element, { scale: 2, backgroundColor: '#0f172a' }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `Jadwal_${targetDate}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  };
 
   return (
     <div className="flex flex-col gap-md" style={{ maxWidth: '1200px', margin: '0 auto' }}>
       
-      {/* FILTER & HARI */}
-      <div className="glass-card" style={{ padding: '15px', marginBottom: '10px' }}>
-         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <div>
-               <label style={{ fontSize: '11px', color: '#94a3b8' }}>Filter Tanggal:</label>
-               <input type="date" value={targetDate} onChange={handleDateChange} style={{ padding: '8px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '4px' }} />
-            </div>
-            {/* Indikator Hari yang sedang aktif */}
-            <div style={{ padding: '10px 20px', background: '#2563eb', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', color: '#fff' }}>
-                {selectedDay}
-            </div>
+      {/* FILTER & STATISTIK HADIR */}
+      <div className="glass-card" style={{ padding: '15px', display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap' }}>
+         <div>
+            <label style={{ fontSize: '11px', color: '#94a3b8' }}>Pilih Tanggal:</label>
+            <input type="date" value={targetDate} onChange={handleDateChange} style={{ padding: '8px', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '4px' }} />
          </div>
+         
+         <div style={{ padding: '8px 15px', background: '#2563eb', borderRadius: '6px', fontWeight: 'bold', color: '#fff', textAlign: 'center' }}>
+            {selectedDay}
+         </div>
+
+         {/* BADGE TOTAL HADIR */}
+         <div style={{ marginLeft: 'auto', padding: '8px 15px', background: '#059669', borderRadius: '6px', color: '#fff', fontWeight: 'bold' }}>
+            Total Hadir: {totalHadir} Siswa
+         </div>
+
+         <button onClick={handleDownloadImage} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+           📸 Export
+         </button>
       </div>
 
+      {/* MATRIX JADWAL */}
       <div id="matrix-jadwal" className="glass-card" style={{ padding: '15px', overflowX: 'auto', background: '#0f172a' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '12px' }}>
           <thead>
@@ -61,13 +81,12 @@ export function JadwalTab({ siswa = [], users = [], branches = [], perkembangan 
                       s.hari?.includes(selectedDay) && 
                       s.jam_mulai?.startsWith(slot.substring(0,2))
                     ).map(s => {
-                      // CEK KEHADIRAN: ID Siswa di tabel perkembangan harus sama dengan ID Siswa di jadwal
                       const isHadir = dataHadir.some(p => String(p.siswa_id) === String(s.id));
                       return (
                         <div key={s.id} style={{ 
                             background: isHadir ? '#10b981' : '#334155', 
                             padding: '6px', borderRadius: '4px', marginBottom: '4px', color: '#fff',
-                            fontSize: '11px', fontWeight: '500', transition: '0.3s'
+                            fontSize: '11px', fontWeight: '500'
                         }}>
                           {isHadir ? '✅ ' : '👤 '} {s.nama}
                         </div>
