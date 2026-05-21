@@ -66,6 +66,12 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
           <div style={{ fontSize: '12px', color: '#94a3b8' }}>Hari dipantau:</div>
           <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6' }}>✨ {selectedDay}</div>
         </div>
+        
+        {/* RADAR INDIKATOR DATA - Agar kita tahu data absen masuk atau tidak */}
+        <div style={{ marginLeft: 'auto', textAlign: 'right', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '8px 12px', borderRadius: '8px' }}>
+           <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold' }}>📡 Radar Sistem</div>
+           <div style={{ fontSize: '13px', color: '#fff' }}>{absensiSiswa?.length || 0} Data Absen Masuk</div>
+        </div>
       </div>
 
       <div className="glass-card" style={{ padding: '15px' }}>
@@ -125,17 +131,24 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
                             // LOGIKA SUPER PINTAR PENDETEKSI KEHADIRAN (DIJAMIN NYALA)
                             // =====================================================================
                             const isHadir = (absensiSiswa || []).some(abs => {
-                              // 1. Samakan ID Siswa dengan kuat
-                              const isIdSama = String(abs.siswa_id) === String(s.id);
+                              // Cek ID (Kebal struktur data)
+                              const idSiswaAbsen = String(abs.siswa_id || abs.siswa?.id || abs.id_siswa);
+                              const isIdSama = idSiswaAbsen === String(s.id);
                               
-                              // 2. Baca Segala Jenis Kolom Tanggal (tanggal, created_at, waktu_in)
-                              const dataTanggal = String(abs.tanggal || abs.waktu_in || abs.waktu || abs.created_at || '');
-                              // Gunakan .includes() karena format Supabase panjang (misal: "2026-05-21T08:00:00")
-                              const isTanggalSama = dataTanggal.includes(targetDate);
+                              // Cek Tanggal (Kebal Format Date & Timezone Supabase)
+                              const rawDate = abs.tanggal || abs.waktu_in || abs.waktu || abs.created_at || '';
+                              let isTanggalSama = false;
+                              if (rawDate) {
+                                try {
+                                  isTanggalSama = new Date(rawDate).toISOString().slice(0, 10) === targetDate;
+                                } catch(e) {
+                                  isTanggalSama = String(rawDate).includes(targetDate);
+                                }
+                              }
                               
-                              // 3. Baca Segala Jenis Kolom Status (kalau tidak ada kolomnya, otomatis dianggap Hadir)
-                              const dataStatus = String(abs.status || abs.keterangan || abs.mode || '').toLowerCase();
-                              const isStatusMasuk = dataStatus === '' || dataStatus.includes('hadir') || dataStatus.includes('in') || dataStatus.includes('masuk') || dataStatus.includes('true');
+                              // Cek Status
+                              const rawStatus = String(abs.status || abs.keterangan || abs.mode || '').toLowerCase();
+                              const isStatusMasuk = rawStatus === '' || rawStatus.includes('hadir') || rawStatus.includes('in');
                                                     
                               return isIdSama && isTanggalSama && isStatusMasuk;
                             });
