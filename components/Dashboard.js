@@ -26,6 +26,60 @@ import { MaintenanceTab } from './tabs/MaintenanceTab'
 
 export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
+  // --- OTOMATIS: DETEKSI SISWA BOLOS 3X ATAU LEBIH ---
+  useEffect(() => {
+    // Pastikan data siswa, perkembangan, dan actions sudah siap
+    if (!actions || !state.siswaTampil || !state.perkembanganTampil) return;
+
+    const jalankanDeteksiBolos = async () => {
+      const waQueue = state.waQueueTampil || [];
+      const hariIni = new Date();
+      
+      // Ambil rentang 3 hari ke belakang
+      const last3Days = [1, 2, 3].map(i => {
+        const d = new Date();
+        d.setDate(hariIni.getDate() - i);
+        return d.toISOString().slice(0, 10);
+      });
+
+      for (const s of state.siswaTampil) {
+        // Filter: Abaikan siswa nonaktif atau yang sudah dikonfirmasi berhenti
+        if (s.status === 'nonaktif' || s.status_bimbel === 'berhenti') continue;
+        
+        // Anti-Spam: Jangan kirim jika sudah ada antrean tipe ini dalam 7 hari terakhir
+        const sudahPernahDitegur = waQueue.some(q => 
+          String(q.siswa_id) === String(s.id) && 
+          q.tipe === 'pertanyaan_tidak_hadir' && 
+          new Date(q.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        );
+        
+        if (sudahPernahDitegur) continue;
+
+        // Cek ketidakhadiran berturut-turut di data perkembangan
+        const bolos3xAtauLebih = last3Days.every(tgl => 
+          !state.perkembanganTampil.some(p => String(p.siswa_id) === String(s.id) && String(p.tanggal).includes(tgl))
+        );
+
+        if (bolos3xAtauLebih) {
+          try {
+            // Langsung inject ke tabel wa_queue melalui actions supabase global
+            await actions.supabase.from('wa_queue').insert([{
+              siswa_id: s.id,
+              no_hp: s.no_wa_ortu || s.wa_ortu || '', 
+              pesan: `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda ${s.nama} sudah tidak hadir selama 3 kali pertemuan atau lebih. Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`,
+              tipe: 'pertanyaan_tidak_hadir'
+            }]);
+            console.log(`[Sistem] Otomatis mendaftarkan absen 3x untuk: ${s.nama}`);
+          } catch (error) {
+            console.error("Gagal input otomatis ke wa_queue:", error);
+          }
+        }
+      }
+    };
+
+    jalankanDeteksiBolos();
+  }, [state.siswaTampil, state.perkembanganTampil, state.waQueueTampil]);
+  // --- AKHIR LOGIKA OTOMATIS ---
 // === STATE UNTUK TEMA GELAP/TERANG ===
   const [isLightMode, setIsLightMode] = useState(false);
   // === FITUR AUTO-REDIRECT TAB ===
