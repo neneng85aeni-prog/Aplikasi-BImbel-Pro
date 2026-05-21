@@ -57,7 +57,7 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
   return (
     <div className="flex flex-col gap-md" style={{ maxWidth: '1200px', margin: '0 auto' }}>
       
-      {/* === KOTAK FILTER TANGGAL (BARU) === */}
+      {/* === KOTAK FILTER TANGGAL === */}
       <div className="glass-card" style={{ display: 'flex', gap: '20px', alignItems: 'center', padding: '15px 20px', flexWrap: 'wrap', marginBottom: '10px' }}>
         <div>
           <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>📅 Filter Tanggal Kehadiran:</label>
@@ -79,7 +79,7 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
 
       <div className="glass-card" style={{ padding: '15px' }}>
         
-        {/* HEADER & PEMILIH HARI (Dibuat lebih rapat) */}
+        {/* HEADER & PEMILIH HARI */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <h2 className="section-title" style={{ margin: 0, fontSize: '18px' }}>📋 Matrix Jadwal</h2>
@@ -107,18 +107,17 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
           </div>
         </div>
 
-        {/* MATRIX TABLE (Optimasi lebar kolom) */}
+        {/* MATRIX TABLE */}
         <div id="poster-jadwal-matrix" className="table-wrap" style={{
           overflowX: 'auto', 
-          maxHeight: '65vh', // Agar tidak terlalu panjang ke bawah
+          maxHeight: '65vh', 
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '10px',
-          background: '#0f172a' // Background gelap saat export
+          background: '#0f172a' 
         }}>
           <table style={{ borderCollapse: 'separate', borderSpacing: '0', width: '100%', fontSize: '13px' }}>
             <thead>
               <tr>
-                {/* HEADER GURU (Pojok Kiri Atas - Sticky Horizontal & Vertikal) */}
                 <th style={{ 
                   position: 'sticky', top: 0, left: 0, zIndex: 20, 
                   background: '#1e293b', 
@@ -128,17 +127,16 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
                   color: '#94a3b8'
                 }}>GURU</th>
                 
-                {/* HEADER JAM (Baris Atas - Sticky Vertikal) */}
                 {timeSlots.map(time => (
                   <th key={time} style={{ 
-                    position: 'sticky', top: 0, zIndex: 10, // <--- KUNCI AGAR TIDAK HILANG SAAT SCROLL BAWAH
+                    position: 'sticky', top: 0, zIndex: 10, 
                     textAlign: 'center', 
                     minWidth: '75px', 
                     padding: '12px 2px',
-                    background: '#1e293b', // <--- WARNA DIBUAT SOLID AGAR BARIS DI BAWAHNYA TIDAK TEMBUS PANDANG
+                    background: '#1e293b', 
                     fontSize: '11px',
                     borderBottom: '2px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Sedikit bayangan pemisah
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
                     color: '#94a3b8'
                   }}>{time}</th>
                 ))}
@@ -147,7 +145,6 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
             <tbody>
               {guruList.map(guru => (
                 <tr key={guru.id}>
-                  {/* KOLOM GURU (Lebih compact) */}
                   <td style={{ 
                     position: 'sticky', left: 0, zIndex: 5, background: '#1e293b', 
                     padding: '12px 10px', borderRight: '1px solid rgba(255,255,255,0.1)',
@@ -159,12 +156,9 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
                     </div>
                   </td>
 
-                  {/* SLOT JADWAL */}
                   {timeSlots.map(slot => {
                     const matchSiswa = (siswa || []).filter(s => 
-                      // 1. FILTER SAKTI: Buang siswa nonaktif
                       s.status !== 'nonaktif' && s.status !== 'Nonaktif' &&
-                      // 2. Cocokkan jadwal
                       s.guru_id === guru.id && 
                       s.hari?.includes(selectedDay) &&
                       s.jam_mulai && s.jam_mulai.startsWith(slot.substring(0, 2))
@@ -179,16 +173,17 @@ export function JadwalTab({ siswa = [], users = [], branches = [], absensiSiswa 
                       }}>
                         {matchSiswa.length > 0 ? (
                           matchSiswa.map(s => {
-                            // === 3. CEK ABSENSI: APAKAH SISWA INI HADIR DI TANGGAL TERSEBUT? ===
-                            const isHadir = (absensiSiswa || []).some(abs => 
-                              abs.siswa_id === s.id && 
-                              abs.tanggal === targetDate && 
-                              (abs.status?.toLowerCase() === 'hadir' || abs.mode?.toLowerCase() === 'in')
-                            );
+                            // === 3. CEK ABSENSI YANG SUDAH DIBUAT SUPER KEBAL (ANTI GAGAL) ===
+                            const isHadir = (absensiSiswa || []).some(abs => {
+                              const isIdSama = String(abs.siswa_id) === String(s.id);
+                              const isTanggalSama = abs.tanggal && abs.tanggal.startsWith(targetDate);
+                              const isStatusMasuk = abs.status?.toLowerCase() === 'hadir' || abs.mode?.toLowerCase() === 'in';
+                                                    
+                              return isIdSama && isTanggalSama && isStatusMasuk;
+                            });
 
                             return (
                               <div key={s.id} style={{ 
-                                // JIKA HADIR = HIJAU TERANG, JIKA BELUM = BIRU MUDA (DEFAULT)
                                 background: isHadir ? '#10b981' : '#e0f2fe', 
                                 borderLeft: `3px solid ${isHadir ? '#059669' : '#0284c7'}`,
                                 padding: '6px 8px', 
