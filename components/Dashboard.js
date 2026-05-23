@@ -133,34 +133,48 @@ export function Dashboard({ state, actions }) {
 
         if (!tidakHadirTigaJadwal) continue
 
-        const markerSiswa = `[AUTO_ABSEN_3HARI:${siswa.id}:`
-        const markerPesan = `[AUTO_ABSEN_3HARI:${siswa.id}:${tigaJadwalTerakhir.join('|')}]`
+        const namaSiswa = String(siswa.nama || '').trim()
+        const infoTanggalAbsen = `tidak hadir dalam 3 jadwal berturut-turut (${tigaJadwalTerakhir.join(', ')})`
 
         // Cek lokal dulu agar tidak spam jika data wa_queue sudah ada di state.
+        // Marker AUTO_ABSEN_3HARI sengaja tidak dimasukkan ke pesan, supaya tidak terkirim ke orang tua.
+        // Anti-duplikat diganti memakai kombinasi nomor WA + nama siswa + tanggal jadwal yang sama.
         const sudahAdaDiQueueLokal = waQueue.some((q) => {
           const createdAt = q?.created_at ? new Date(q.created_at) : null
           const masihBaru = createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= tujuhHariLalu
-          return String(q?.no_wa || '') === nomorWaOrtu && String(q?.pesan || '').includes(markerSiswa) && masihBaru
+          const pesanQueue = String(q?.pesan || '')
+
+          return (
+            String(q?.no_wa || '') === nomorWaOrtu &&
+            pesanQueue.includes(namaSiswa) &&
+            pesanQueue.includes(infoTanggalAbsen) &&
+            masihBaru
+          )
         })
         if (sudahAdaDiQueueLokal) continue
 
         // Cek langsung ke Supabase supaya tetap aman walaupun state waQueueTampil belum sempat refresh.
+        // Kita ambil queue terbaru nomor ini lalu filter di JS agar tidak perlu menyimpan marker di pesan.
         const { data: queueLama, error: cekQueueError } = await supabase
           .from('wa_queue')
-          .select('id')
+          .select('id, pesan, created_at')
           .eq('no_wa', nomorWaOrtu)
-          .ilike('pesan', `%${markerSiswa}%`)
           .gte('created_at', tujuhHariLaluISO)
-          .limit(1)
+          .limit(25)
 
         if (cekQueueError) {
           console.error('[Deteksi absen 3 hari] Gagal cek wa_queue:', cekQueueError)
           continue
         }
 
-        if (queueLama && queueLama.length > 0) continue
+        const sudahAdaDiDatabase = Array.isArray(queueLama) && queueLama.some((q) => {
+          const pesanQueue = String(q?.pesan || '')
+          return pesanQueue.includes(namaSiswa) && pesanQueue.includes(infoTanggalAbsen)
+        })
 
-        const pesan = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${siswa.nama}* tidak hadir dalam 3 jadwal berturut-turut (${tigaJadwalTerakhir.join(', ')}). Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.\n\n${markerPesan}`
+        if (sudahAdaDiDatabase) continue
+
+        const pesan = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${namaSiswa}* ${infoTanggalAbsen}. Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`
 
         const { error: insertError } = await supabase
           .from('wa_queue')
