@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Banner } from './ui/Banner'
 import { StatCard } from './ui/StatCard'
 import { TAB_LABELS } from '../lib/constants'
@@ -27,78 +27,162 @@ import { supabase } from '../lib/supabase'
 
 export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
-  // --- OTOMATIS: DETEKSI SISWA BOLOS 3X (BERDASARKAN JADWAL) ---
-  useEffect(() => {
-    if (!state.siswaTampil || !state.perkembanganTampil) return;
+  const deteksiBolos3HariRef = useRef(false)
 
-    // Fungsi canggih untuk mendapatkan nama hari dari tanggal
+  // --- OTOMATIS: DETEKSI SISWA TIDAK HADIR 3 JADWAL BERTURUT-TURUT ---
+  useEffect(() => {
+    if (!Array.isArray(state.siswaTampil) || !Array.isArray(state.perkembanganTampil)) return
+    if (state.siswaTampil.length === 0) return
+
+    // Hindari double insert saat React StrictMode / refresh state berkali-kali.
+    if (deteksiBolos3HariRef.current) return
+
+    const formatTanggalLokal = (dateObj) => {
+      const tahun = dateObj.getFullYear()
+      const bulan = String(dateObj.getMonth() + 1).padStart(2, '0')
+      const tanggal = String(dateObj.getDate()).padStart(2, '0')
+      return `${tahun}-${bulan}-${tanggal}`
+    }
+
+    const normalisasiHari = (nilai) => {
+      const teks = String(nilai || '').trim().toLowerCase()
+      const mapHari = {
+        minggu: 'minggu', ahad: 'minggu',
+        senin: 'senin',
+        selasa: 'selasa',
+        rabu: 'rabu',
+        kamis: 'kamis',
+        jumat: 'jumat', "jum'at": 'jumat',
+        sabtu: 'sabtu'
+      }
+      return mapHari[teks] || teks
+    }
+
     const getNamaHari = (dateObj) => {
-      const namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-      return namaHari[dateObj.getDay()];
-    };
+      const namaHari = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
+      return namaHari[dateObj.getDay()]
+    }
+
+    const normalisasiNomorWa = (nomor) => {
+      let hasil = String(nomor || '').replace(/\D/g, '')
+      if (!hasil) return ''
+      if (hasil.startsWith('0')) hasil = `62${hasil.slice(1)}`
+      if (hasil.startsWith('8')) hasil = `62${hasil}`
+      return hasil
+    }
+
+    const ambilTigaJadwalTerakhir = (hariJadwalSiswa) => {
+      const tigaJadwalTerakhir = []
+      const d = new Date()
+
+      // Mulai dari kemarin agar sistem tidak menganggap siswa absen padahal jadwal hari ini belum selesai.
+      d.setDate(d.getDate() - 1)
+
+      let mundur = 0
+      while (tigaJadwalTerakhir.length < 3 && mundur < 31) {
+        const namaHari = getNamaHari(d)
+        if (hariJadwalSiswa.includes(namaHari)) {
+          tigaJadwalTerakhir.push(formatTanggalLokal(d))
+        }
+        d.setDate(d.getDate() - 1)
+        mundur += 1
+      }
+
+      return tigaJadwalTerakhir
+    }
+
+    const tanggalHariIni = formatTanggalLokal(new Date())
+    const sessionKey = `deteksi-bolos-3hari-${state.selectedBranchId || 'semua-cabang'}-${tanggalHariIni}`
+    if (typeof window !== 'undefined' && window.sessionStorage?.getItem(sessionKey) === 'selesai') return
 
     const jalankanDeteksiBolos = async () => {
-      const waQueue = state.waQueueTampil || [];
+      deteksiBolos3HariRef.current = true
 
-      for (const s of state.siswaTampil) {
-        // 1. Abaikan siswa nonaktif atau yang tidak punya nomor WA
-        if (s.status === 'nonaktif') continue;
-        const nomorWaOrtu = s.no_wa_ortu || s.wa_ortu || '';
-        if (!nomorWaOrtu) continue;
+      const waQueue = Array.isArray(state.waQueueTampil) ? state.waQueueTampil : []
+      const tujuhHariLalu = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      const tujuhHariLaluISO = tujuhHariLalu.toISOString()
 
-        // 2. Anti-Spam: Jangan kirim jika sudah pernah ditegur dalam 7 hari terakhir
-        const sudahPernahDitegur = waQueue.some(q => 
-          q.no_wa === nomorWaOrtu && 
-          q.pesan?.includes('3 kali pertemuan') && 
-          new Date(q.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        );
-        if (sudahPernahDitegur) continue;
+      // Dibuat Set supaya pengecekan hadir lebih cepat dan tanggalnya tidak rawan salah timezone.
+      const perkembanganSet = new Set(
+        state.perkembanganTampil
+          .filter((p) => p?.siswa_id && p?.tanggal)
+          .map((p) => `${String(p.siswa_id)}|${String(p.tanggal).slice(0, 10)}`)
+      )
 
-        // 3. MENCARI 3 TANGGAL JADWAL TERAKHIR SISWA
-        if (!s.hari) continue; // Skip jika siswa tidak punya jadwal hari
-        const hariJadwalSiswa = s.hari.split(',').map(h => h.trim().toLowerCase());
-        
-        const tigaJadwalTerakhir = [];
-        let d = new Date();
-        d.setDate(d.getDate() - 1); // Kita mulai cek dari "kemarin"
-        
-        // Mundur hari demi hari untuk mencari 3 hari jadwal yang cocok
-        let mundur = 0;
-        while (tigaJadwalTerakhir.length < 3 && mundur < 14) { // Batas mundur 14 hari
-          const namaHariIni = getNamaHari(d).toLowerCase();
-          if (hariJadwalSiswa.includes(namaHariIni)) {
-             tigaJadwalTerakhir.push(d.toISOString().slice(0, 10));
-          }
-          d.setDate(d.getDate() - 1);
-          mundur++;
+      for (const siswa of state.siswaTampil) {
+        if (!siswa?.id) continue
+        if (String(siswa.status || '').toLowerCase() === 'nonaktif') continue
+
+        // Data CSV siswa memakai no_hp, jadi no_hp wajib ikut dicek.
+        const nomorWaOrtu = normalisasiNomorWa(siswa.no_wa_ortu || siswa.wa_ortu || siswa.no_hp || siswa.no_wa)
+        if (!nomorWaOrtu) continue
+
+        const hariJadwalSiswa = String(siswa.hari || '')
+          .split(',')
+          .map(normalisasiHari)
+          .filter(Boolean)
+
+        if (hariJadwalSiswa.length === 0) continue
+
+        const tigaJadwalTerakhir = ambilTigaJadwalTerakhir(hariJadwalSiswa)
+        if (tigaJadwalTerakhir.length < 3) continue
+
+        const tidakHadirTigaJadwal = tigaJadwalTerakhir.every((tgl) => {
+          return !perkembanganSet.has(`${String(siswa.id)}|${tgl}`)
+        })
+
+        if (!tidakHadirTigaJadwal) continue
+
+        const markerSiswa = `[AUTO_ABSEN_3HARI:${siswa.id}:`
+        const markerPesan = `[AUTO_ABSEN_3HARI:${siswa.id}:${tigaJadwalTerakhir.join('|')}]`
+
+        // Cek lokal dulu agar tidak spam jika data wa_queue sudah ada di state.
+        const sudahAdaDiQueueLokal = waQueue.some((q) => {
+          const createdAt = q?.created_at ? new Date(q.created_at) : null
+          const masihBaru = createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= tujuhHariLalu
+          return String(q?.no_wa || '') === nomorWaOrtu && String(q?.pesan || '').includes(markerSiswa) && masihBaru
+        })
+        if (sudahAdaDiQueueLokal) continue
+
+        // Cek langsung ke Supabase supaya tetap aman walaupun state waQueueTampil belum sempat refresh.
+        const { data: queueLama, error: cekQueueError } = await supabase
+          .from('wa_queue')
+          .select('id')
+          .eq('no_wa', nomorWaOrtu)
+          .ilike('pesan', `%${markerSiswa}%`)
+          .gte('created_at', tujuhHariLaluISO)
+          .limit(1)
+
+        if (cekQueueError) {
+          console.error('[Deteksi absen 3 hari] Gagal cek wa_queue:', cekQueueError)
+          continue
         }
 
-        // Jika siswa belum punya 3 riwayat jadwal, kita skip
-        if (tigaJadwalTerakhir.length < 3) continue;
+        if (queueLama && queueLama.length > 0) continue
 
-        // 4. PENGECEKAN FINAL: Apakah di 3 jadwal itu TIDAK ADA data perkembangan sama sekali?
-        const bolos3xBerturutTurut = tigaJadwalTerakhir.every(tgl => 
-          !state.perkembanganTampil.some(p => String(p.siswa_id) === String(s.id) && String(p.tanggal).includes(tgl))
-        );
+        const pesan = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${siswa.nama}* tidak hadir dalam 3 jadwal berturut-turut (${tigaJadwalTerakhir.join(', ')}). Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.\n\n${markerPesan}`
 
-        if (bolos3xBerturutTurut) {
-          try {
-            // Kita pakai supabase langsung (Bukan actions.supabase lagi)
-            await supabase.from('wa_queue').insert([{
-              no_wa: nomorWaOrtu, 
-              pesan: `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda ${s.nama} sudah tidak hadir selama 3 kali pertemuan berturut-turut. Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`,
-              status: 'pending'
-            }]);
-            console.log(`[Sistem] Sukses mendaftarkan absen 3x untuk: ${s.nama}`);
-          } catch (error) {
-            console.error("Gagal input otomatis ke wa_queue:", error);
-          }
+        const { error: insertError } = await supabase
+          .from('wa_queue')
+          .insert([{ no_wa: nomorWaOrtu, pesan, status: 'pending' }])
+
+        if (insertError) {
+          console.error(`[Deteksi absen 3 hari] Gagal input ${siswa.nama} ke wa_queue:`, insertError)
+          continue
         }
+
+        console.log(`[Deteksi absen 3 hari] Masuk wa_queue: ${siswa.nama}`)
       }
-    };
 
-    jalankanDeteksiBolos();
-  }, [state.siswaTampil, state.perkembanganTampil, state.waQueueTampil]);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage?.setItem(sessionKey, 'selesai')
+      }
+    }
+
+    jalankanDeteksiBolos().finally(() => {
+      deteksiBolos3HariRef.current = false
+    })
+  }, [state.siswaTampil, state.perkembanganTampil, state.waQueueTampil, state.selectedBranchId])
   // --- AKHIR LOGIKA OTOMATIS ---
 // === STATE UNTUK TEMA GELAP/TERANG ===
   const [isLightMode, setIsLightMode] = useState(false);
