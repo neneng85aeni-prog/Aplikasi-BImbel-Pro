@@ -28,7 +28,6 @@ export function Dashboard({ state, actions }) {
   const { user, activeTab, message, errorMsg, loadingData, visibleTabs, stats, overview, financeSummary } = state
   // --- OTOMATIS: DETEKSI SISWA BOLOS 3X ATAU LEBIH ---
   useEffect(() => {
-    // Pastikan data siswa, perkembangan, dan actions sudah siap
     if (!actions || !state.siswaTampil || !state.perkembanganTampil) return;
 
     const jalankanDeteksiBolos = async () => {
@@ -43,34 +42,36 @@ export function Dashboard({ state, actions }) {
       });
 
       for (const s of state.siswaTampil) {
-        // Filter: Abaikan siswa nonaktif atau yang sudah dikonfirmasi berhenti
-       // GANTI DENGAN INI (Hanya mengecek kolom 'status'):
+        // Filter: Abaikan siswa nonaktif
         if (s.status === 'nonaktif') continue;
-        
-        // Anti-Spam: Jangan kirim jika sudah ada antrean tipe ini dalam 7 hari terakhir
+
+        // Ambil nomor WA (Pastikan sesuai dengan kolom di tabel siswa Mbak)
+        const nomorWaOrtu = s.no_wa_ortu || s.wa_ortu || '';
+        if (!nomorWaOrtu) continue; // Skip jika siswa tidak punya nomor WA
+
+        // Anti-Spam (Diperbarui): Cek berdasarkan no_wa dan isi pesan
         const sudahPernahDitegur = waQueue.some(q => 
-          String(q.siswa_id) === String(s.id) && 
-          q.tipe === 'pertanyaan_tidak_hadir' && 
+          q.no_wa === nomorWaOrtu && 
+          q.pesan?.includes('3 kali pertemuan') && 
           new Date(q.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
         );
         
         if (sudahPernahDitegur) continue;
 
-        // Cek ketidakhadiran berturut-turut di data perkembangan
+        // Cek ketidakhadiran berturut-turut di 3 hari terakhir
         const bolos3xAtauLebih = last3Days.every(tgl => 
           !state.perkembanganTampil.some(p => String(p.siswa_id) === String(s.id) && String(p.tanggal).includes(tgl))
         );
 
         if (bolos3xAtauLebih) {
           try {
-            // Langsung inject ke tabel wa_queue melalui actions supabase global
+            // PERBAIKAN FATAL: Nama kolom sekarang 100% sesuai dengan database Supabase Mbak!
             await actions.supabase.from('wa_queue').insert([{
-              siswa_id: s.id,
-              no_hp: s.no_wa_ortu || s.wa_ortu || '', 
+              no_wa: nomorWaOrtu, 
               pesan: `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda ${s.nama} sudah tidak hadir selama 3 kali pertemuan atau lebih. Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`,
-              tipe: 'pertanyaan_tidak_hadir'
+              status: 'pending' // Kolom ini wajib ada agar terbaca oleh sistem pengirim WA otomatis Mbak
             }]);
-            console.log(`[Sistem] Otomatis mendaftarkan absen 3x untuk: ${s.nama}`);
+            console.log(`[Sistem] Sukses mendaftarkan absen 3x untuk: ${s.nama}`);
           } catch (error) {
             console.error("Gagal input otomatis ke wa_queue:", error);
           }
@@ -79,7 +80,7 @@ export function Dashboard({ state, actions }) {
     };
 
     jalankanDeteksiBolos();
-  }, [state.siswaTampil, state.perkembanganTampil, state.waQueueTampil]);
+  }, [state.siswaTampil, state.perkembanganTampil, state.waQueueTampil, actions]);
   // --- AKHIR LOGIKA OTOMATIS ---
 // === STATE UNTUK TEMA GELAP/TERANG ===
   const [isLightMode, setIsLightMode] = useState(false);
