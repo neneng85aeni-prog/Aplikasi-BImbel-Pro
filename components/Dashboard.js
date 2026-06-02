@@ -22,6 +22,7 @@ import { DownloadTab } from './tabs/DownloadTab'
 import { PengeluaranTab } from './tabs/PengeluaranTab'
 import { LaporanGuruTab } from './tabs/LaporanGuruTab'
 import { InventoryTab } from './tabs/InventoryTab'
+import { PengingatAbsenTab } from './tabs/PengingatAbsenTab'
 import { MaintenanceTab } from './tabs/MaintenanceTab'
 
 export function Dashboard({ state, actions }) {
@@ -95,6 +96,7 @@ export function Dashboard({ state, actions }) {
           {visibleTabs.includes('jadwal') && <button className={`tab ${activeTab === 'jadwal' ? 'active' : ''}`} onClick={() => actions.setActiveTab('jadwal')}>📅 Jadwal Guru</button>}
           {visibleTabs.includes('perkembangan') && <button className={`tab ${activeTab === 'perkembangan' ? 'active' : ''}`} onClick={() => actions.setActiveTab('perkembangan')}>📝 Input Laporan</button>}
           {visibleTabs.includes('absensi_siswa') && <button className={`tab ${activeTab === 'absensi_siswa' ? 'active' : ''}`} onClick={() => actions.setActiveTab('absensi_siswa')}>⏳ Monitor Absen</button>}
+          <button className={`tab ${activeTab === 'pengingat_absen' ? 'active' : ''}`} onClick={() => actions.setActiveTab('pengingat_absen')}>🔔 Pengingat Absen</button>
           {visibleTabs.includes('laporan_guru') && <button className={`tab ${activeTab === 'laporan_guru' ? 'active' : ''}`} onClick={() => actions.setActiveTab('laporan_guru')}>👨‍🏫 Laporan Guru</button>}
           {visibleTabs.includes('review') && <button className={`tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => actions.setActiveTab('review')}>⭐ Penilaian Guru</button>}
         
@@ -272,6 +274,12 @@ export function Dashboard({ state, actions }) {
             siswaTampil={state.siswaTampil}
             perkembanganTampil={state.perkembanganTampil}
             openSmartWA={actions.openSmartWA}
+          />
+        )}
+        {activeTab === 'pengingat_absen' && (
+          <PengingatAbsenTab 
+            siswa={state.siswaTampil} 
+            perkembangan={state.perkembanganTampil} 
           />
         )}
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
