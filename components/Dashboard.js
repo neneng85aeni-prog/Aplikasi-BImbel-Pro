@@ -71,7 +71,7 @@ export function Dashboard({ state, actions }) {
       return hasil
     }
 
-    const ambilTigaJadwalTerakhir = (hariJadwalSiswa) => {
+    const ambilTigaJadwalTerakhir = (hariJadwalSiswa, setLibur) => {
       const tigaJadwalTerakhir = []
       const d = new Date()
 
@@ -80,10 +80,14 @@ export function Dashboard({ state, actions }) {
 
       let mundur = 0
       while (tigaJadwalTerakhir.length < 3 && mundur < 31) {
+        const tglString = formatTanggalLokal(d)
         const namaHari = getNamaHari(d)
-        if (hariJadwalSiswa.includes(namaHari)) {
-          tigaJadwalTerakhir.push(formatTanggalLokal(d))
+        
+        // JIKA hari ini masuk jadwal siswa DAN TANGGAL INI BUKAN HARI LIBUR, baru dihitung
+        if (hariJadwalSiswa.includes(namaHari) && !setLibur.has(tglString)) {
+          tigaJadwalTerakhir.push(tglString)
         }
+        
         d.setDate(d.getDate() - 1)
         mundur += 1
       }
@@ -112,7 +116,10 @@ export function Dashboard({ state, actions }) {
       }
       const batasWaktuDateObj = new Date(batasWaktuISO);
       // --- AKHIR TAMBAHAN BARU ---
-
+// --- AMBIL DATA HARI LIBUR ---
+      const { data: dataLibur } = await supabase.from('hari_libur').select('tanggal');
+      const setLibur = new Set(dataLibur?.map(l => l.tanggal) || []);
+     
       const waQueue = Array.isArray(state.waQueueTampil) ? state.waQueueTampil : []
 
       // Dibuat Set supaya pengecekan hadir lebih cepat dan tanggalnya tidak rawan salah timezone.
@@ -137,7 +144,7 @@ export function Dashboard({ state, actions }) {
 
         if (hariJadwalSiswa.length === 0) continue
 
-        const tigaJadwalTerakhir = ambilTigaJadwalTerakhir(hariJadwalSiswa)
+        const tigaJadwalTerakhir = ambilTigaJadwalTerakhir(hariJadwalSiswa, setLibur)
         if (tigaJadwalTerakhir.length < 3) continue
 
         const tidakHadirTigaJadwal = tigaJadwalTerakhir.every((tgl) => {
