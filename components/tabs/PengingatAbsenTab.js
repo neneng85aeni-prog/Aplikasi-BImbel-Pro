@@ -120,7 +120,7 @@ export function PengingatAbsenTab({ siswa = [], perkembangan = [] }) {
     if (!window.confirm(`Kirim pengingat untuk ananda ${s.nama}?`)) return
     
     setLoading(true)
-    const pesanText = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${s.nama}* tidak hadir dalam ${jumlahBolos} jadwal berturut-turut (${s.detailAbsen}). Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`
+    const pesanText = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${s.nama}* tidak hadir dalam ${jumlahBolos} . Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`
     
     try {
       // 1. Masukkan ke wa_queue
