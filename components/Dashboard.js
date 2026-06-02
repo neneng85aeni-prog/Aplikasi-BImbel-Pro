@@ -30,10 +30,11 @@ export function Dashboard({ state, actions }) {
 // === STATE UNTUK TEMA GELAP/TERANG ===
   const [isLightMode, setIsLightMode] = useState(false);
   // === FITUR AUTO-REDIRECT TAB ===
+  // === FITUR AUTO-REDIRECT TAB ===
   useEffect(() => {
     if (visibleTabs && visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
-      // Jika tab yang diakses laporan_guru atau hari_libur tapi belum ada di visibleTabs, kita izinkan
-      if (activeTab !== 'laporan_guru' && activeTab !== 'hari_libur') {
+      // Izinkan laporan_guru, hari_libur, dan pengingat_absen diakses langsung tanpa di-redirect
+      if (activeTab !== 'laporan_guru' && activeTab !== 'hari_libur' && activeTab !== 'pengingat_absen') {
         actions.setActiveTab(visibleTabs[0]);
       }
     }
