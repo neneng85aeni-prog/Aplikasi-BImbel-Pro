@@ -3,6 +3,7 @@ import { Banner } from './ui/Banner'
 import { StatCard } from './ui/StatCard'
 import { TAB_LABELS } from '../lib/constants'
 import { formatRupiah } from '../lib/format'
+import { HariLiburTab } from './tabs/HariLiburTab'
 import { OverviewTab } from './tabs/OverviewTab'
 import { CabangTab } from './tabs/CabangTab'
 import { ProgramTab } from './tabs/ProgramTab'
@@ -313,6 +314,7 @@ export function Dashboard({ state, actions }) {
           {visibleTabs.includes('inventory') && <button className={`tab ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => actions.setActiveTab('inventory')}>📦 Inventaris</button>}
           {visibleTabs.includes('permissions') && <button className={`tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => actions.setActiveTab('permissions')}>🛡️ Hak Akses</button>}
           {visibleTabs.includes('maintenance') && <button className={`tab ${activeTab === 'maintenance' ? 'active' : ''}`} onClick={() => actions.setActiveTab('maintenance')}>🛠️ Maintenance</button>}
+          <button className={`tab ${activeTab === 'hari_libur' ? 'active' : ''}`} onClick={() => actions.setActiveTab('hari_libur')}>🗓️ Hari Libur</button>
           {visibleTabs.includes('download') && <button className={`tab ${activeTab === 'download' ? 'active' : ''}`} onClick={() => actions.setActiveTab('download')}>⬇️ Download Data</button>}
 
         </div>
@@ -472,7 +474,7 @@ export function Dashboard({ state, actions }) {
         )}
         {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
         {activeTab === 'maintenance' && <MaintenanceTab pembayaran={state.pembayaranTampil} perkembangan={state.perkembanganTampil} onTriggerArchive={actions.triggerManualArchive} />}
-       
+        {activeTab === 'hari_libur' && <HariLiburTab />}    
         {state.deleteConfirm.show && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
             <div className="glass-card" style={{ width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.2s ease-out' }}>
