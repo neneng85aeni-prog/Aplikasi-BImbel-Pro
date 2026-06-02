@@ -156,6 +156,7 @@ export function Dashboard({ state, actions }) {
 
         const namaSiswa = String(siswa.nama || '').trim()
         const infoTanggalAbsen = `tidak hadir dalam 3 jadwal berturut-turut (${tigaJadwalTerakhir.join(', ')})`
+        const periodeAbsen = tigaJadwalTerakhir.join('|')
 
         // Cek lokal dulu agar tidak spam jika data wa_queue sudah ada di state (Kode Asli Dipertahankan)
         const sudahAdaDiQueueLokal = waQueue.some((q) => {
@@ -164,7 +165,6 @@ export function Dashboard({ state, actions }) {
           const pesanQueue = String(q?.pesan || '')
 
           return (
-            String(q?.no_wa || '') === nomorWaOrtu &&
             pesanQueue.includes(namaSiswa) &&
             pesanQueue.includes(infoTanggalAbsen) &&
             masihBaru
@@ -172,13 +172,13 @@ export function Dashboard({ state, actions }) {
         })
         if (sudahAdaDiQueueLokal) continue
 
-        // --- MODIFIKASI: Cek langsung ke wa_log (Bukan lagi ke wa_queue) ---
+        // --- MODIFIKASI: Cek langsung ke wa_log berdasarkan siswa dan periode absen, bukan nomor WA ---
         const { data: logLama, error: cekLogError } = await supabase
           .from('wa_log')
           .select('id')
-          .eq('no_wa', nomorWaOrtu)
+          .eq('siswa_id', String(siswa.id))
           .eq('kategori', 'peringatan_bolos_3x')
-          .gte('created_at', batasWaktuISO)
+          .eq('periode_absen', periodeAbsen)
           .limit(1)
 
         if (cekLogError) {
@@ -193,6 +193,24 @@ export function Dashboard({ state, actions }) {
         // Kode Asli Dipertahankan
         const pesan = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${namaSiswa}* ${infoTanggalAbsen}. Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`
 
+        // --- TAMBAHAN BARU: Catat pengiriman ke wa_log permanen sebelum masuk wa_queue ---
+        const { error: insertLogError } = await supabase
+          .from('wa_log')
+          .insert([{
+            no_wa: nomorWaOrtu,
+            no_wa_normalized: nomorWaOrtu,
+            siswa_id: String(siswa.id),
+            nama_siswa: namaSiswa,
+            kategori: 'peringatan_bolos_3x',
+            periode_absen: periodeAbsen
+          }])
+
+        if (insertLogError) {
+          console.error(`[Deteksi absen 3 hari] Gagal catat log untuk: ${siswa.nama}`, insertLogError)
+          continue
+        }
+        // --- AKHIR TAMBAHAN BARU ---
+
         const { error: insertError } = await supabase
           .from('wa_queue')
           .insert([{ no_wa: nomorWaOrtu, pesan, status: 'pending' }])
@@ -201,16 +219,6 @@ export function Dashboard({ state, actions }) {
           console.error(`[Deteksi absen 3 hari] Gagal input ${siswa.nama} ke wa_queue:`, insertError)
           continue
         }
-
-        // --- TAMBAHAN BARU: Catat pengiriman ke wa_log permanen ---
-        const { error: insertLogError } = await supabase
-          .from('wa_log')
-          .insert([{ no_wa: nomorWaOrtu, kategori: 'peringatan_bolos_3x' }])
-        
-        if (insertLogError) {
-          console.error(`[Deteksi absen 3 hari] Gagal catat log untuk: ${siswa.nama}`, insertLogError)
-        }
-        // --- AKHIR TAMBAHAN BARU ---
 
         console.log(`[Deteksi absen 3 hari] Masuk wa_queue & wa_log: ${siswa.nama}`)
       }
