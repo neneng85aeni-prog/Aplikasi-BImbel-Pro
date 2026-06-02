@@ -148,7 +148,7 @@ export function PengingatAbsenTab({ siswa = [], perkembangan = [] }) {
     const logData = []
 
     siswaBolosList.forEach(s => {
-      const pesanText = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${s.nama}* tidak hadir dalam ${jumlahBolos} jadwal berturut-turut (${s.detailAbsen}). Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`
+      const pesanText = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${s.nama}* tidak hadir dalam ${jumlahBolos} hari berturut-turut. Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`
       queueData.push({ no_wa: s.nomorWaFormat, pesan: pesanText, status: 'pending' })
       logData.push({ no_wa: s.nomorWaFormat, kategori: 'peringatan_bolos_3x' })
     })
