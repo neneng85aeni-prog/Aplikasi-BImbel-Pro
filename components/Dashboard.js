@@ -229,8 +229,8 @@ export function Dashboard({ state, actions }) {
   // === FITUR AUTO-REDIRECT TAB ===
   useEffect(() => {
     if (visibleTabs && visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
-      // Jika tab yang diakses laporan_guru tapi belum ada di visibleTabs, kita izinkan lewat shortcut sidebar bawah
-      if (activeTab !== 'laporan_guru') {
+      // Jika tab yang diakses laporan_guru atau hari_libur tapi belum ada di visibleTabs, kita izinkan
+      if (activeTab !== 'laporan_guru' && activeTab !== 'hari_libur') {
         actions.setActiveTab(visibleTabs[0]);
       }
     }
