@@ -95,12 +95,25 @@ export function Dashboard({ state, actions }) {
     const sessionKey = `deteksi-bolos-3hari-${state.selectedBranchId || 'semua-cabang'}-${tanggalHariIni}`
     if (typeof window !== 'undefined' && window.sessionStorage?.getItem(sessionKey) === 'selesai') return
 
-    const jalankanDeteksiBolos = async () => {
+   const jalankanDeteksiBolos = async () => {
       deteksiBolos3HariRef.current = true
 
+      // --- TAMBAHAN BARU: AMBIL DURASI DARI WA_SETTINGS ---
+      // Kita set default 7 hari dulu untuk berjaga-jaga jika tabel wa_settings belum terbaca
+      let batasWaktuISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: settings, error: settingsError } = await supabase
+        .from('wa_settings')
+        .select('nilai_hari')
+        .eq('nama_setting', 'durasi_peringatan_bolos')
+        .single();
+      
+      if (!settingsError && settings && settings.nilai_hari) {
+        batasWaktuISO = new Date(Date.now() - settings.nilai_hari * 24 * 60 * 60 * 1000).toISOString();
+      }
+      const batasWaktuDateObj = new Date(batasWaktuISO);
+      // --- AKHIR TAMBAHAN BARU ---
+
       const waQueue = Array.isArray(state.waQueueTampil) ? state.waQueueTampil : []
-      const tujuhHariLalu = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      const tujuhHariLaluISO = tujuhHariLalu.toISOString()
 
       // Dibuat Set supaya pengecekan hadir lebih cepat dan tanggalnya tidak rawan salah timezone.
       const perkembanganSet = new Set(
@@ -136,12 +149,10 @@ export function Dashboard({ state, actions }) {
         const namaSiswa = String(siswa.nama || '').trim()
         const infoTanggalAbsen = `tidak hadir dalam 3 jadwal berturut-turut (${tigaJadwalTerakhir.join(', ')})`
 
-        // Cek lokal dulu agar tidak spam jika data wa_queue sudah ada di state.
-        // Marker AUTO_ABSEN_3HARI sengaja tidak dimasukkan ke pesan, supaya tidak terkirim ke orang tua.
-        // Anti-duplikat diganti memakai kombinasi nomor WA + nama siswa + tanggal jadwal yang sama.
+        // Cek lokal dulu agar tidak spam jika data wa_queue sudah ada di state (Kode Asli Dipertahankan)
         const sudahAdaDiQueueLokal = waQueue.some((q) => {
           const createdAt = q?.created_at ? new Date(q.created_at) : null
-          const masihBaru = createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= tujuhHariLalu
+          const masihBaru = createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= batasWaktuDateObj
           const pesanQueue = String(q?.pesan || '')
 
           return (
@@ -153,27 +164,25 @@ export function Dashboard({ state, actions }) {
         })
         if (sudahAdaDiQueueLokal) continue
 
-        // Cek langsung ke Supabase supaya tetap aman walaupun state waQueueTampil belum sempat refresh.
-        // Kita ambil queue terbaru nomor ini lalu filter di JS agar tidak perlu menyimpan marker di pesan.
-        const { data: queueLama, error: cekQueueError } = await supabase
-          .from('wa_queue')
-          .select('id, pesan, created_at')
+        // --- MODIFIKASI: Cek langsung ke wa_log (Bukan lagi ke wa_queue) ---
+        const { data: logLama, error: cekLogError } = await supabase
+          .from('wa_log')
+          .select('id')
           .eq('no_wa', nomorWaOrtu)
-          .gte('created_at', tujuhHariLaluISO)
-          .limit(25)
+          .eq('kategori', 'peringatan_bolos_3x')
+          .gte('created_at', batasWaktuISO)
+          .limit(1)
 
-        if (cekQueueError) {
-          console.error('[Deteksi absen 3 hari] Gagal cek wa_queue:', cekQueueError)
+        if (cekLogError) {
+          console.error('[Deteksi absen 3 hari] Gagal cek wa_log:', cekLogError)
           continue
         }
 
-        const sudahAdaDiDatabase = Array.isArray(queueLama) && queueLama.some((q) => {
-          const pesanQueue = String(q?.pesan || '')
-          return pesanQueue.includes(namaSiswa) && pesanQueue.includes(infoTanggalAbsen)
-        })
+        const sudahAdaDiDatabaseLog = Array.isArray(logLama) && logLama.length > 0
+        if (sudahAdaDiDatabaseLog) continue
+        // --- AKHIR MODIFIKASI ---
 
-        if (sudahAdaDiDatabase) continue
-
+        // Kode Asli Dipertahankan
         const pesan = `Assalamu'alaikum Ayah/Bunda, kami perhatikan ananda *${namaSiswa}* ${infoTanggalAbsen}. Apakah ada kendala atau ada yang bisa kami bantu? Mohon informasinya ya, terima kasih.`
 
         const { error: insertError } = await supabase
@@ -185,14 +194,23 @@ export function Dashboard({ state, actions }) {
           continue
         }
 
-        console.log(`[Deteksi absen 3 hari] Masuk wa_queue: ${siswa.nama}`)
+        // --- TAMBAHAN BARU: Catat pengiriman ke wa_log permanen ---
+        const { error: insertLogError } = await supabase
+          .from('wa_log')
+          .insert([{ no_wa: nomorWaOrtu, kategori: 'peringatan_bolos_3x' }])
+        
+        if (insertLogError) {
+          console.error(`[Deteksi absen 3 hari] Gagal catat log untuk: ${siswa.nama}`, insertLogError)
+        }
+        // --- AKHIR TAMBAHAN BARU ---
+
+        console.log(`[Deteksi absen 3 hari] Masuk wa_queue & wa_log: ${siswa.nama}`)
       }
 
       if (typeof window !== 'undefined') {
         window.sessionStorage?.setItem(sessionKey, 'selesai')
       }
     }
-
     jalankanDeteksiBolos().finally(() => {
       deteksiBolos3HariRef.current = false
     })
