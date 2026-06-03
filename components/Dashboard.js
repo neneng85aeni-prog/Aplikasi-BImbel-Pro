@@ -77,6 +77,8 @@ export function Dashboard({ state, actions }) {
             box-sizing: border-box; border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.1); 
             padding: 10px 15px !important; border-radius: 0 !important; 
             background: ${isLightMode ? '#ffffff' : '#1e293b'}; 
+            overflow: visible !important; /* SUPER PENTING: Mencegah menu terjepit! */
+            margin: 0 !important;
           }
           
           .sidebar-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 0 !important; }
@@ -87,7 +89,7 @@ export function Dashboard({ state, actions }) {
           
           /* 3. MENU HP - LAYAR PENUH (FULL OVERLAY) ANTI BUG */
           .nav-stack { 
-            position: fixed; top: 55px; left: 0; width: 100%; height: calc(100vh - 55px);
+            position: fixed; top: 55px; left: 0; width: 100vw; height: calc(100vh - 55px);
             background: ${isLightMode ? '#f8fafc' : '#0f172a'}; 
             display: flex !important; flex-direction: column !important; 
             overflow-y: auto !important; overflow-x: hidden !important;
@@ -99,11 +101,11 @@ export function Dashboard({ state, actions }) {
           
           /* 4. AREA KONTEN UTAMA (DI-CENTER) */
           .content-area { 
-            padding: 12px 15px !important; /* Padding seimbang kiri-kanan */
-            width: 100% !important; /* Ganti dari 100vw jadi 100% */
+            padding: 12px 15px !important; 
+            width: 100% !important; 
             box-sizing: border-box !important; 
             display: block !important; overflow-x: hidden !important;
-            margin: 0 auto !important; /* Memaksa rata tengah otomatis */
+            margin: 0 auto !important; 
           }
           
           .topbar { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; width: 100%; box-sizing: border-box; padding: 12px !important;}
@@ -123,15 +125,15 @@ export function Dashboard({ state, actions }) {
             flex-direction: column !important;
             width: 100% !important;
             gap: 12px !important;
-            margin: 0 auto !important; /* Center grid children */
+            margin: 0 auto !important; 
           }
 
           /* ======================================================== */
-          /* 6. KARTU & TABEL TOUCH SCROLLING (DI-CENTER) */
+          /* 6. KARTU & TABEL TOUCH SCROLLING (HANYA AREA KONTEN)     */
           /* ======================================================== */
-          .glass-card {
+          .content-area .glass-card { /* <-- Ini Kuncinya: Hanya Card di Area Bawah! */
             width: 100% !important; max-width: 100% !important; box-sizing: border-box !important;
-            margin: 0 auto 12px auto !important; /* KUNCI RATA TENGAH UNTUK SETIAP PANEL */
+            margin: 0 auto 12px auto !important; 
             padding: 15px !important;
             overflow-x: auto !important; -webkit-overflow-scrolling: touch;
           }
