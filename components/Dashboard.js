@@ -140,4 +140,179 @@ export function Dashboard({ state, actions }) {
             display: block !important; width: 100% !important; min-width: 100% !important;
             white-space: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch;
           }
-          th, td { padding: 8px !important;
+          th, td { padding: 8px !important; font-size: 11px !important; }
+        }
+      `}</style>
+
+      <aside className="sidebar glass-card">
+        <div className="sidebar-header">
+          <div>
+            <div className="eyebrow">Bimbel Pro</div>
+            <h1 className="sidebar-title" style={{ margin: 0 }}>Final Stable</h1>
+            <p className="text-muted hide-on-mobile">{user.nama}<br />{user.email}</p>
+          </div>
+          
+          {/* === TOMBOL MENU & LOGOUT KHUSUS HP === */}
+          <div className="mobile-actions">
+            <button 
+              className="btn btn-secondary btn-small"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              style={{ padding: '6px 12px', fontSize: '14px', borderRadius: '6px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }}
+            >
+              {isMobileMenuOpen ? '✖ Tutup' : '☰ Menu'}
+            </button>
+            <button 
+              className="btn btn-danger btn-small" 
+              onClick={actions.logout} 
+              style={{ padding: '6px 12px', borderRadius: '6px' }}
+            >
+              🚪 Keluar
+            </button>
+          </div>
+        </div>
+
+        <div className={`nav-stack ${!isMobileMenuOpen ? 'mobile-closed' : ''}`}>
+          
+          {/* === KATEGORI UTAMA === */}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '5px' }}>Utama</div>
+          {visibleTabs.includes('overview') && <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabClick('overview')}>📊 Dashboard</button>}
+          {visibleTabs.includes('kasir') && <button className={`tab ${activeTab === 'kasir' ? 'active' : ''}`} onClick={() => handleTabClick('kasir')}>🧾 Kasir</button>}
+
+          {/* === KATEGORI AKADEMIK === */}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '10px' }}>Akademik</div>
+          {visibleTabs.includes('siswa') && <button className={`tab ${activeTab === 'siswa' ? 'active' : ''}`} onClick={() => handleTabClick('siswa')}>👨‍🎓 Data Siswa</button>}
+          {visibleTabs.includes('jadwal') && <button className={`tab ${activeTab === 'jadwal' ? 'active' : ''}`} onClick={() => handleTabClick('jadwal')}>📅 Jadwal Guru</button>}
+          {visibleTabs.includes('perkembangan') && <button className={`tab ${activeTab === 'perkembangan' ? 'active' : ''}`} onClick={() => handleTabClick('perkembangan')}>📝 Input Laporan</button>}
+          {visibleTabs.includes('absensi_siswa') && <button className={`tab ${activeTab === 'absensi_siswa' ? 'active' : ''}`} onClick={() => handleTabClick('absensi_siswa')}>⏳ Monitor Absen</button>}
+          <button className={`tab ${activeTab === 'pengingat_absen' ? 'active' : ''}`} onClick={() => handleTabClick('pengingat_absen')}>🔔 Pengingat Absen</button>
+          {visibleTabs.includes('laporan_guru') && <button className={`tab ${activeTab === 'laporan_guru' ? 'active' : ''}`} onClick={() => handleTabClick('laporan_guru')}>👨‍🏫 Laporan Guru</button>}
+          {visibleTabs.includes('review') && <button className={`tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => handleTabClick('review')}>⭐ Penilaian Guru</button>}
+        
+          {/* === KATEGORI KEUANGAN === */}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '10px' }}>Keuangan</div>
+          {visibleTabs.includes('laporan') && <button className={`tab ${activeTab === 'laporan' ? 'active' : ''}`} onClick={() => handleTabClick('laporan')}>💰 Pemasukan</button>}
+          {visibleTabs.includes('pengeluaran') && <button className={`tab ${activeTab === 'pengeluaran' ? 'active' : ''}`} onClick={() => handleTabClick('pengeluaran')}>💸 Pengeluaran</button>}
+          {visibleTabs.includes('payroll') && <button className={`tab ${activeTab === 'payroll' ? 'active' : ''}`} onClick={() => handleTabClick('payroll')}>🧧 Gaji & Bonus</button>}
+
+          {/* === KATEGORI PENGATURAN === */}
+          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', padding: '10px 10px 5px 10px', marginTop: '10px' }}>Sistem</div>
+          {visibleTabs.includes('karyawan') && <button className={`tab ${activeTab === 'karyawan' ? 'active' : ''}`} onClick={() => handleTabClick('karyawan')}>👥 Karyawan</button>}
+          {visibleTabs.includes('users') && <button className={`tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => handleTabClick('users')}>🔑 Akun & User</button>}
+          {visibleTabs.includes('cabang') && <button className={`tab ${activeTab === 'cabang' ? 'active' : ''}`} onClick={() => handleTabClick('cabang')}>🏢 Cabang</button>}
+          {visibleTabs.includes('program') && <button className={`tab ${activeTab === 'program' ? 'active' : ''}`} onClick={() => handleTabClick('program')}>📚 Program Belajar</button>}
+          {visibleTabs.includes('inventory') && <button className={`tab ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => handleTabClick('inventory')}>📦 Inventaris</button>}
+          {visibleTabs.includes('permissions') && <button className={`tab ${activeTab === 'permissions' ? 'active' : ''}`} onClick={() => handleTabClick('permissions')}>🛡️ Hak Akses</button>}
+          {visibleTabs.includes('maintenance') && <button className={`tab ${activeTab === 'maintenance' ? 'active' : ''}`} onClick={() => handleTabClick('maintenance')}>🛠️ Maintenance</button>}
+          <button className={`tab ${activeTab === 'hari_libur' ? 'active' : ''}`} onClick={() => handleTabClick('hari_libur')}>🗓️ Hari Libur</button>
+          {visibleTabs.includes('download') && <button className={`tab ${activeTab === 'download' ? 'active' : ''}`} onClick={() => handleTabClick('download')}>⬇️ Download Data</button>}
+        </div>
+
+        <div className="btn-row column sidebar-actions">
+          <button className="btn btn-secondary" onClick={actions.loadAllData}>{loadingData ? 'Refreshing...' : 'Refresh data'}</button>
+          <button className="btn btn-danger" onClick={actions.logout}>Logout</button>
+        </div>
+      </aside>
+
+      <section className="content-area">
+        <div className="glass-card topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
+          <div>
+            <div className="eyebrow">{user.akses}</div>
+            <h1 className="hero-title">Operasional premium {state.selectedBranch?.nama ? `• ${state.selectedBranch.nama}` : '• Semua cabang'}</h1>
+            <p className="text-muted">Dashboard modern untuk cabang, kasir, absensi, inventory, payroll, dan laporan keuangan.</p>
+          </div>
+          
+          {/* === TOMBOL SAKLAR TEMA === */}
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => setIsLightMode(!isLightMode)}
+            style={{ 
+              borderRadius: '50px', 
+              padding: '8px 14px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              border: isLightMode ? '1px solid #cbd5e1' : '1px solid rgba(255,255,255,0.2)'
+            }}
+          >
+            {isLightMode ? '🌙 Mode Gelap' : '☀️ Mode Terang'}
+          </button>
+        </div>
+        
+        {canSeeStats && (
+          <div className="grid grid-3 compact-stats">
+            <StatCard label="Siswa" value={stats.siswa} />
+            <StatCard label="Karyawan" value={stats.pegawai} />
+            <StatCard label="Net bulan ini (Laba)" value={formatRupiah(overview.labaBulanan)} />
+          </div>
+        )}
+
+        {message ? <Banner>{message}</Banner> : null}
+        {errorMsg ? <Banner warning>{errorMsg}</Banner> : null}
+
+        {/* === AREA KONTEN TAB === */}
+        {activeTab === 'overview' && (
+          <OverviewTab overview={overview} financeSummary={financeSummary} selectedBranch={state.selectedBranch} employeeBarcodeIn={state.employeeBarcodeIn} employeeBarcodeOut={state.employeeBarcodeOut} pembayaran={state.pembayaranTampil} pengeluaran={state.pengeluaranTampil} siswa={state.siswaTampil} perkembangan={state.perkembanganTampil}/>
+        )}
+        {activeTab === 'jadwal' && <JadwalTab siswa={state.siswaTampil} users={state.usersTampil} branches={state.branches} perkembangan={state.perkembanganTampil} />}
+        {activeTab === 'cabang' && <CabangTab branchForm={state.branchForm} setBranchForm={actions.setBranchForm} branches={state.branches} onSubmit={actions.submitBranch} onReset={actions.setBranchForm} onEdit={actions.startEditBranch} onDelete={actions.deleteBranch} />}
+        {activeTab === 'program' && <ProgramTab programForm={state.programForm} setProgramForm={actions.setProgramForm} programs={state.programs} onSubmit={actions.submitProgram} onReset={actions.setProgramForm} onEdit={actions.startEditProgram} onDelete={actions.deleteProgram} />}
+        {activeTab === 'users' && <UsersTab userForm={state.userForm} setUserForm={actions.setUserForm} users={state.usersTampil} branches={state.branches} programs={state.programs} onSubmit={actions.submitUser} onReset={actions.setUserForm} onEdit={actions.startEditUser} onDelete={actions.deleteUser} />}
+        {activeTab === 'permissions' && <PermissionsTab users={state.usersTampil} permissionUserId={state.permissionUserId} setPermissionUserId={actions.setPermissionUserId} permissionDraft={state.permissionDraft} onTogglePermission={actions.togglePermissionDraft} onSavePermissions={actions.savePermissions} onSelectAllPermissions={actions.selectAllPermissions} onResetPermissions={actions.resetPermissionDraft} />}
+        
+        {activeTab === 'siswa' && (
+          <SiswaTab user={state.user} siswaForm={state.siswaForm} setSiswaForm={actions.setSiswaForm} siswaTampil={state.siswaTampil} programs={state.programs} guruOptions={state.guruOptions} branches={state.branches} onGenerateBarcode={actions.generateStudentBarcodeAction} onSubmit={actions.submitSiswa} onReset={actions.setSiswaForm} onEdit={actions.startEditSiswa} onDelete={actions.deleteSiswa} onPrintBarcode={actions.printStudentBarcode} searchSiswa={state.searchSiswa} setSearchSiswa={actions.setSearchSiswa} exportDateFrom={state.exportDateFrom} setExportDateFrom={actions.setExportDateFrom} exportDateTo={state.exportDateTo} setExportDateTo={actions.setExportDateTo} handleDownload={actions.handleDownload} onSendManualReminder={actions.sendManualReminderWA} perkembanganTampil={state.perkembanganTampil} transaksiTampil={state.transaksiTampil} />
+        )}
+        
+        {activeTab === 'kasir' && <KasirTab branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} siswaOptions={state.siswaTampil} selectedStudent={state.selectedStudent} kasirForm={state.kasirForm} setKasirForm={actions.setKasirForm} studentScanInfo={state.studentScanInfo} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanText={state.studentScanText} onSelectStudent={actions.selectStudentById} onSubmitKasir={actions.submitKasir} onPrintReceiptDesktop={actions.printThermalReceiptDesktop} onPrintReceiptAndroid={actions.printThermalReceiptAndroid} onSendReceiptWA={actions.sendThermalReceiptWA} inventoryTampil={state.inventoryTampil} showReceiptPopup={state.showReceiptPopup} setShowReceiptPopup={actions.setShowReceiptPopup} lastReceipt={state.lastReceipt} />}
+        {activeTab === 'perkembangan' && <PerkembanganTab user={state.user} perkembanganForm={state.perkembanganForm} setPerkembanganForm={actions.setPerkembanganForm} siswaTampil={state.siswaTampil} guruOptions={state.guruOptions} perkembanganHistory={state.perkembanganHistory} selectedProgressStudent={state.selectedProgressStudent} progressInputMode={state.progressInputMode} setProgressInputMode={actions.setProgressInputMode} scanStudentActive={state.scanStudentActive} setScanStudentActive={actions.setScanStudentActive} studentScanInfo={state.studentScanInfo} onSelectProgressStudent={actions.selectProgressStudentById} onSubmit={actions.submitPerkembangan} onSendPerkembanganWA={actions.sendPerkembanganWA} perkembanganTampil={state.perkembanganTampil} onDeletePerkembangan={actions.deletePerkembangan} />}
+        {activeTab === 'karyawan' && <KaryawanTab currentUser={state.user} employeeMode={state.employeeMode} setEmployeeMode={actions.setEmployeeMode} scanEmployeeActive={state.scanEmployeeActive} setScanEmployeeActive={actions.setScanEmployeeActive} employeeScanInfo={state.employeeScanInfo} employeeScanText={state.employeeScanText} absensiKaryawan={state.absensiKaryawanTampil} employeeBarcodeIn={state.employeeBarcodeIn} employeeBarcodeOut={state.employeeBarcodeOut} employeeManualForm={state.employeeManualForm} setEmployeeManualForm={actions.setEmployeeManualForm} users={state.usersTampil} onSubmitManual={actions.submitEmployeeManualAttendance} />}
+        {activeTab === 'review' && <ReviewsTab reviewForm={state.reviewForm} setReviewForm={actions.setReviewForm} users={state.usersTampil} reviews={state.reviewsTampil} onAddItem={actions.addReviewItem} onChangeItem={actions.changeReviewItem} onRemoveItem={actions.removeReviewItem} onSubmitReview={actions.submitReview} onPrintReview={actions.printEmployeeReview} />}
+        {activeTab === 'pengeluaran' && <PengeluaranTab pengeluaranForm={state.pengeluaranForm} setPengeluaranForm={actions.setPengeluaranForm} pengeluaran={state.pengeluaranTampil} branches={state.branches} onSubmit={actions.submitPengeluaran} onEdit={actions.startEditPengeluaran} onDelete={actions.deletePengeluaran} onReset={actions.setPengeluaranForm} />}
+        {activeTab === 'inventory' && <InventoryTab inventoryForm={state.inventoryForm} setInventoryForm={actions.setInventoryForm} inventory={state.inventoryTampil} branches={state.branches} onSubmit={actions.submitInventory} onEdit={actions.startEditInventory} onDelete={actions.deleteInventory} />}
+        {activeTab === 'payroll' && <PayrollTab payrollRows={state.payrollRows} bonusForm={state.bonusForm} setBonusForm={actions.setBonusForm} users={state.usersTampil} bonusManual={state.bonusManualTampil} onSubmitBonus={actions.submitBonus} onCatatGaji={actions.catatPengeluaranGaji} branches={state.branches} payrollMonth={state.payrollMonth} setPayrollMonth={actions.setPayrollMonth} payrollYear={state.payrollYear} setPayrollYear={actions.setPayrollYear} openSmartWA={actions.openSmartWA} actions={actions} />}
+        {activeTab === 'laporan' && <LaporanTab financeSummary={financeSummary} pembayaran={state.pembayaranTampil} branches={state.branches} selectedBranchId={state.selectedBranchId} setSelectedBranchId={actions.setSelectedBranchId} searchTransaksi={state.searchTransaksi} setSearchTransaksi={actions.setSearchTransaksi} onDeleteTransaksi={actions.deleteTransaksi} editTransaksiForm={state.editTransaksiForm} setEditTransaksiForm={actions.setEditTransaksiForm} onSubmitEditTransaksi={actions.submitEditTransaksi} onStartEditTransaksi={actions.startEditTransaksi} pengeluaran={state.pengeluaranTampil} onSendWA={actions.sendHistoryTransactionWA} canSeeStats={canSeeStats} />}
+        {activeTab === 'laporan_guru' && <LaporanGuruTab users={state.usersTampil} perkembanganTampil={state.perkembanganTampil} siswaTampil={state.siswaTampil} absensiSiswa={state.absensiSiswaTampil} />}
+        {activeTab === 'absensi_siswa' && <AbsensiSiswaTab siswaTampil={state.siswaTampil} perkembanganTampil={state.perkembanganTampil} openSmartWA={actions.openSmartWA} />}
+        {activeTab === 'pengingat_absen' && <PengingatAbsenTab siswa={state.siswaTampil} perkembangan={state.perkembanganTampil} />}
+        {activeTab === 'download' && <DownloadTab exportType={state.exportType} setExportType={actions.setExportType} exportDateFrom={state.exportDateFrom} exportDateTo={state.exportDateTo} setExportDateFrom={actions.setExportDateFrom} setExportDateTo={actions.setExportDateTo} onQuickRange={actions.setQuickExportRange} onDownload={actions.handleDownload} selectedBranch={state.selectedBranch} />}
+        {activeTab === 'maintenance' && <MaintenanceTab pembayaran={state.pembayaranTampil} perkembangan={state.perkembanganTampil} onTriggerArchive={actions.triggerManualArchive} />}
+        {activeTab === 'hari_libur' && <HariLiburTab />}    
+        
+        {/* === POPUPS (Delete & Archive) === */}
+        {state.deleteConfirm.show && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div className="glass-card" style={{ width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)', animation: 'fadeIn 0.2s ease-out' }}>
+              <div style={{ fontSize: '60px', marginBottom: '20px' }}>🗑️</div>
+              <h2 style={{ margin: '0 0 10px 0', fontSize: '20px' }}>Konfirmasi Hapus</h2>
+              <p className="text-muted" style={{ marginBottom: '25px', fontSize: '14px' }}>
+                Apakah Anda yakin ingin menghapus <b style={{ color: '#ef4444' }}>{state.deleteConfirm.label}</b>?
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="btn btn-danger" onClick={actions.confirmDelete} style={{ flex: 1, padding: '12px' }}>Ya, Hapus</button>
+                <button className="btn btn-secondary" onClick={() => actions.setDeleteConfirm({ show: false, table: '', id: '', label: '' })} style={{ flex: 1, padding: '12px' }}>Batal</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {state.archiveState.show && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999 }}>
+            <div className="glass-card" style={{ width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', border: `1px solid ${state.archiveState.forced ? '#ef4444' : '#eab308'}`, animation: 'fadeIn 0.2s ease-out' }}>
+              <h2 style={{ color: state.archiveState.forced ? '#ef4444' : '#eab308' }}>Otorisasi Required</h2>
+              <input 
+                type="password" placeholder="Password..." 
+                value={state.archiveState.password}
+                onChange={(e) => actions.setArchiveState(prev => ({ ...prev, password: e.target.value }))}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', margin: '20px 0', background: 'rgba(255,255,255,0.1)', color: 'white' }}
+              />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button className="btn btn-primary" onClick={actions.executeArchive} disabled={state.archiveState.loading} style={{ flex: 1 }}>📦 Eksekusi</button>
+                {!state.archiveState.forced && <button className="btn btn-secondary" onClick={() => actions.setArchiveState({ show: false, forced: false, password: '', loading: false, months: 6 })} style={{ flex: 1 }}>Batal</button>}
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    </main>
+  )
+}
