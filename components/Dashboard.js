@@ -56,97 +56,87 @@ export function Dashboard({ state, actions }) {
         .mobile-actions { display: none; }
         
         @media (max-width: 768px) {
-          /* 1. Kembalikan fungsi scroll alami layar HP */
-          body, html { overflow-x: hidden !important; width: 100%; margin: 0; padding: 0; }
-          .app-shell { 
-            display: block !important; 
-            min-height: 100vh; width: 100vw; 
+          /* 1. RESET BASE & PERKECIL UKURAN FONT PROPORSIONAL */
+          body, html { 
+            overflow-x: hidden !important; width: 100%; margin: 0; padding: 0; 
+            font-size: 13px !important; /* Base font diperkecil */
           }
+          .app-shell { display: block !important; min-height: 100vh; width: 100vw; overflow-x: hidden !important; }
           
-          /* 2. Jadikan sidebar sebagai Header Atas yang menempel (Sticky) */
+          h1 { font-size: 16px !important; }
+          h2 { font-size: 14px !important; margin-bottom: 8px !important; }
+          p, span, div, label { font-size: 12px !important; }
+          input, select, textarea, button { 
+            font-size: 12px !important; padding: 8px 10px !important; 
+            max-width: 100% !important; box-sizing: border-box !important; 
+          }
+
+          /* 2. HEADER MENEMPEL DI ATAS (Lebih Ramping) */
           .sidebar { 
             position: sticky; top: 0; z-index: 999; width: 100% !important; 
-            box-sizing: border-box; border-right: none !important; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
-            padding: 12px 16px !important; border-radius: 0 !important; 
+            box-sizing: border-box; border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.1); 
+            padding: 10px 15px !important; border-radius: 0 !important; 
             background: ${isLightMode ? '#ffffff' : '#1e293b'}; 
           }
           
-          .sidebar-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+          .sidebar-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 0 !important; }
+          .sidebar-title { font-size: 15px !important; margin: 0 !important; }
           .hide-on-mobile { display: none !important; }
           .sidebar-actions { display: none !important; }
           .mobile-actions { display: flex !important; gap: 8px; align-items: center; }
           
-          /* 3. Menu berubah jadi Dropdown Mengambang */
+          /* 3. MENU HP - LAYAR PENUH (FULL OVERLAY) ANTI BUG */
           .nav-stack { 
-            position: absolute; top: 100%; left: 0; width: 100%; 
-            background: ${isLightMode ? '#ffffff' : '#1e293b'}; 
+            position: fixed; top: 55px; left: 0; width: 100vw; height: calc(100vh - 55px);
+            background: ${isLightMode ? '#f8fafc' : '#0f172a'}; 
             display: flex !important; flex-direction: column !important; 
-            max-height: calc(100vh - 60px); overflow-y: auto !important; 
-            gap: 5px; padding: 15px; margin: 0 !important; 
-            box-shadow: 0 15px 25px rgba(0,0,0,0.6); border-bottom: 2px solid #334155;
+            overflow-y: auto !important; overflow-x: hidden !important;
+            padding: 15px 20px 100px 20px !important; margin: 0 !important; 
             box-sizing: border-box; z-index: 1000;
           }
           .nav-stack.mobile-closed { display: none !important; }
-          .nav-stack .tab { width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; }
+          .nav-stack .tab { width: 100%; text-align: left; padding: 10px 15px !important; border-radius: 8px; margin-bottom: 5px; font-size: 13px !important; }
           
-          /* 4. Area Konten Utama bebas di-scroll dari atas ke bawah */
+          /* 4. AREA KONTEN UTAMA */
           .content-area { 
-            padding: 15px !important; width: 100%; box-sizing: border-box; 
+            padding: 12px !important; width: 100vw !important; box-sizing: border-box !important; 
             display: block !important; overflow-x: hidden !important;
           }
           
-          .topbar { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; width: 100%; }
-          .topbar h1 { font-size: 16px !important; line-height: 1.4; white-space: normal; }
+          .topbar { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; width: 100%; box-sizing: border-box; padding: 12px !important;}
+          .topbar h1 { font-size: 14px !important; line-height: 1.4; white-space: normal; }
           .topbar p { display: none !important; }
           
-          .compact-stats { 
-            display: flex !important; flex-direction: column !important; 
-            gap: 12px; padding-bottom: 10px; margin-bottom: 10px; width: 100%; 
-          }
-          .compact-stats > div { width: 100% !important; padding: 15px !important; box-sizing: border-box; }
+          .compact-stats { display: flex !important; flex-direction: column !important; gap: 10px; margin-bottom: 12px; width: 100%; }
+          .compact-stats > div { width: 100% !important; padding: 12px !important; box-sizing: border-box; }
 
           /* ======================================================== */
-          /* KUNCI PERBAIKAN MENU KASIR & PERKEMBANGAN (HP ONLY)     */
+          /* 5. FIX LAYOUT KASIR & LAPORAN (Tanpa merusak tombol lain)*/
           /* ======================================================== */
-
-          /* A. Hancurkan layout 2 kolom di Kasir. Paksa menyusun ke bawah! */
-          .content-area div[style*="grid-template-columns"] {
+          /* Menghilangkan tanda '>' agar Kasir yang letaknya di dalam pasti kena efek turun ke bawah */
+          .content-area div[style*="grid-template-columns"],
+          .content-area div[style*="display: grid"],
+          .content-area .grid {
             display: flex !important;
             flex-direction: column !important;
             width: 100% !important;
-            gap: 15px !important;
+            gap: 12px !important;
           }
 
-          /* B. Jika menu dibungkus dengan flex biasa, pastikan dia melipat (wrap) ke bawah */
-          .content-area > div > div[style*="display: flex"] {
-            flex-wrap: wrap !important;
+          /* ======================================================== */
+          /* 6. KARTU & TABEL TOUCH SCROLLING */
+          /* ======================================================== */
+          .glass-card {
+            width: 100% !important; max-width: 100% !important; box-sizing: border-box !important;
+            margin-left: 0 !important; margin-right: 0 !important; padding: 12px !important;
+            overflow-x: auto !important; -webkit-overflow-scrolling: touch;
           }
           
-          /* C. Mencegah Kartu meluber (Terpotong di menu Perkembangan) */
-          .glass-card {
-            width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-            margin-left: 0 !important; 
-            margin-right: 0 !important;
-            overflow-x: hidden !important; /* Tutup luapan */
-          }
-
-          /* D. Jinakkan input, select, dan tombol agar tidak mendorong kartu */
-          input, select, textarea, button {
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-          }
-
-          /* E. Tabel Data panjang bisa di-geser ke samping di dalam kotaknya saja */
-          .content-area div[style*="overflow-x: auto"],
           .content-area table {
-            max-width: 100% !important;
-            display: block !important;
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch; /* Kelancaran scroll di iPhone */
+            display: block !important; width: 100% !important; min-width: 100% !important;
+            white-space: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch;
           }
+          th, td { padding: 8px !important; font-size: 11px !important; }
         }
       `}</style>
 
@@ -154,7 +144,7 @@ export function Dashboard({ state, actions }) {
         <div className="sidebar-header">
           <div>
             <div className="eyebrow">Bimbel Pro</div>
-            <h1 className="sidebar-title" style={{ margin: 0, fontSize: '18px' }}>Final Stable</h1>
+            <h1 className="sidebar-title" style={{ margin: 0 }}>Final Stable</h1>
             <p className="text-muted hide-on-mobile">{user.nama}<br />{user.email}</p>
           </div>
           
@@ -163,14 +153,14 @@ export function Dashboard({ state, actions }) {
             <button 
               className="btn btn-secondary btn-small"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              style={{ padding: '6px 12px', fontSize: '16px', borderRadius: '6px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }}
+              style={{ padding: '6px 12px', fontSize: '14px', borderRadius: '6px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }}
             >
               {isMobileMenuOpen ? '✖ Tutup' : '☰ Menu'}
             </button>
             <button 
               className="btn btn-danger btn-small" 
               onClick={actions.logout} 
-              style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px' }}
+              style={{ padding: '6px 12px', borderRadius: '6px' }}
             >
               🚪 Keluar
             </button>
@@ -233,7 +223,7 @@ export function Dashboard({ state, actions }) {
             onClick={() => setIsLightMode(!isLightMode)}
             style={{ 
               borderRadius: '50px', 
-              padding: '10px 16px', 
+              padding: '8px 14px', 
               display: 'flex', 
               alignItems: 'center', 
               gap: '8px',
