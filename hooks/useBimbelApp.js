@@ -26,8 +26,70 @@ import { printBarcodeCard } from '../components/ui/BarcodePreview'
 import QRCode from 'qrcode'
 
 function normalizeUserPayload(row) {
-  if (!row) return row
-  return { ...row, menu_permissions: normalizePermissions(row.menu_permissions, row.akses) }
+  if (!row) return row;
+
+  let dbPerms = row.menu_permissions;
+  const normalizedAkses = String(row.akses || '').trim().toLowerCase();
+
+  // === PENGAMAN BARU: Jika Supabase mengirim data sebagai Teks, kita ubah paksa jadi Array ===
+  if (typeof dbPerms === 'string') {
+    try {
+      // Jika format dari postgres seperti "{overview,siswa}"
+      if (dbPerms.startsWith('{')) {
+        dbPerms = dbPerms.slice(1, -1).split(',').map(s => s.replace(/"/g, '').trim());
+      } else {
+        dbPerms = JSON.parse(dbPerms);
+      }
+    } catch (e) {
+      dbPerms = [];
+    }
+  }
+
+  // Cek apakah koper hak aksesnya ada isinya
+  const hasCustomPerms = Array.isArray(dbPerms) && dbPerms.length > 0;
+
+  // Jika ada isinya pakai data database. Jika kosong melompong, pakai bawaan pabrik.
+  // Akses dinormalisasi ke huruf kecil supaya MASTER/ADMIN dari database tetap terbaca benar.
+  const finalPerms = hasCustomPerms ? dbPerms : normalizePermissions(dbPerms, normalizedAkses);
+
+  return { ...row, akses: normalizedAkses, menu_permissions: finalPerms };
+}
+
+function isPrivilegedBranchUser(user) {
+  const akses = String(user?.akses || '').trim().toLowerCase();
+  return ['master', 'admin', 'owner', 'super admin', 'super_admin'].includes(akses);
+}
+
+
+function isParentUser(user) {
+  const akses = String(user?.akses || '').trim().toLowerCase();
+  return ['orangtua', 'ortu', 'parent', 'wali'].includes(akses);
+}
+
+function normalizePhone(value) {
+  let digits = String(value ?? '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('0')) digits = '62' + digits.slice(1);
+  if (digits.startsWith('8')) digits = '62' + digits;
+  return digits;
+}
+
+function isStudentLinkedToParent(siswa, user) {
+  if (!isParentUser(user)) return true;
+
+  const userLinkedIds = [user?.siswa_id, user?.student_id, user?.parent_siswa_id, user?.anak_id]
+    .filter(Boolean)
+    .map((item) => String(item));
+  if (userLinkedIds.length && userLinkedIds.includes(String(siswa?.id))) return true;
+
+  const parentPhone = normalizePhone(user?.no_telepon || user?.no_hp || user?.phone || user?.telepon);
+  if (!parentPhone) return false;
+
+  const studentPhones = [siswa?.no_hp, siswa?.no_wa, siswa?.wa_ortu, siswa?.no_wa_ortu, siswa?.telepon_ortu]
+    .map(normalizePhone)
+    .filter(Boolean);
+
+  return studentPhones.includes(parentPhone);
 }
 
 export function useBimbelApp() {
@@ -99,20 +161,57 @@ export function useBimbelApp() {
   const employeeScannerRef = useRef(null)
 
   const visibleTabs = useMemo(() => allowedTabs(user?.akses, user?.menu_permissions), [user])
-  const selectedBranch = useMemo(() => branches.find((item) => item.id === selectedBranchId) || branches.find((item) => item.id === user?.branch_id) || branches[0] || null, [branches, selectedBranchId, user])
-  const employeeBarcodeIn = selectedBranch?.employee_barcode_in || EMPLOYEE_GLOBAL_IN
-  const employeeBarcodeOut = selectedBranch?.employee_barcode_out || EMPLOYEE_GLOBAL_OUT
 
-  const usersTampil = useMemo(() => filterByUserBranch(users, user), [users, user])
-  const siswaScoped = useMemo(() => filterByUserBranch(siswa, user), [siswa, user])
-  const pembayaranScoped = useMemo(() => filterByUserBranch(pembayaran, user, 'branch_id'), [pembayaran, user])
-  const absensiSiswaScoped = useMemo(() => filterByUserBranch(absensiSiswa, user, 'branch_id'), [absensiSiswa, user])
-  const perkembanganScoped = useMemo(() => filterByUserBranch(perkembangan, user, 'branch_id'), [perkembangan, user])
-  const absensiKaryawanScoped = useMemo(() => filterByUserBranch(absensiKaryawan, user, 'branch_id'), [absensiKaryawan, user])
-  const bonusManualScoped = useMemo(() => filterByUserBranch(bonusManual, user, 'branch_id'), [bonusManual, user])
-  const reviewsScoped = useMemo(() => filterByUserBranch(reviews, user, 'branch_id'), [reviews, user])
-  const pengeluaranScoped = useMemo(() => filterByUserBranch(pengeluaran, user, 'branch_id'), [pengeluaran, user])
-  const inventoryScoped = useMemo(() => filterByUserBranch(inventory, user, 'branch_id'), [inventory, user])
+  // MASTER/ADMIN boleh melihat semua cabang.
+  // User cabang seperti guru/kasir tetap dibatasi ke branch_id masing-masing.
+  const canAccessAllBranches = useMemo(() => isPrivilegedBranchUser(user), [user])
+  const branchScopedUser = useMemo(() => {
+    if (!user) return user;
+    return canAccessAllBranches ? { ...user, branch_id: null } : user;
+  }, [user, canAccessAllBranches])
+
+  const selectedBranch = useMemo(() => {
+    if (selectedBranchId) return branches.find((item) => item.id === selectedBranchId) || null;
+    if (!canAccessAllBranches && user?.branch_id) return branches.find((item) => item.id === user.branch_id) || null;
+    return null; 
+  }, [branches, selectedBranchId, user, canAccessAllBranches])
+
+  // === TAMBAHKAN DUA BARIS INI TEPAT DI BAWAHNYA ===
+  const employeeBarcodeIn = selectedBranch?.employee_barcode_in || EMPLOYEE_GLOBAL_IN;
+  const employeeBarcodeOut = selectedBranch?.employee_barcode_out || EMPLOYEE_GLOBAL_OUT;
+
+
+  const usersTampil = useMemo(() => {
+    let rows = filterByUserBranch(users, branchScopedUser);
+    if (selectedBranchId) {
+      rows = rows.filter((item) => item.branch_id === selectedBranchId);
+    }
+    return rows;
+  }, [users, branchScopedUser, selectedBranchId])
+  const siswaScoped = useMemo(() => {
+    const rows = filterByUserBranch(siswa, branchScopedUser)
+    return isParentUser(user) ? rows.filter((item) => isStudentLinkedToParent(item, user)) : rows
+  }, [siswa, branchScopedUser, user])
+
+  const parentStudentIds = useMemo(
+    () => new Set((siswaScoped || []).map((item) => String(item.id)).filter(Boolean)),
+    [siswaScoped]
+  )
+
+  const filterRowsForParent = (rows, branchField = 'branch_id') => {
+    const branchRows = filterByUserBranch(rows, branchScopedUser, branchField)
+    if (!isParentUser(user)) return branchRows
+    return branchRows.filter((item) => parentStudentIds.has(String(item.siswa_id || item.siswa?.id || '')))
+  }
+
+  const pembayaranScoped = useMemo(() => filterRowsForParent(pembayaran, 'branch_id'), [pembayaran, branchScopedUser, user, parentStudentIds])
+  const absensiSiswaScoped = useMemo(() => filterRowsForParent(absensiSiswa, 'branch_id'), [absensiSiswa, branchScopedUser, user, parentStudentIds])
+  const perkembanganScoped = useMemo(() => filterRowsForParent(perkembangan, 'branch_id'), [perkembangan, branchScopedUser, user, parentStudentIds])
+  const absensiKaryawanScoped = useMemo(() => isParentUser(user) ? [] : filterByUserBranch(absensiKaryawan, branchScopedUser, 'branch_id'), [absensiKaryawan, branchScopedUser, user])
+  const bonusManualScoped = useMemo(() => isParentUser(user) ? [] : filterByUserBranch(bonusManual, branchScopedUser, 'branch_id'), [bonusManual, branchScopedUser, user])
+  const reviewsScoped = useMemo(() => isParentUser(user) ? [] : filterByUserBranch(reviews, branchScopedUser, 'branch_id'), [reviews, branchScopedUser, user])
+  const pengeluaranScoped = useMemo(() => isParentUser(user) ? [] : filterByUserBranch(pengeluaran, branchScopedUser, 'branch_id'), [pengeluaran, branchScopedUser, user])
+  const inventoryScoped = useMemo(() => isParentUser(user) ? [] : filterByUserBranch(inventory, branchScopedUser, 'branch_id'), [inventory, branchScopedUser, user])
 
   const siswaTampil = useMemo(() => {
     let rows = siswaScoped
@@ -167,18 +266,48 @@ export function useBimbelApp() {
   }), [usersTampil, absSiswaPayroll, absKaryawanPayroll, bonusPayroll, targetPayrollDate])
   // ===================================================================================
 
-  const overview = useMemo(() => computeOverview({ pembayaran: pembayaranTampil, pengeluaran: pengeluaranTampil, siswa: siswaTampil, users: usersTampil, branches: selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches, payrollRows }), [pembayaranTampil, pengeluaranTampil, siswaTampil, usersTampil, branches, selectedBranchId, payrollRows])
-  const financeSummary = useMemo(() => buildFinanceSummary(pembayaranTampil, pengeluaranTampil, payrollRows, bonusManualTampil, selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches), [pembayaranTampil, pengeluaranTampil, payrollRows, bonusManualTampil, branches, selectedBranchId])
+  // Filter data khusus untuk Dashboard/Overview berdasarkan pilihan dropdown cabang
+  const overview = useMemo(() => computeOverview({ 
+    pembayaran: pembayaranTampil, 
+    pengeluaran: pengeluaranTampil, 
+    siswa: siswaTampil, 
+    users: usersTampil, 
+    branches: selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches, 
+    payrollRows 
+  }), [pembayaranTampil, pengeluaranTampil, siswaTampil, usersTampil, branches, selectedBranchId, payrollRows])
+
+  const financeSummary = useMemo(() => buildFinanceSummary(
+    pembayaranTampil, 
+    pengeluaranTampil, 
+    payrollRows, 
+    bonusManualTampil, 
+    selectedBranchId ? branches.filter((b) => b.id === selectedBranchId) : branches
+  ), [pembayaranTampil, pengeluaranTampil, payrollRows, bonusManualTampil, branches, selectedBranchId])
   const stats = useMemo(() => ({ siswa: siswaTampil.length, pegawai: usersTampil.length, program: programs.length, pemasukan: pembayaranTampil.reduce((sum, item) => sum + Number(item.nominal || 0), 0) }), [siswaTampil, usersTampil, programs, pembayaranTampil])
 
   useEffect(() => { const cachedUser = readSession(); if (cachedUser) setUser(normalizeUserPayload(cachedUser)) }, [])
   useEffect(() => { if (user) loadAllData() }, [user])
-  useEffect(() => { if (user?.branch_id && !selectedBranchId) setSelectedBranchId(user.branch_id) }, [user, selectedBranchId])
+  useEffect(() => {
+    if (!user) return;
+
+    // Jangan paksa MASTER/ADMIN ke branch_id tertentu.
+    // Ini penyebab pilihan "Semua cabang" selalu balik ke cabang user.
+    if (canAccessAllBranches || isParentUser(user)) return;
+
+    if (user?.branch_id && !selectedBranchId) {
+      setSelectedBranchId(user.branch_id);
+    }
+  }, [user, selectedBranchId, canAccessAllBranches])
 
   useEffect(() => {
     if (!permissionUserId) return setPermissionDraft([])
     const selected = usersTampil.find((item) => item.id === permissionUserId)
-    setPermissionDraft(normalizePermissions(selected?.menu_permissions, selected?.akses))
+    
+    // Langsung tampilkan apa adanya dari database, jangan difilter/direset lagi!
+    const dbPerms = selected?.menu_permissions;
+    const finalPerms = (dbPerms && dbPerms.length > 0) ? dbPerms : [];
+    
+    setPermissionDraft(finalPerms);
   }, [permissionUserId, usersTampil])
 
   useEffect(() => {
@@ -234,15 +363,106 @@ export function useBimbelApp() {
     } catch (error) { setErrorMsg(error.message || 'Gagal mengambil data.') } finally { setLoadingData(false) }
   }
 
-  async function login() {
+  function isUuidLike(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim())
+  }
+
+  async function cariSiswaDariBarcodeLogin(rawValue) {
+    const kode = String(rawValue || '').trim()
+    if (!kode) throw new Error('Barcode siswa belum terbaca.')
+
+    const kolomDicoba = [
+      { field: 'kode_qr', value: kode },
+      { field: 'barcode', value: kode },
+    ]
+
+    if (isUuidLike(kode)) {
+      kolomDicoba.push({ field: 'id', value: kode })
+    }
+
+    for (const item of kolomDicoba) {
+      const { data, error } = await supabase
+        .from('siswa')
+        .select('*')
+        .eq(item.field, item.value)
+        .limit(1)
+        .maybeSingle()
+
+      if (error) {
+        const pesanError = String(error.message || '').toLowerCase()
+
+        if (
+          pesanError.includes('does not exist') ||
+          pesanError.includes('could not find') ||
+          error.code === 'PGRST116'
+        ) {
+          continue
+        }
+
+        throw error
+      }
+
+      if (data) return data
+    }
+
+    throw new Error('Barcode siswa tidak ditemukan. Pastikan yang discan adalah barcode/QR siswa.')
+  }
+
+  async function loginDenganBarcodeSiswa(rawValue) {
+    setLoadingLogin(true)
+    setLoginError('')
+
+    try {
+      const siswaDitemukan = await cariSiswaDariBarcodeLogin(rawValue)
+
+      const userOrangtua = normalizeUserPayload({
+        id: `orangtua-barcode-${siswaDitemukan.id}`,
+        nama: `Orang Tua ${siswaDitemukan.nama || ''}`.trim(),
+        email: `barcode-siswa:${siswaDitemukan.kode_qr || siswaDitemukan.barcode || siswaDitemukan.id}`,
+        akses: 'orangtua',
+        branch_id: null,
+        no_telepon: siswaDitemukan.no_hp || '',
+        siswa_id: siswaDitemukan.id,
+        student_id: siswaDitemukan.id,
+        parent_siswa_id: siswaDitemukan.id,
+        menu_permissions: ['portal_orangtua'],
+        login_method: 'barcode_siswa',
+      })
+
+      setUser(userOrangtua)
+      saveSession(userOrangtua)
+      setSelectedBranchId('')
+      setSearchSiswa('')
+      setActiveTab('portal_orangtua')
+      setMessage(`Akses orang tua dibuka untuk ananda ${siswaDitemukan.nama || 'siswa'}.`)
+    } catch (error) {
+      setLoginError(error.message || 'Barcode siswa tidak dikenali.')
+    } finally {
+      setLoadingLogin(false)
+    }
+  }
+
+  async function login(eventOrBarcode, loginMode) {
+    const barcodeInput = typeof eventOrBarcode === 'string' ? eventOrBarcode.trim() : ''
+
+    if (loginMode === 'barcode_siswa' || barcodeInput) {
+      return loginDenganBarcodeSiswa(barcodeInput)
+    }
+
     setLoadingLogin(true); setLoginError('')
     try {
       const loggedInUser = normalizeUserPayload(await loginWithRpc(email, password))
-      setUser(loggedInUser); saveSession(loggedInUser); setMessage(`Login berhasil sebagai ${loggedInUser.akses}.`)
+
+      setSelectedBranchId((isPrivilegedBranchUser(loggedInUser) || isParentUser(loggedInUser)) ? '' : (loggedInUser.branch_id || ''));
+
+      setUser(loggedInUser)
+      saveSession(loggedInUser)
+      setActiveTab(allowedTabs(loggedInUser?.akses, loggedInUser?.menu_permissions)?.[0] || 'overview')
+      setMessage(`Login berhasil sebagai ${loggedInUser.akses}.`)
     } catch (error) { setLoginError(error.message || 'Login gagal.') } finally { setLoadingLogin(false) }
   }
 
-  function logout() { setUser(null); setEmail(''); setPassword(''); setActiveTab('overview'); clearSession(); setMessage('Logout berhasil.') }
+  function logout() { setUser(null); setEmail(''); setPassword(''); setActiveTab('overview'); setSelectedBranchId(''); clearSession(); setMessage('Logout berhasil.') }
 
   async function submitBranch(event) { 
   event.preventDefault(); 
@@ -331,14 +551,19 @@ export function useBimbelApp() {
         const targetBranch = branches.find((b) => b.id === siswaForm.branch_id);
         const LINK_GRUP_WA = targetBranch?.link_grup || "https://chat.whatsapp.com/GrupBelumDiatur";
 
-        const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat datang dan selamat bergabung di Bimbel TopCourse Pangkalan ya! ✨\n\n` +
+        const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat datang dan selamat bergabung di Bimbel Bumi Cerdas ya! ✨\n\n` +
           `Biar kita bisa komunikasi lebih enak dan Ayah/Bunda nggak ketinggalan info seru seputar jadwal serta kegiatan belajar mengajar, yuk langsung gabung ke Grup WhatsApp kita!\n\n` +
           `Tinggal klik link ini aja ya:\n` +
           `🔗 ${LINK_GRUP_WA}\n\n` +
           `Admin tunggu di dalam ya! Terima kasih 🥰`;
 
         await supabase.from('wa_queue').insert([
-          { no_wa: cleanedHp, pesan: pesanWelcome, status: 'pending' }
+          { 
+            no_wa: cleanedHp, 
+            pesan: pesanWelcome, 
+            status: 'pending',
+            //cabang_id: siswaForm.branch_id || selectedBranchId // <--- TAMBAHAN INI
+          }
         ]);
       }
 
@@ -420,49 +645,44 @@ export function useBimbelApp() {
 
 
 
-'DISINI DIHAPUS'
 
-
-
-
-  
-  async function submitPerkembangan(event) { 
-    event.preventDefault(); 
+  async function submitPerkembangan(event, directData = null) { 
+    if (event && event.preventDefault) event.preventDefault(); 
     try { 
-      const payload = validatePerkembanganForm(perkembanganForm); 
+      // 1. Terima data kiriman fisik (Quick Scan) ATAU data memori (Manual Form)
+      const dataToProcess = directData || perkembanganForm;
+      const payload = validatePerkembanganForm(dataToProcess); 
+
       const matched = siswaTampil.find((item) => item.id === payload.siswa_id); 
       if (!matched) throw new Error('Siswa tidak ditemukan.'); 
 
-      // Pisahkan 'guru_handle_id' agar tidak ikut terkirim ke database utama
       const { guru_handle_id, ...cleanPayload } = payload; 
       
-      // 1. SIMPAN KE TABEL UTAMA (Database Lama)
+      // 2. Simpan ke database
       const res = await savePerkembangan({ 
         ...cleanPayload, 
-        guru_id: user?.akses === 'guru' ? user.id : (perkembanganForm.guru_handle_id || matched.guru_id || null) 
+        guru_id: user?.akses === 'guru' ? user.id : (dataToProcess.guru_handle_id || matched.guru_id || null),
+        branch_id: matched.branch_id || selectedBranchId 
       }); 
       
       if (res.error) throw res.error; 
       
-      // ==========================================
-      // 2. FITUR BARU: INJEKSI KE ANTREAN WA
-      // ==========================================
-      // Kita hanya kirim WA otomatis jika ini data BARU (bukan sekadar ngedit data lama)
-      if (!perkembanganForm.id) {
-          const nomorWAOrtu = matched.no_hp; // Ambil nomor HP siswa
+      // 3. Antrean WA
+      if (!dataToProcess.id) {
+          const nomorWAOrtu = matched.no_hp; 
 
           if (nomorWAOrtu) {
               const { error: errorWa } = await supabase
                   .from('wa_queue')
                   .insert([{ 
                       no_wa: nomorWAOrtu, 
-                      pesan: perkembanganForm.catatan // Teks hasil gabungan dari form UI
+                      pesan: dataToProcess.catatan,
+                      status: 'pending'
                   }]);
                   
-              if (errorWa) console.error("Gagal masuk antrean WA:", errorWa);
+              if (errorWa) throw errorWa; 
           }
       }
-      // ==========================================
 
       setPerkembanganForm((prev) => ({ 
         ...INITIAL_PERKEMBANGAN_FORM, 
@@ -474,7 +694,9 @@ export function useBimbelApp() {
       setMessage('Laporan disimpan & masuk antrean WA!'); 
       await loadAllData();
     } catch (error) { 
-      setErrorMsg(error.message);
+      const pesanError = error.message || error.details || JSON.stringify(error);
+      alert("⚠️ INFO: " + pesanError);
+      setErrorMsg(pesanError);
     } 
   }
   async function prosesScanPerkembangan(decodedText) { 
@@ -585,7 +807,8 @@ export function useBimbelApp() {
         setLastReceipt({ 
           nama: selectedStudent.nama, 
           no_hp: selectedStudent.no_hp, 
-          cabang: selectedBranch?.nama || '-', 
+          // --- KODE CABANG DIPERBAIKI DI SINI ---
+          cabang: selectedStudent.branches?.nama || selectedBranch?.nama || 'Pusat', 
           cart: [...cart], 
           nominal: totalBayar, 
           subtotal: subtotalCart, 
@@ -596,7 +819,7 @@ export function useBimbelApp() {
           status: kasirForm.status 
         }); 
         setShowReceiptPopup(true); 
-      } 
+      }
       
       setMessage('Transaksi berhasil disimpan.'); 
       setSelectedStudent(null); 
@@ -608,60 +831,117 @@ export function useBimbelApp() {
   }
   
   async function submitStudentAttendance(event) { event.preventDefault(); try { const payload = validateStudentAttendanceForm(studentAttendanceForm); const res = await saveStudentAttendance({ p_siswa_id: payload.siswa_id, p_guru_handle_id: payload.guru_handle_id, p_tanggal: payload.tanggal, p_mode: payload.mode, p_status: payload.status, p_catatan: payload.catatan, p_sumber: 'manual' }); if (res.error) throw res.error; setStudentAttendanceForm(INITIAL_STUDENT_ATTENDANCE_FORM); setMessage('Absensi siswa disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  async function submitEmployeeManualAttendance(event) { 
+    async function submitEmployeeManualAttendance(event) { 
     event.preventDefault(); 
     try { 
       const payload = validateEmployeeManualForm(employeeManualForm); 
-      const tgl = payload.tanggal || new Date().toISOString().split('T')[0];
 
-      // PENGAMAN 1: Gabungkan Tanggal + Jam Datang
-      let finalJamDatang = payload.jam_datang;
-      if (finalJamDatang && !finalJamDatang.includes('T')) {
-        finalJamDatang = new Date(`${tgl}T${finalJamDatang.substring(0, 5)}:00`).toISOString();
-      }
-
-      // PENGAMAN 2: Gabungkan Tanggal + Jam Pulang
-      let finalJamPulang = payload.jam_pulang;
-      if (finalJamPulang && !finalJamPulang.includes('T')) {
-        finalJamPulang = new Date(`${tgl}T${finalJamPulang.substring(0, 5)}:00`).toISOString();
-      }
+      // --- FUNGSI PEMBERSIH JAM (Agar hanya HH:MM yang dikirim) ---
+      const cleanTime = (val) => {
+        if (!val) return null;
+        // Jika formatnya ISO (ada huruf T), ambil jam setelah huruf T
+        if (typeof val === 'string' && val.includes('T')) {
+          return val.split('T')[1].substring(0, 5);
+        }
+        // Jika format jam murni, ambil 5 karakter pertama (HH:MM)
+        return String(val).substring(0, 5);
+      };
 
       const res = await saveEmployeeManualAttendance({ 
         p_user_id: payload.user_id, 
         p_tanggal: payload.tanggal, 
         p_status: payload.status, 
-        p_jam_datang: finalJamDatang || null, 
-        p_jam_pulang: finalJamPulang || null, 
+        // Kita bersihkan dulu jamnya di sini ✨
+        p_jam_datang: cleanTime(payload.jam_datang), 
+        p_jam_pulang: cleanTime(payload.jam_pulang), 
         p_catatan: payload.catatan 
       }); 
 
       if (res.error) throw res.error; 
       
       setEmployeeManualForm(INITIAL_EMPLOYEE_MANUAL_FORM); 
-      setMessage('Absensi manual disimpan.'); 
+      setMessage('✅ Absensi manual berhasil disimpan!'); 
       await loadAllData();
     } catch (error) { 
+      // Munculkan error di alert agar Mbak Evi bisa langsung lihat jika gagal
+      alert("Gagal simpan manual: " + error.message);
       setErrorMsg(error.message);
     } 
   }
+
   
   function buildReceiptHtml(data, withAutoPrint = true) { 
+    // === SABUK PENGAMAN ANTI CRASH ===
+    if (!data) return ''; 
+
     const cartHtml = (data.cart || []).map(c => `<div class="row"><span>${c.nama} (${c.qty}x)</span><span>${formatRupiah(c.harga * c.qty)}</span></div>`).join('');
-    const diskonHtml = data.diskon > 0 ? `<div class="row" style="margin-top:5px; border-top:1px dashed #ddd; padding-top:5px"><span class="label">Subtotal:</span><span>${formatRupiah(data.subtotal || 0)}</span></div><div class="row"><span class="label">Diskon:</span><span>-${formatRupiah(data.diskon)}</span></div>` : '';
+    const diskonHtml = (data.diskon && data.diskon > 0) ? `<div class="row" style="margin-top:5px; border-top:1px dashed #ddd; padding-top:5px"><span class="label">Subtotal:</span><span>${formatRupiah(data.subtotal || 0)}</span></div><div class="row"><span class="label">Diskon:</span><span>-${formatRupiah(data.diskon)}</span></div>` : '';
     
     let bayarHtml = '';
     if (data.nominal_bayar && data.nominal_bayar > 0) {
       bayarHtml = `<div class="line"></div><div class="row"><span class="label">Tunai Bayar:</span><span>${formatRupiah(data.nominal_bayar)}</span></div><div class="row"><span class="label">Kembalian:</span><span>${formatRupiah(data.kembalian || 0)}</span></div>`;
     }
 
-    return `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000;background:#fff}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:15px;font-weight:bold}.help{margin-top:12px;font-size:11px;color:#374151;background:#f8fafc;padding:8px;border-radius:8px}@media print{body{width:72mm}}</style></head><body ${withAutoPrint ? 'onload=\"window.print();window.close()\"' : ''}><div class=\"receipt\"><div class=\"center big\">BIMBEL PRO</div><div class=\"center\">Bukti Pembayaran</div><div class=\"line\"></div><div><span class=\"label\">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class=\"label\">Cabang:</span> ${data.cabang || '-'}</div><div><span class=\"label\">Nama siswa:</span> ${data.nama || '-'}</div><div><span class=\"label\">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class=\"label\">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class=\"line\"></div><div class=\"center\" style=\"margin-bottom:8px\"><b>Rincian Pembelian:</b></div>${cartHtml}${diskonHtml}<div class=\"line\"></div><div class=\"row\"><span class=\"label\">Total Tagihan:</span><span class=\"big\">${formatRupiah(data.nominal || 0)}</span></div>${bayarHtml}<div class=\"line\"></div><div class=\"center\">Terima kasih</div>${withAutoPrint ? '' : '<div class=\"help\"><b>Cara print di Android:</b><br/>1. Buka menu browser<br/>2. Pilih Share atau bagikan ke aplikasi printer bluetooth<br/>3. Jika aplikasi printer mendukung print halaman web/teks, gunakan halaman ini sebagai sumber cetak.</div>'}</div></body></html>` 
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000;background:#fff}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:16px;font-weight:bold}.help{margin-top:12px;font-size:11px;color:#374151;background:#f8fafc;padding:8px;border-radius:8px}@media print{body{width:72mm}}</style></head><body ${withAutoPrint ? 'onload=\"window.print();window.close()\"' : ''}><div class=\"receipt\"><div class=\"center big\">BIMBEL BUMI CERDAS</div><div class=\"center\">Cabang: ${data.cabang || 'Pusat'}</div><div class=\"line\"></div><div class=\"center\">Bukti Pembayaran</div><div class=\"line\"></div><div><span class=\"label\">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class=\"label\">Nama siswa:</span> ${data.nama || '-'}</div><div><span class=\"label\">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class=\"label\">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class=\"line\"></div><div class=\"center\" style=\"margin-bottom:8px\"><b>Rincian Pembelian:</b></div>${cartHtml}${diskonHtml}<div class=\"line\"></div><div class=\"row\"><span class=\"label\">Total Tagihan:</span><span class=\"big\">${formatRupiah(data.nominal || 0)}</span></div>${bayarHtml}<div class=\"line\"></div><div class=\"center\">Terima kasih</div>${withAutoPrint ? '' : '<div class=\"help\"><b>Cara print di Android:</b><br/>1. Buka menu browser<br/>2. Pilih Share atau bagikan ke aplikasi printer bluetooth<br/>3. Jika aplikasi printer mendukung print halaman web/teks, gunakan halaman ini sebagai sumber cetak.</div>'}</div></body></html>` 
   }
   function printThermalReceiptDesktop(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank', 'width=420,height=700'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, true)); w.document.close() }
   function printThermalReceiptAndroid(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, false)); w.document.close() }
   function openSmartWA(phone, text) { if (!phone) { alert('Maaf, nomor HP belum tersimpan di sistem.'); return; } let formattedPhone = phone.startsWith('0') ? '62' + phone.substring(1) : phone; formattedPhone = formattedPhone.replace(/\D/g, ''); const encodedText = encodeURIComponent(text); const waLink = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedText}`; window.open(waLink, '_blank'); }
-  function sendThermalReceiptWA() { const data = lastReceipt; if (!data) return setErrorMsg('Belum ada transaksi terakhir untuk dikirim.'); let text = `*BIMBEL PRO - BUKTI PEMBAYARAN*\n\nTanggal: ${new Date().toLocaleString('id-ID')}\nCabang: ${data.cabang || '-'}\nNama Siswa: ${data.nama || '-'}\nMetode Bayar: ${(data.metode_bayar || 'cash').toUpperCase()}\nStatus: ${(data.status || 'LUNAS').toUpperCase()}\n\n*Rincian Pembelian:*\n`; (data.cart || []).forEach(c => { text += `- ${c.nama} (${c.qty}x): ${formatRupiah(c.harga * c.qty)}\n`; }); if (data.diskon > 0) { text += `\nSubtotal: ${formatRupiah(data.subtotal || 0)}\nDiskon: -${formatRupiah(data.diskon)}\n`; } text += `\n*Total Tagihan: ${formatRupiah(data.nominal || 0)}*\n\nTerima kasih atas kepercayaannya.`; openSmartWA(data.no_hp, text); }
-  function sendPerkembanganWA(item) { if (!item) return; let text = `Halo Ayah/Bunda,\nBerikut adalah laporan perkembangan dan kehadiran ananda *${item.siswa?.nama || '-'}* pada ${formatTanggal(item.tanggal)}:\n\n*Catatan Guru:*\n${item.catatan || 'Hadir mengikuti sesi pembelajaran dengan baik.'}\n\nSalam hangat,\nAdmin ${item.siswa?.branches?.nama || 'Bimbel Pro'}`; openSmartWA(item.siswa?.no_hp, text); }
-  async function prosesScanKaryawan(decodedText) { try { const validCode = employeeMode === 'datang' ? employeeBarcodeIn : employeeBarcodeOut; if (decodedText !== validCode) { setEmployeeScanInfo(`Barcode ${employeeMode} tidak dikenali.`); return } const res = await saveEmployeeAttendance({ p_user_id: user?.id, p_tanggal: TODAY(), p_mode: employeeMode }); if (res.error) throw res.error; setEmployeeScanInfo(`Scan ${employeeMode} berhasil untuk ${user?.nama}.`); setMessage(`Absensi ${employeeMode} disimpan.`); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
+  function sendThermalReceiptWA() { 
+    const data = lastReceipt; 
+    
+    // === SABUK PENGAMAN ANTI CRASH ===
+    if (!data) return; 
+    
+    let text = `*BIMBEL BUMI CERDAS*\nCabang: ${data.cabang || 'Pusat'}\n-----------------------------------\n*BUKTI PEMBAYARAN*\n\nTanggal: ${new Date().toLocaleString('id-ID')}\nNama Siswa: ${data.nama || '-'}\nMetode Bayar: ${(data.metode_bayar || 'cash').toUpperCase()}\nStatus: ${(data.status || 'LUNAS').toUpperCase()}\n\n*Rincian Pembelian:*\n`; 
+    
+    (data.cart || []).forEach(c => { 
+      text += `- ${c.nama} (${c.qty}x): ${formatRupiah(c.harga * c.qty)}\n`; 
+    }); 
+    
+    if (data.diskon && data.diskon > 0) { 
+      text += `\nSubtotal: ${formatRupiah(data.subtotal || 0)}\nDiskon: -${formatRupiah(data.diskon)}\n`; 
+    } 
+    
+    text += `\n*Total Tagihan: ${formatRupiah(data.nominal || 0)}*\n\nTerima kasih atas kepercayaannya.`; 
+    
+    if (typeof openSmartWA === 'function') {
+      openSmartWA(data.no_hp || '', text); 
+    }
+  }
+  function sendPerkembanganWA(item) { if (!item) return; let text = `Halo Ayah/Bunda,\nBerikut adalah laporan perkembangan dan kehadiran ananda *${item.siswa?.nama || '-'}* pada ${formatTanggal(item.tanggal)}:\n\n*Catatan Guru:*\n${item.catatan || 'Hadir mengikuti sesi pembelajaran dengan baik.'}\n\nSalam hangat,\nAdmin ${item.siswa?.branches?.nama || 'Bimbel Bumi Cerdas'}`; openSmartWA(item.siswa?.no_hp, text); }  
+  async function prosesScanKaryawan(decodedText) { 
+    try { 
+      const validCode = employeeMode === 'datang' ? employeeBarcodeIn : employeeBarcodeOut; 
+      if (decodedText !== validCode) { 
+        setEmployeeScanInfo(`Barcode ${employeeMode} tidak dikenali.`); 
+        return; 
+      } 
+      
+      // === KUNCI JAWABAN: Menerjemahkan bahasa aplikasi ke bahasa database ===
+      const dbMode = employeeMode === 'datang' ? 'in' : 'out';
+
+      const res = await saveEmployeeAttendance({ 
+        p_user_id: user?.id, 
+        p_tanggal: TODAY(), 
+        p_mode: dbMode 
+      }); 
+      
+      if (res.error) throw res.error; 
+
+      // === MENCEGAH NOTIFIKASI PALSU ===
+      if (res.data && res.data.success === false) {
+        throw new Error(res.data.message);
+      }
+
+      setEmployeeScanInfo(`Scan ${employeeMode} berhasil untuk ${user?.nama}.`); 
+      setMessage(res.data?.message || `Absensi ${employeeMode} disimpan.`); 
+      await loadAllData();
+    } catch (error) { 
+      setErrorMsg(error.message);
+    } 
+  }
+
   async function submitBonus(event) { event.preventDefault(); try { const targetUser = usersTampil.find((item) => item.id === bonusForm.user_id); const res = await saveBonus({ user_id: bonusForm.user_id, branch_id: targetUser?.branch_id || null, bonus_date: bonusForm.bonus_date, amount: bonusForm.amount, description: bonusForm.description, created_by: user?.id || null }); if (res.error) throw res.error; setBonusForm(INITIAL_BONUS_FORM); setMessage('Bonus disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
   function addReviewItem() { setReviewForm((prev) => ({ ...prev, items: [...prev.items, { title: '', score: '8', note: '' }] })) }
   function changeReviewItem(index, field, value) { setReviewForm((prev) => ({ ...prev, items: prev.items.map((item, i) => i === index ? { ...item, [field]: value } : item) })) }
@@ -672,7 +952,26 @@ export function useBimbelApp() {
   function selectAllPermissions() { setPermissionDraft(visibleTabs.length ? Array.from(new Set([...permissionDraft, ...visibleTabs])) : permissionDraft) }
   function resetPermissionDraft(nextPermissions = []) { setPermissionDraft(nextPermissions) }
   async function savePermissions() { try { if (!permissionUserId) throw new Error('Pilih user.'); const res = await saveUserPermissions(permissionUserId, permissionDraft); if (res.error) throw res.error; if (user?.id === permissionUserId) { const updated = { ...user, menu_permissions: permissionDraft }; setUser(updated); saveSession(updated) } setMessage('Hak akses disimpan.'); await loadAllData() } catch (error) { setErrorMsg(error.message) } }
-  function startEditBranch(item) { setBranchForm({ id: item.id, nama: item.nama, kode: item.kode, alamat: item.alamat || '', employee_barcode_in: item.employee_barcode_in || EMPLOYEE_GLOBAL_IN, employee_barcode_out: item.employee_barcode_out || EMPLOYEE_GLOBAL_OUT, link_grup: item.link_grup}); setActiveTab('cabang') }
+  function startEditBranch(item) {
+    setBranchForm({
+      id: item.id,
+      nama: item.nama,
+      kode: item.kode,
+      alamat: item.alamat || '',
+      employee_barcode_in: item.employee_barcode_in || EMPLOYEE_GLOBAL_IN,
+      employee_barcode_out: item.employee_barcode_out || EMPLOYEE_GLOBAL_OUT,
+      link_grup: item.link_grup || '',
+      qris_image_url: item.qris_image_url || item.payment_qris_url || '',
+      payment_qris_url: item.payment_qris_url || item.qris_image_url || '',
+      qris_merchant_name: item.qris_merchant_name || '',
+      bank_name: item.bank_name || '',
+      bank_account_number: item.bank_account_number || item.no_rekening || '',
+      bank_account_name: item.bank_account_name || item.atas_nama || '',
+      payment_whatsapp: item.payment_whatsapp || item.no_wa_admin || '',
+      payment_note: item.payment_note || '',
+    });
+    setActiveTab('cabang')
+  }
   function startEditProgram(item) { setProgramForm({ id: item.id, nama: item.nama, deskripsi: item.deskripsi || '', nominal: item.nominal || '' }); setActiveTab('program') }
   function startEditUser(item) { 
     setUserForm({ 
@@ -715,11 +1014,11 @@ export function useBimbelApp() {
 
     let text = "";
     if (jenis === 'TAGIHAN') {
-      text = `*PENGINGAT PEMBAYARAN BIMBEL PRO* 💳\n\nHalo Ayah/Bunda,\nMengingatkan untuk administrasi ananda *${item.nama}* program *${item.programs?.nama}* sudah memasuki masa pembayaran (${infoBayar.info}).\n\nNominal: *${formatRupiah(item.programs?.nominal || 0)}*\n\nMohon kerjasamanya untuk kelancaran kegiatan belajar mengajar. Terima kasih! 🙏`;
+      text = `*PENGINGAT PEMBAYARAN BIMBEL BUMI CERDAS* 💳\n\nHalo Ayah/Bunda,\nMengingatkan untuk administrasi ananda *${item.nama}* program *${item.programs?.nama}* sudah memasuki masa pembayaran (${infoBayar.info}).\n\nNominal: *${formatRupiah(item.programs?.nominal || 0)}*\n\nMohon kerjasamanya untuk kelancaran kegiatan belajar mengajar. Terima kasih! 🙏`;
     } else {
       const jamTarget = item.jam_mulai || '-';
       const programTarget = item.programs?.nama || '-';
-      text = `*PENGINGAT JADWAL BIMBEL PRO* 📚\n\nHalo Ayah/Bunda,\nMengingatkan jadwal ananda *${item.nama}* hari ini jam *${jamTarget}*.\n\nProgram: *${programTarget}*\n\nSampai jumpa di kelas! 🙏`;
+      text = `*PENGINGAT JADWAL BIMBEL BUMI CERDAS* 📚\n\nHalo Ayah/Bunda,\nMengingatkan jadwal ananda *${item.nama}* hari ini jam *${jamTarget}*.\n\nProgram: *${programTarget}*\n\nSampai jumpa di kelas! 🙏`;
     }
     openSmartWA(item.no_hp, text);
   }
@@ -734,7 +1033,7 @@ export function useBimbelApp() {
     const nominal = formatRupiah(item.nominal);
     const ket = item.keterangan || item.programs?.nama || '-';
     
-    const text = `*BIMBEL PRO - BUKTI TRANSAKSI*\n\n` +
+    const text = `*BIMBEL BUMI CERDAS - BUKTI TRANSAKSI*\n\n` +
                  `Tanggal: ${tgl}\n` +
                  `Siswa: ${item.siswa?.nama || '-'}\n` +
                  `Keterangan: ${ket}\n` +
@@ -750,12 +1049,12 @@ export function useBimbelApp() {
   // === 2. INI RETURN UTAMA (CUMA ADA SATU DI PALING BAWAH) ===
   return {
     state: {
-      user, email, password, loginError, loadingLogin, activeTab, message, errorMsg, loadingData, branches, programs, users, siswa, pembayaran, absensiSiswa, perkembangan, absensiKaryawan, bonusManual, reviews, pengeluaranTampil, inventoryTampil, branchForm, programForm, userForm, siswaForm, perkembanganForm, kasirForm, bonusForm, employeeManualForm, studentAttendanceForm, reviewForm, pengeluaranForm, inventoryForm, permissionUserId, permissionDraft, scanStudentActive, scanEmployeeActive, employeeMode, studentScanText, employeeScanText, studentScanInfo, employeeScanInfo, selectedStudent, selectedProgressStudent, exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, employeeBarcodeIn, employeeBarcodeOut, progressInputMode, guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats, searchSiswa, searchTransaksi, payrollMonth, payrollYear, showReceiptPopup, editTransaksiForm, deleteConfirm, archiveState
+      user, email, password, loginError, loadingLogin, activeTab, message, errorMsg, loadingData, branches, programs, users, siswa, pembayaran, absensiSiswa, perkembangan, absensiKaryawan, bonusManual, reviews, pengeluaranTampil, inventoryTampil, branchForm, programForm, userForm, siswaForm, perkembanganForm, kasirForm, bonusForm, employeeManualForm, studentAttendanceForm, reviewForm, pengeluaranForm, inventoryForm, permissionUserId, permissionDraft, scanStudentActive, scanEmployeeActive, employeeMode, studentScanText, employeeScanText, studentScanInfo, employeeScanInfo, selectedStudent, selectedProgressStudent, exportType, exportDateFrom, exportDateTo, lastReceipt, selectedBranchId, selectedBranch, canAccessAllBranches, employeeBarcodeIn, employeeBarcodeOut, progressInputMode, guruOptions, visibleTabs, usersTampil, siswaTampil, pembayaranTampil, perkembanganTampil, perkembanganHistory, absensiKaryawanTampil, bonusManualTampil, absensiSiswaTampil, reviewsTampil, overview, financeSummary, payrollRows, stats, searchSiswa, searchTransaksi, payrollMonth, payrollYear, showReceiptPopup, editTransaksiForm, deleteConfirm, archiveState
     },
     actions: {
       sendManualReminderWA, // <--- TAMBAHKAN INI DI SINI
       sendHistoryTransactionWA, // <--- NAMA FUNGSI SUDAH DIDAFTARKAN DI SINI DENGAN BENAR
-      setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId, setBranchForm, setProgramForm, setUserForm, setSiswaForm, setPerkembanganForm, setKasirForm, setBonusForm, setEmployeeManualForm, setStudentAttendanceForm, setReviewForm, setPengeluaranForm, setInventoryForm, setPermissionUserId, setPermissionDraft, setScanStudentActive, setScanEmployeeActive, setEmployeeMode, setExportType, setExportDateFrom, setExportDateTo, setProgressInputMode, setPayrollMonth, setPayrollYear, setShowReceiptPopup, setEditTransaksiForm, submitEditTransaksi, login, logout, loadAllData, setDeleteConfirm, confirmDelete, submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa, submitPengeluaran, deletePengeluaran, submitInventory, deleteInventory,
+      setUser, setEmail, setPassword, setActiveTab, setMessage, setErrorMsg, setSelectedBranchId, setBranchForm, setProgramForm, setUserForm, setSiswaForm, setPerkembanganForm, setKasirForm, setBonusForm, setEmployeeManualForm, setStudentAttendanceForm, setReviewForm, setPengeluaranForm, setInventoryForm, setPermissionUserId, setPermissionDraft, setScanStudentActive, setScanEmployeeActive, setEmployeeMode, setExportType, setExportDateFrom, setExportDateTo, setProgressInputMode, setPayrollMonth, setPayrollYear, setShowReceiptPopup, setEditTransaksiForm, submitEditTransaksi, login, loginDenganBarcodeSiswa, logout, loadAllData, setDeleteConfirm, confirmDelete, submitBranch, deleteBranch, submitProgram, deleteProgram, submitUser, deleteUser, submitSiswa, deleteSiswa, submitPengeluaran, deletePengeluaran, submitInventory, deleteInventory,
       deleteBonus: (id, label) => setDeleteConfirm({ show: true, table: 'employee_bonus', id, label }),
       deletePerkembangan: (id, label) => setDeleteConfirm({ show: true, table: 'perkembangan', id, label: `materi ${label}` }),
       submitPerkembangan, submitKasir, submitBonus, submitEmployeeManualAttendance, submitStudentAttendance, submitReview, prosesScanSiswa, prosesScanPerkembangan, prosesScanKaryawan, startEditBranch, startEditProgram, startEditUser, startEditSiswa, startEditPengeluaran, startEditInventory, handleDownload, printThermalReceiptDesktop, printThermalReceiptAndroid, selectStudentById, selectProgressStudentById, generateStudentBarcodeAction, printStudentBarcode, addReviewItem, changeReviewItem, removeReviewItem, printEmployeeReview, togglePermissionDraft, savePermissions, selectAllPermissions, resetPermissionDraft, setQuickExportRange, setSearchSiswa, setSearchTransaksi, deleteTransaksi, catatPengeluaranGaji, sendThermalReceiptWA, sendPerkembanganWA, openSmartWA, startEditTransaksi, setArchiveState, triggerManualArchive, executeArchive
