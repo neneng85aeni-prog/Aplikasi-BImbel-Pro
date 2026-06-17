@@ -215,14 +215,18 @@ export function useBimbelApp() {
 
   const siswaTampil = useMemo(() => {
     let rows = siswaScoped
+
+    // Guru tetap dibatasi berdasarkan cabang dari branchScopedUser/siswaScoped.
+    // Jangan batasi lagi berdasarkan guru_id siswa, supaya guru bisa input perkembangan
+    // untuk semua siswa dalam cabang yang sama, bukan hanya siswa atas nama guru tersebut.
     if (selectedBranchId) rows = rows.filter((item) => item.branch_id === selectedBranchId)
-    if (user?.akses === 'guru') rows = rows.filter((item) => item.guru_id === user.id || !item.guru_id)
+
     if (searchSiswa) {
       const q = searchSiswa.toLowerCase()
       rows = rows.filter(item => item.nama?.toLowerCase().includes(q) || item.no_hp?.includes(q))
     }
     return rows
-  }, [siswaScoped, selectedBranchId, user, searchSiswa])
+  }, [siswaScoped, selectedBranchId, searchSiswa])
 
   const pembayaranTampil = useMemo(() => {
     let rows = selectedBranchId ? pembayaranScoped.filter((item) => item.branch_id === selectedBranchId) : pembayaranScoped;
