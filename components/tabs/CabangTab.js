@@ -155,7 +155,7 @@ export function CabangTab({ branchForm, setBranchForm, branches, onSubmit, onRes
               <input
                 value={branchForm.qris_merchant_name || ''}
                 onChange={(e) => setBranchForm({ ...branchForm, qris_merchant_name: e.target.value })}
-                placeholder="Contoh: Bimbel Bumi Cerdas"
+                placeholder="Contoh: Bimbel Top Pangkalan"
               />
             </div>
 
