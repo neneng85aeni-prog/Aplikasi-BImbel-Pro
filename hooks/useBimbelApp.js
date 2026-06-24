@@ -552,7 +552,7 @@ export function useBimbelApp() {
         const targetBranch = branches.find((b) => b.id === siswaForm.branch_id);
         const LINK_GRUP_WA = targetBranch?.link_grup || "https://chat.whatsapp.com/GrupBelumDiatur";
 
-        const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat datang dan selamat bergabung di Bimbel Bumi Cerdas ya! ✨\n\n` +
+        const pesanWelcome = `Halo Ayah/Bunda dari ananda *${siswaForm.nama}*! Selamat datang dan selamat bergabung di Bimbel TOP PANGKALAN ya! ✨\n\n` +
           `Biar kita bisa komunikasi lebih enak dan Ayah/Bunda nggak ketinggalan info seru seputar jadwal serta kegiatan belajar mengajar, yuk langsung gabung ke Grup WhatsApp kita!\n\n` +
           `Tinggal klik link ini aja ya:\n` +
           `🔗 ${LINK_GRUP_WA}\n\n` +
@@ -883,7 +883,7 @@ export function useBimbelApp() {
       bayarHtml = `<div class="line"></div><div class="row"><span class="label">Tunai Bayar:</span><span>${formatRupiah(data.nominal_bayar)}</span></div><div class="row"><span class="label">Kembalian:</span><span>${formatRupiah(data.kembalian || 0)}</span></div>`;
     }
 
-    return `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000;background:#fff}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:16px;font-weight:bold}.help{margin-top:12px;font-size:11px;color:#374151;background:#f8fafc;padding:8px;border-radius:8px}@media print{body{width:72mm}}</style></head><body ${withAutoPrint ? 'onload=\"window.print();window.close()\"' : ''}><div class=\"receipt\"><div class=\"center big\">BIMBEL BUMI CERDAS</div><div class=\"center\">Cabang: ${data.cabang || 'Pusat'}</div><div class=\"line\"></div><div class=\"center\">Bukti Pembayaran</div><div class=\"line\"></div><div><span class=\"label\">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class=\"label\">Nama siswa:</span> ${data.nama || '-'}</div><div><span class=\"label\">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class=\"label\">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class=\"line\"></div><div class=\"center\" style=\"margin-bottom:8px\"><b>Rincian Pembelian:</b></div>${cartHtml}${diskonHtml}<div class=\"line\"></div><div class=\"row\"><span class=\"label\">Total Tagihan:</span><span class=\"big\">${formatRupiah(data.nominal || 0)}</span></div>${bayarHtml}<div class=\"line\"></div><div class=\"center\">Terima kasih</div>${withAutoPrint ? '' : '<div class=\"help\"><b>Cara print di Android:</b><br/>1. Buka menu browser<br/>2. Pilih Share atau bagikan ke aplikasi printer bluetooth<br/>3. Jika aplikasi printer mendukung print halaman web/teks, gunakan halaman ini sebagai sumber cetak.</div>'}</div></body></html>` 
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Bayar</title><meta name="viewport" content="width=device-width, initial-scale=1" /><style>body{font-family:Arial,sans-serif;width:72mm;margin:0 auto;padding:8px;color:#000;background:#fff}.receipt{text-align:left;font-size:12px;line-height:1.4}.center{text-align:center}.line{border-top:1px dashed #000;margin:8px 0}.row{display:flex;justify-content:space-between;gap:8px}.label{font-weight:bold}.big{font-size:16px;font-weight:bold}.help{margin-top:12px;font-size:11px;color:#374151;background:#f8fafc;padding:8px;border-radius:8px}@media print{body{width:72mm}}</style></head><body ${withAutoPrint ? 'onload=\"window.print();window.close()\"' : ''}><div class=\"receipt\"><div class=\"center big\">BIMBEL TOP PANGKALAN</div><div class=\"center\">Cabang: ${data.cabang || 'Pusat'}</div><div class=\"line\"></div><div class=\"center\">Bukti Pembayaran</div><div class=\"line\"></div><div><span class=\"label\">Tanggal:</span> ${new Date().toLocaleString('id-ID')}</div><div><span class=\"label\">Nama siswa:</span> ${data.nama || '-'}</div><div><span class=\"label\">Metode bayar:</span> ${(data.metode_bayar || 'cash').toUpperCase()}</div><div><span class=\"label\">Status:</span> ${(data.status || 'LUNAS').toUpperCase()}</div><div class=\"line\"></div><div class=\"center\" style=\"margin-bottom:8px\"><b>Rincian Pembelian:</b></div>${cartHtml}${diskonHtml}<div class=\"line\"></div><div class=\"row\"><span class=\"label\">Total Tagihan:</span><span class=\"big\">${formatRupiah(data.nominal || 0)}</span></div>${bayarHtml}<div class=\"line\"></div><div class=\"center\">Terima kasih</div>${withAutoPrint ? '' : '<div class=\"help\"><b>Cara print di Android:</b><br/>1. Buka menu browser<br/>2. Pilih Share atau bagikan ke aplikasi printer bluetooth<br/>3. Jika aplikasi printer mendukung print halaman web/teks, gunakan halaman ini sebagai sumber cetak.</div>'}</div></body></html>` 
   }
   function printThermalReceiptDesktop(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank', 'width=420,height=700'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, true)); w.document.close() }
   function printThermalReceiptAndroid(receipt) { const data = receipt || lastReceipt; if (!data) return setErrorMsg('Belum ada pembayaran.'); const w = window.open('', '_blank'); if (!w) return setErrorMsg('Popup diblokir.'); w.document.write(buildReceiptHtml(data, false)); w.document.close() }
@@ -894,7 +894,7 @@ export function useBimbelApp() {
     // === SABUK PENGAMAN ANTI CRASH ===
     if (!data) return; 
     
-    let text = `*BIMBEL BUMI CERDAS*\nCabang: ${data.cabang || 'Pusat'}\n-----------------------------------\n*BUKTI PEMBAYARAN*\n\nTanggal: ${new Date().toLocaleString('id-ID')}\nNama Siswa: ${data.nama || '-'}\nMetode Bayar: ${(data.metode_bayar || 'cash').toUpperCase()}\nStatus: ${(data.status || 'LUNAS').toUpperCase()}\n\n*Rincian Pembelian:*\n`; 
+    let text = `*BIMBEL TOP PANGKALAN*\nCabang: ${data.cabang || 'Pusat'}\n-----------------------------------\n*BUKTI PEMBAYARAN*\n\nTanggal: ${new Date().toLocaleString('id-ID')}\nNama Siswa: ${data.nama || '-'}\nMetode Bayar: ${(data.metode_bayar || 'cash').toUpperCase()}\nStatus: ${(data.status || 'LUNAS').toUpperCase()}\n\n*Rincian Pembelian:*\n`; 
     
     (data.cart || []).forEach(c => { 
       text += `- ${c.nama} (${c.qty}x): ${formatRupiah(c.harga * c.qty)}\n`; 
@@ -910,7 +910,7 @@ export function useBimbelApp() {
       openSmartWA(data.no_hp || '', text); 
     }
   }
-  function sendPerkembanganWA(item) { if (!item) return; let text = `Halo Ayah/Bunda,\nBerikut adalah laporan perkembangan dan kehadiran ananda *${item.siswa?.nama || '-'}* pada ${formatTanggal(item.tanggal)}:\n\n*Catatan Guru:*\n${item.catatan || 'Hadir mengikuti sesi pembelajaran dengan baik.'}\n\nSalam hangat,\nAdmin ${item.siswa?.branches?.nama || 'Bimbel Bumi Cerdas'}`; openSmartWA(item.siswa?.no_hp, text); }  
+  function sendPerkembanganWA(item) { if (!item) return; let text = `Halo Ayah/Bunda,\nBerikut adalah laporan perkembangan dan kehadiran ananda *${item.siswa?.nama || '-'}* pada ${formatTanggal(item.tanggal)}:\n\n*Catatan Guru:*\n${item.catatan || 'Hadir mengikuti sesi pembelajaran dengan baik.'}\n\nSalam hangat,\nAdmin ${item.siswa?.branches?.nama || 'Bimbel TOP PANGKALAN'}`; openSmartWA(item.siswa?.no_hp, text); }  
   async function prosesScanKaryawan(decodedText) { 
     try { 
       const validCode = employeeMode === 'datang' ? employeeBarcodeIn : employeeBarcodeOut; 
@@ -1015,11 +1015,11 @@ export function useBimbelApp() {
 
     let text = "";
     if (jenis === 'TAGIHAN') {
-      text = `*PENGINGAT PEMBAYARAN BIMBEL BUMI CERDAS* 💳\n\nHalo Ayah/Bunda,\nMengingatkan untuk administrasi ananda *${item.nama}* program *${item.programs?.nama}* sudah memasuki masa pembayaran (${infoBayar.info}).\n\nNominal: *${formatRupiah(item.programs?.nominal || 0)}*\n\nMohon kerjasamanya untuk kelancaran kegiatan belajar mengajar. Terima kasih! 🙏`;
+      text = `*PENGINGAT PEMBAYARAN BIMBEL TOP PANGKALAN* 💳\n\nHalo Ayah/Bunda,\nMengingatkan untuk administrasi ananda *${item.nama}* program *${item.programs?.nama}* sudah memasuki masa pembayaran (${infoBayar.info}).\n\nNominal: *${formatRupiah(item.programs?.nominal || 0)}*\n\nMohon kerjasamanya untuk kelancaran kegiatan belajar mengajar. Terima kasih! 🙏`;
     } else {
       const jamTarget = item.jam_mulai || '-';
       const programTarget = item.programs?.nama || '-';
-      text = `*PENGINGAT JADWAL BIMBEL BUMI CERDAS* 📚\n\nHalo Ayah/Bunda,\nMengingatkan jadwal ananda *${item.nama}* hari ini jam *${jamTarget}*.\n\nProgram: *${programTarget}*\n\nSampai jumpa di kelas! 🙏`;
+      text = `*PENGINGAT JADWAL BIMBEL TOP PANGKALAN* 📚\n\nHalo Ayah/Bunda,\nMengingatkan jadwal ananda *${item.nama}* hari ini jam *${jamTarget}*.\n\nProgram: *${programTarget}*\n\nSampai jumpa di kelas! 🙏`;
     }
     openSmartWA(item.no_hp, text);
   }
@@ -1034,7 +1034,7 @@ export function useBimbelApp() {
     const nominal = formatRupiah(item.nominal);
     const ket = item.keterangan || item.programs?.nama || '-';
     
-    const text = `*BIMBEL BUMI CERDAS - BUKTI TRANSAKSI*\n\n` +
+    const text = `*BIMBEL TOP PANGKALAN - BUKTI TRANSAKSI*\n\n` +
                  `Tanggal: ${tgl}\n` +
                  `Siswa: ${item.siswa?.nama || '-'}\n` +
                  `Keterangan: ${ket}\n` +
