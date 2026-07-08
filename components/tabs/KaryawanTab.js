@@ -5,13 +5,25 @@ import { EMPLOYEE_STATUS_OPTIONS } from '../../lib/constants'
 // FUNGSI BANTUAN 1: Format ISO jadi Jam (09:31)
 function formatJam(timeString) {
   if (!timeString) return '--:--';
-  if (timeString.length === 5 && timeString.includes(':')) return timeString;
+
+  const str = String(timeString);
+
+  // Database bisa mengirim HH:MM atau HH:MM:SS
+  if (/^\d{2}:\d{2}(:\d{2})?$/.test(str)) {
+    return str.substring(0, 5);
+  }
+
   try {
-    const date = new Date(timeString);
-    if (isNaN(date.getTime())) return timeString; 
-    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
+    const date = new Date(str);
+    if (isNaN(date.getTime())) return '--:--';
+
+    return date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).replace('.', ':');
   } catch {
-    return timeString;
+    return '--:--';
   }
 }
 
@@ -67,7 +79,13 @@ export function KaryawanTab({
   })
 
   // 3. FILTER PERIODE & PENCARIAN PINTAR
-  const finalFilteredAbsensi = roleFilteredAbsensi.filter(item => {
+  const normalizedAbsensi = roleFilteredAbsensi.map(item => ({
+    ...item,
+    jam_datang: item.jam_datang || item.jam_masuk || item.waktu_masuk || null,
+    jam_pulang: item.jam_pulang || item.jam_keluar || item.waktu_pulang || null,
+  }))
+
+  const finalFilteredAbsensi = normalizedAbsensi.filter(item => {
     const itemDate = item.tanggal;
     if (startDate && itemDate < startDate) return false;
     if (endDate && itemDate > endDate) return false;
