@@ -287,7 +287,15 @@ export function useBimbelApp() {
   const stats = useMemo(() => ({ siswa: siswaTampil.length, pegawai: usersTampil.length, program: programs.length, pemasukan: pembayaranTampil.reduce((sum, item) => sum + Number(item.nominal || 0), 0) }), [siswaTampil, usersTampil, programs, pembayaranTampil])
 
   useEffect(() => { const cachedUser = readSession(); if (cachedUser) setUser(normalizeUserPayload(cachedUser)) }, [])
-  useEffect(() => { if (user) loadAllData() }, [user])
+  useEffect(() => {
+    if (!user) return;
+
+    if (isParentUser(user) || user?.login_method === 'barcode_siswa') {
+      loadParentData();
+    } else {
+      loadAllData();
+    }
+  }, [user])
   useEffect(() => {
     if (!user) return;
 
@@ -355,6 +363,87 @@ export function useBimbelApp() {
     }, () => {})
     return () => { scanner.clear().catch(() => {}); employeeScannerRef.current = null }
   }, [scanEmployeeActive, employeeMode, user, employeeBarcodeIn, employeeBarcodeOut])
+
+  // Load data khusus orangtua.
+  // Sengaja dipisahkan dari loadAllData agar login barcode siswa
+  // tidak menarik seluruh database Supabase.
+  async function loadParentData() {
+    try {
+      setLoadingData(true);
+      setErrorMsg('');
+
+      const siswaId =
+        user?.siswa_id ||
+        user?.student_id ||
+        user?.parent_siswa_id ||
+        user?.anak_id;
+
+      if (!siswaId) {
+        throw new Error('Data siswa orangtua tidak ditemukan.');
+      }
+
+      const [
+        siswaRes,
+        perkembanganRes,
+        absensiRes,
+        pembayaranRes
+      ] = await Promise.all([
+        supabase
+          .from('siswa')
+          .select('*')
+          .eq('id', siswaId)
+          .limit(1)
+          .maybeSingle(),
+
+        supabase
+          .from('perkembangan')
+          .select('*')
+          .eq('siswa_id', siswaId)
+          .order('created_at', { ascending: false })
+          .limit(50),
+
+        supabase
+          .from('absensi_siswa')
+          .select('*')
+          .eq('siswa_id', siswaId)
+          .order('tanggal', { ascending: false })
+          .limit(50),
+
+        supabase
+          .from('pembayaran')
+          .select('*')
+          .eq('siswa_id', siswaId)
+          .order('created_at', { ascending: false })
+          .limit(50)
+      ]);
+
+      if (siswaRes.error) throw siswaRes.error;
+      if (perkembanganRes.error) throw perkembanganRes.error;
+      if (absensiRes.error) throw absensiRes.error;
+      if (pembayaranRes.error) throw pembayaranRes.error;
+
+      setSiswa(siswaRes.data ? [siswaRes.data] : []);
+      setPerkembangan(perkembanganRes.data || []);
+      setAbsensiSiswa(absensiRes.data || []);
+      setPembayaran(pembayaranRes.data || []);
+
+      // Data berikut tidak diperlukan portal orangtua.
+      // Dikosongkan agar tidak membawa data sensitif/berat.
+      setBranches([]);
+      setPrograms([]);
+      setUsers([]);
+      setAbsensiKaryawan([]);
+      setBonusManual([]);
+      setReviews([]);
+      setPengeluaran([]);
+      setInventory([]);
+
+    } catch (error) {
+      setErrorMsg(error.message || 'Gagal mengambil data orangtua.');
+    } finally {
+      setLoadingData(false);
+    }
+  }
 
   async function loadAllData() {
     try {
