@@ -134,8 +134,29 @@ export function CabangTab({ branchForm, setBranchForm, branches, onSubmit, onRes
                 />
                 <div>
                   <b style={{ fontSize: '13px' }}>QRIS aktif</b>
-                  <div className="text-muted" style={{ fontSize: '11px', wordBreak: 'break-all' }}>
+                  <div className="text-muted" style={{ fontSize: '11px', wordBreak: 'break-all', marginBottom: '8px' }}>
                     {branchForm.qris_image_url}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <a
+                      href={branchForm.qris_image_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary btn-small"
+                      style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                    >
+                      👁️ Preview
+                    </a>
+                    <a
+                      href={branchForm.qris_image_url}
+                      download={`QRIS-${branchForm.kode || 'cabang'}.png`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary btn-small"
+                      style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                    >
+                      ⬇️ Download
+                    </a>
                   </div>
                 </div>
               </div>
