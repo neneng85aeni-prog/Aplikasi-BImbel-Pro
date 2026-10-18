@@ -208,7 +208,6 @@ function getBranchPaymentSettings(selectedSiswa, branches) {
   }
 }
 
-// === Modifikasi: Menambahkan properti onClickQris pada PaymentBox ===
 function PaymentBox({ selectedSiswa, payment, branches, onClickQris }) {
   const [paymentMethod, setPaymentMethod] = useState('qris')
   const settings = getBranchPaymentSettings(selectedSiswa, branches)
@@ -245,7 +244,6 @@ function PaymentBox({ selectedSiswa, payment, branches, onClickQris }) {
         <div className="parent-qris-panel">
           {settings.qrisImageUrl ? (
             <>
-              {/* === Modifikasi: Membuat gambar dapat diklik === */}
               <img 
                 src={settings.qrisImageUrl} 
                 alt={`QRIS ${settings.qrisName}`} 
@@ -255,7 +253,32 @@ function PaymentBox({ selectedSiswa, payment, branches, onClickQris }) {
                 onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 title="Klik untuk memperbesar"
               />
-              <p className="text-muted">Scan QRIS di atas, lalu konfirmasi pembayaran ke admin. (Klik gambar untuk perbesar)</p>
+              <p className="text-muted" style={{ marginBottom: '12px' }}>
+                Scan QRIS di atas, lalu konfirmasi pembayaran ke admin. (Klik gambar untuk perbesar)
+              </p>
+              
+              {/* === TOMBOL DOWNLOAD BARU DI BAWAH GAMBAR === */}
+              <a 
+                href={settings.qrisImageUrl}
+                download={`QRIS-${settings.qrisName || 'Pembayaran'}.png`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+                style={{ 
+                  textDecoration: 'none', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '6px', 
+                  margin: '0 auto',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  padding: '8px 16px',
+                  borderRadius: '10px'
+                }}
+              >
+                ⬇️ Download QRIS
+              </a>
             </>
           ) : (
             <div className="parent-empty-payment">
@@ -294,8 +317,6 @@ export function OrangtuaPortalTab({ user, siswa = [], perkembangan = [], absensi
   const [query, setQuery] = useState('')
   const [selectedSiswaId, setSelectedSiswaId] = useState('')
   const [openSections, setOpenSections] = useState(['ringkasan', 'bayar'])
-  
-  // === Modifikasi: State untuk mengontrol modal preview layar penuh ===
   const [previewQrisUrl, setPreviewQrisUrl] = useState(null);
 
   useEffect(() => {
@@ -352,7 +373,6 @@ export function OrangtuaPortalTab({ user, siswa = [], perkembangan = [], absensi
 
   return (
     <div className="parent-portal-page">
-      {/* === Modifikasi: Styling tambahan untuk modal fullscreen === */}
       <style>{`
         .parent-portal-page {
           display: flex;
@@ -563,6 +583,8 @@ export function OrangtuaPortalTab({ user, siswa = [], perkembangan = [], absensi
           border-radius: 16px;
           background: rgba(255,255,255,.055);
           border: 1px solid rgba(148,163,184,.16);
+          display: flex;
+          flex-direction: column;
         }
 
         .parent-qris-panel {
@@ -592,7 +614,6 @@ export function OrangtuaPortalTab({ user, siswa = [], perkembangan = [], absensi
           flex-wrap: wrap;
         }
 
-        /* --- Modal Fullscreen QRIS --- */
         .qris-modal-overlay {
           position: fixed;
           top: 0;
@@ -715,7 +736,6 @@ export function OrangtuaPortalTab({ user, siswa = [], perkembangan = [], absensi
         }
       `}</style>
 
-      {/* === Modifikasi: Komponen Modal Layar Penuh === */}
       {previewQrisUrl && (
         <div className="qris-modal-overlay" onClick={() => setPreviewQrisUrl(null)}>
           <div className="qris-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -803,7 +823,6 @@ export function OrangtuaPortalTab({ user, siswa = [], perkembangan = [], absensi
           </AccordionSection>
 
           <AccordionSection id="bayar" icon="💳" title="Bayar Sekarang" subtitle="Pembayaran via QRIS atau transfer bank" openSections={openSections} toggleSection={toggleSection}>
-            {/* === Modifikasi: Mengirimkan fungsi onImageClick ke PaymentBox === */}
             <PaymentBox 
               selectedSiswa={selectedSiswa} 
               payment={payment} 
