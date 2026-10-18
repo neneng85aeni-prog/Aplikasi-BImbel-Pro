@@ -208,7 +208,8 @@ function getBranchPaymentSettings(selectedSiswa, branches) {
   }
 }
 
-function PaymentBox({ selectedSiswa, payment, branches }) {
+// === Modifikasi: Menambahkan properti onClickQris pada PaymentBox ===
+function PaymentBox({ selectedSiswa, payment, branches, onClickQris }) {
   const [paymentMethod, setPaymentMethod] = useState('qris')
   const settings = getBranchPaymentSettings(selectedSiswa, branches)
   const nominal = payment?.nominal || nominalProgram(selectedSiswa)
@@ -244,8 +245,17 @@ function PaymentBox({ selectedSiswa, payment, branches }) {
         <div className="parent-qris-panel">
           {settings.qrisImageUrl ? (
             <>
-              <img src={settings.qrisImageUrl} alt={`QRIS ${settings.qrisName}`} />
-              <p className="text-muted">Scan QRIS di atas, lalu konfirmasi pembayaran ke admin.</p>
+              {/* === Modifikasi: Membuat gambar dapat diklik === */}
+              <img 
+                src={settings.qrisImageUrl} 
+                alt={`QRIS ${settings.qrisName}`} 
+                onClick={() => onClickQris(settings.qrisImageUrl)}
+                style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                title="Klik untuk memperbesar"
+              />
+              <p className="text-muted">Scan QRIS di atas, lalu konfirmasi pembayaran ke admin. (Klik gambar untuk perbesar)</p>
             </>
           ) : (
             <div className="parent-empty-payment">
@@ -280,20 +290,17 @@ function PaymentBox({ selectedSiswa, payment, branches }) {
 }
 
 export function OrangtuaPortalTab({ user, siswa = [], perkembangan = [], absensiSiswa = [], pembayaran = [], branches = [] }) {
-  
-  // --- MULAI TAMBAHKAN KODE INI ---
   const [isMounted, setIsMounted] = useState(false);
+  const [query, setQuery] = useState('')
+  const [selectedSiswaId, setSelectedSiswaId] = useState('')
+  const [openSections, setOpenSections] = useState(['ringkasan', 'bayar'])
+  
+  // === Modifikasi: State untuk mengontrol modal preview layar penuh ===
+  const [previewQrisUrl, setPreviewQrisUrl] = useState(null);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  
-  // --- BATAS AKHIR KODE TAMBAHAN ---
-
-  const [query, setQuery] = useState('')
-  const [selectedSiswaId, setSelectedSiswaId] = useState('')
-  const [openSections, setOpenSections] = useState(['ringkasan', 'bayar'])
 
   const toggleSection = (id) => {
     setOpenSections((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])
@@ -338,11 +345,14 @@ export function OrangtuaPortalTab({ user, siswa = [], perkembangan = [], absensi
   const hadirTerakhir = absensiSiswaTerpilih[0] || perkembanganSiswa[0]
   const catatanTerbaru = perkembanganSiswa[0]
   const jadwal = selectedSiswa ? `${selectedSiswa.hari || '-'}${selectedSiswa.jam_mulai ? `, ${selectedSiswa.jam_mulai}` : ''}` : '-'
-if (!isMounted) {
+
+  if (!isMounted) {
     return <div style={{ padding: 20, textAlign: 'center' }}>Memuat portal...</div>;
   }
+
   return (
     <div className="parent-portal-page">
+      {/* === Modifikasi: Styling tambahan untuk modal fullscreen === */}
       <style>{`
         .parent-portal-page {
           display: flex;
@@ -582,6 +592,71 @@ if (!isMounted) {
           flex-wrap: wrap;
         }
 
+        /* --- Modal Fullscreen QRIS --- */
+        .qris-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.85);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          backdrop-filter: blur(4px);
+          padding: 20px;
+        }
+        
+        .qris-modal-content {
+          background: white;
+          padding: 16px;
+          border-radius: 20px;
+          max-width: 90vw;
+          max-height: 80vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .qris-modal-content img {
+          max-width: 100%;
+          max-height: calc(80vh - 32px);
+          object-fit: contain;
+          border-radius: 8px;
+        }
+
+        .qris-modal-actions {
+          margin-top: 20px;
+          display: flex;
+          gap: 12px;
+        }
+
+        .qris-modal-btn {
+          padding: 10px 20px;
+          border-radius: 12px;
+          border: none;
+          font-weight: bold;
+          cursor: pointer;
+          font-size: 15px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          text-decoration: none;
+        }
+
+        .btn-download {
+          background: #10b981;
+          color: white;
+        }
+
+        .btn-close {
+          background: #ef4444;
+          color: white;
+        }
+
         @media (max-width: 768px) {
           .parent-portal-page {
             gap: 10px;
@@ -639,6 +714,29 @@ if (!isMounted) {
           }
         }
       `}</style>
+
+      {/* === Modifikasi: Komponen Modal Layar Penuh === */}
+      {previewQrisUrl && (
+        <div className="qris-modal-overlay" onClick={() => setPreviewQrisUrl(null)}>
+          <div className="qris-modal-content" onClick={(e) => e.stopPropagation()}>
+            <img src={previewQrisUrl} alt="Preview QRIS Fullscreen" />
+          </div>
+          <div className="qris-modal-actions" onClick={(e) => e.stopPropagation()}>
+            <a 
+              href={previewQrisUrl} 
+              download={`QRIS-${selectedSiswa?.branches?.nama || 'Cabang'}.png`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="qris-modal-btn btn-download"
+            >
+              ⬇️ Download QRIS
+            </a>
+            <button className="qris-modal-btn btn-close" onClick={() => setPreviewQrisUrl(null)}>
+              ✖ Tutup
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="glass-card parent-hero">
         <div className="eyebrow">Portal Orang Tua</div>
@@ -705,7 +803,13 @@ if (!isMounted) {
           </AccordionSection>
 
           <AccordionSection id="bayar" icon="💳" title="Bayar Sekarang" subtitle="Pembayaran via QRIS atau transfer bank" openSections={openSections} toggleSection={toggleSection}>
-            <PaymentBox selectedSiswa={selectedSiswa} payment={payment} branches={branches} />
+            {/* === Modifikasi: Mengirimkan fungsi onImageClick ke PaymentBox === */}
+            <PaymentBox 
+              selectedSiswa={selectedSiswa} 
+              payment={payment} 
+              branches={branches} 
+              onClickQris={(url) => setPreviewQrisUrl(url)} 
+            />
           </AccordionSection>
 
           <AccordionSection id="perkembangan" icon="📝" title="Perkembangan Siswa" subtitle={`${perkembanganSiswa.length} catatan perkembangan`} openSections={openSections} toggleSection={toggleSection}>
