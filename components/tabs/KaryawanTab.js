@@ -51,9 +51,14 @@ export function KaryawanTab({
   employeeScanInfo, employeeScanText, absensiKaryawan, employeeManualForm, setEmployeeManualForm, 
   users, onSubmitManual 
 }) {
+  // PERBAIKAN: Penentuan tanggal awal dan akhir bulan menggunakan waktu lokal
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  
+  const firstDay = `${year}-${month}-01`;
+  const lastDate = String(new Date(year, today.getMonth() + 1, 0).getDate()).padStart(2, '0');
+  const lastDay = `${year}-${month}-${lastDate}`;
 
   const [searchQuery, setSearchQuery] = useState('')
   const [startDate, setStartDate] = useState(firstDay)
@@ -69,8 +74,6 @@ export function KaryawanTab({
   // === PENYESUAIAN HAK AKSES INPUT MANUAL ===
   // Menggunakan hak akses 'karyawan' sesuai menu permissions di aplikasi
   const canInputManual = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('karyawan')
-
-  // 2. FILTER BERDASARKAN USER YANG LOGIN
 
   // 2. FILTER BERDASARKAN USER YANG LOGIN
   const roleFilteredAbsensi = (absensiKaryawan || []).filter(item => {
