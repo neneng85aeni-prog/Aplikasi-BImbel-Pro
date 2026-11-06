@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { formatTanggal } from '../../lib/format'
 import { EMPLOYEE_STATUS_OPTIONS } from '../../lib/constants'
+import { supabase } from '../../lib/supabase' // PENTING: Tambahkan import supabase
 
 // FUNGSI BANTUAN 1: Format ISO jadi Jam (09:31)
 function formatJam(timeString) {
@@ -51,7 +52,6 @@ export function KaryawanTab({
   employeeScanInfo, employeeScanText, absensiKaryawan, employeeManualForm, setEmployeeManualForm, 
   users, onSubmitManual 
 }) {
-  // PERBAIKAN: Penentuan tanggal awal dan akhir bulan menggunakan waktu lokal
   const today = new Date();
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -64,24 +64,22 @@ export function KaryawanTab({
   const [startDate, setStartDate] = useState(firstDay)
   const [endDate, setEndDate] = useState(lastDay)
   const [currentPage, setCurrentPage] = useState(1)
+  const [isDownloading, setIsDownloading] = useState(false) // STATE BARU: Indikator loading
   
   // PERMINTAAN: 5 ROWS PER HALAMAN
   const ITEMS_PER_PAGE = 5 
 
  // 1. CEK HAK AKSES
   const canViewAll = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('permissions')
-  
-  // === PENYESUAIAN HAK AKSES INPUT MANUAL ===
-  // Menggunakan hak akses 'karyawan' sesuai menu permissions di aplikasi
   const canInputManual = currentUser?.akses === 'master' || currentUser?.akses === 'admin' || currentUser?.menu_permissions?.includes('karyawan')
 
-  // 2. FILTER BERDASARKAN USER YANG LOGIN
+  // 2. FILTER BERDASARKAN USER YANG LOGIN (UNTUK TABEL UI)
   const roleFilteredAbsensi = (absensiKaryawan || []).filter(item => {
     if (canViewAll) return true;
     return item.user_id === currentUser?.id;
   })
 
-  // 3. FILTER PERIODE & PENCARIAN PINTAR
+  // 3. FILTER PERIODE & PENCARIAN PINTAR (UNTUK TABEL UI)
   const normalizedAbsensi = roleFilteredAbsensi.map(item => ({
     ...item,
     jam_datang: item.jam_datang || item.jam_masuk || item.waktu_masuk || null,
@@ -107,7 +105,7 @@ export function KaryawanTab({
     return true;
   })
 
-  // 4. POTONG DATA UNTUK PAGINASI
+  // 4. POTONG DATA UNTUK PAGINASI (UNTUK TABEL UI)
   const totalPages = Math.ceil(finalFilteredAbsensi.length / ITEMS_PER_PAGE);
   const paginatedData = finalFilteredAbsensi.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -123,35 +121,100 @@ export function KaryawanTab({
     setCurrentPage(1); 
   };
 
-  // FUNGSI DOWNLOAD CSV BERDASARKAN FILTER
-  const downloadFilteredData = () => {
-    if (finalFilteredAbsensi.length === 0) {
-      alert("Tidak ada data untuk di-download pada periode ini.");
+  // === FITUR BARU: DOWNLOAD ON-DEMAND (HEMAT EGRESS) ===
+  const downloadFilteredData = async () => {
+    if (!startDate || !endDate) {
+      alert("Pilih rentang tanggal terlebih dahulu.");
       return;
     }
 
-    const rows = finalFilteredAbsensi.map(item => {
-      const ketWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang, item.users?.batas_jam_masuk, item.users?.batas_jam_pulang).join(' & ');
-      const statusKet = ketWaktu ? ` (${ketWaktu})` : '';
-      
-      return [
-        item.tanggal,
-        `"${item.users?.nama || '-'}"`,
-        `"${item.status.toUpperCase()}${statusKet}"`,
-        `${formatJam(item.jam_datang)} s/d ${formatJam(item.jam_pulang)}`,
-        `"${item.catatan || '-'}"`
-      ].join(',')
-    });
+    setIsDownloading(true);
+    try {
+      // 1. Tarik data langsung dari Supabase khusus untuk tanggal yang difilter
+      const { data: dbData, error } = await supabase
+        .from('absensi_karyawan')
+        .select('*')
+        .gte('tanggal', startDate)
+        .lte('tanggal', endDate)
+        .order('tanggal', { ascending: true });
 
-    const csvContent = ['Tanggal,Karyawan,Status & Pelanggaran Waktu,Jam Masuk - Pulang,Catatan'].join(',') + '\n' + rows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Laporan_Absensi_${startDate}_sd_${endDate}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      if (error) throw error;
+
+      if (!dbData || dbData.length === 0) {
+        alert("Tidak ada data absen di database pada periode ini.");
+        setIsDownloading(false);
+        return;
+      }
+
+      // 2. Gabungkan data absen dengan detail Users yang sudah ada di memori
+      const enrichedData = dbData.map(item => {
+        const user = users.find(u => u.id === item.user_id);
+        return {
+          ...item,
+          users: user || null,
+          jam_datang: item.jam_datang || item.jam_masuk || item.waktu_masuk || null,
+          jam_pulang: item.jam_pulang || item.jam_keluar || item.waktu_pulang || null,
+        };
+      });
+
+      // 3. Terapkan filter hak akses (Role)
+      const roleFiltered = enrichedData.filter(item => {
+        if (canViewAll) return true;
+        return item.user_id === currentUser?.id;
+      });
+
+      // 4. Terapkan filter kata kunci pencarian
+      const finalData = roleFiltered.filter(item => {
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const isMatch = (
+            item.users?.nama?.toLowerCase().includes(q) ||
+            item.status?.toLowerCase().includes(q) ||
+            (item.jam_datang && item.jam_datang.includes(q)) ||
+            (item.jam_pulang && item.jam_pulang.includes(q)) ||
+            formatTanggal(item.tanggal).toLowerCase().includes(q)
+          );
+          if (!isMatch) return false;
+        }
+        return true;
+      });
+
+      if (finalData.length === 0) {
+        alert("Tidak ada data yang cocok dengan pencarian Anda pada periode ini.");
+        setIsDownloading(false);
+        return;
+      }
+
+      // 5. Susun dan Download CSV
+      const rows = finalData.map(item => {
+        const ketWaktu = getKeteranganWaktu(item.jam_datang, item.jam_pulang, item.users?.batas_jam_masuk, item.users?.batas_jam_pulang).join(' & ');
+        const statusKet = ketWaktu ? ` (${ketWaktu})` : '';
+        
+        return [
+          item.tanggal,
+          `"${item.users?.nama || '-'}"`,
+          `"${item.status.toUpperCase()}${statusKet}"`,
+          `${formatJam(item.jam_datang)} s/d ${formatJam(item.jam_pulang)}`,
+          `"${item.catatan || '-'}"`
+        ].join(',')
+      });
+
+      const csvContent = ['Tanggal,Karyawan,Status & Pelanggaran Waktu,Jam Masuk - Pulang,Catatan'].join(',') + '\n' + rows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Laporan_Absensi_Full_${startDate}_sd_${endDate}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (err) {
+      console.error("Gagal download data:", err);
+      alert("Terjadi kesalahan saat mengunduh data: " + err.message);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -198,7 +261,7 @@ export function KaryawanTab({
           </div>
         </div>
 
-        {/* 2. INPUT MANUAL (SESUAI HAK AKSES) */}
+        {/* 2. INPUT MANUAL */}
         {canInputManual && (
           <div className="glass-card">
             <h2 className="section-title">Input Absensi Manual</h2>
@@ -280,8 +343,13 @@ export function KaryawanTab({
               }}
             />
 
-            <button className="btn btn-primary" onClick={downloadFilteredData} style={{ padding: '10px 14px', fontSize: '13px' }}>
-              ⬇️ Download CSV
+            <button 
+              className="btn btn-primary" 
+              onClick={downloadFilteredData} 
+              disabled={isDownloading}
+              style={{ padding: '10px 14px', fontSize: '13px', minWidth: '150px' }}
+            >
+              {isDownloading ? '⏳ Mengambil Data...' : '⬇️ Download CSV'}
             </button>
           </div>
         </div>
@@ -295,7 +363,7 @@ export function KaryawanTab({
                 <th>Status</th>
                 <th>Jam Masuk - Pulang</th>
                 <th>Catatan</th>
-                {canInputManual && <th>Aksi</th>}
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -327,33 +395,31 @@ export function KaryawanTab({
                       )}
                     </td>
                     <td>{item.catatan || '-'}</td>
-                    {canInputManual && (
-                      <td>
-                        <button 
-                          className="btn btn-secondary btn-small"
-                          onClick={() => {
-                            setEmployeeManualForm({
-                              id: item.id,
-                              user_id: item.user_id,
-                              tanggal: item.tanggal,
-                              jam_datang: item.jam_datang ? formatJam(item.jam_datang) : '',
-                              jam_pulang: item.jam_pulang ? formatJam(item.jam_pulang) : '',
-                              status: item.status,
-                              catatan: item.catatan || ''
-                            });
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                        >
-                          ✏️ Edit
-                        </button>
-                      </td>
-                    )}
+                    <td>
+                      <button 
+                        className="btn btn-secondary btn-small"
+                        onClick={() => {
+                          setEmployeeManualForm({
+                            id: item.id,
+                            user_id: item.user_id,
+                            tanggal: item.tanggal,
+                            jam_datang: item.jam_datang ? formatJam(item.jam_datang) : '',
+                            jam_pulang: item.jam_pulang ? formatJam(item.jam_pulang) : '',
+                            status: item.status,
+                            catatan: item.catatan || ''
+                          });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
               {paginatedData.length === 0 && (
                 <tr>
-                  <td colSpan={canInputManual ? "6" : "5"} style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
                     {searchQuery || startDate || endDate ? 'Data pencarian / periode tidak ditemukan.' : 'Belum ada data absensi untuk ditampilkan.'}
                   </td>
                 </tr>
